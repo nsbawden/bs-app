@@ -10,8 +10,8 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
+    <div class="top-bar">
+        <div class="select-group">
             <select id="book-select"></select>
             <select id="chapter-select"></select>
             <select id="verse-select"></select>
@@ -23,7 +23,10 @@
                 <option value="dra">DRA</option>
                 <option value="ylt">YLT</option>
             </select>
-        </header>
+        </div>
+        <span class="gear-btn" id="settings-btn">⚙️</span>
+    </div>
+    <div class="container">
         <main id="verse-display"></main>
         <footer>
             <div class="ai-input-container">
@@ -37,10 +40,31 @@
         </footer>
     </div>
     <div id="ai-popup" class="popup hidden">
-        <textarea id="ai-response-input" placeholder="Paste Grok's response here..."></textarea>
+        <textarea id="ai-response-input" placeholder=""></textarea>
         <button id="ai-response-submit">Submit</button>
     </div>
-    <script src="script.js" defer></script>
+    <div id="settings-popup" class="popup hidden">
+        <h3>Settings</h3>
+        <label>Max AI History Length: <input type="number" id="max-history-length" value="10" min="1"></label>
+        <label>Temperature: <input type="number" id="temperature" value="0.7" step="0.1" min="0" max="2"> (0-2, lower =
+            more focused)</label>
+        <label>OpenAI Model:
+            <select id="openai-model">
+                <option value="gpt-3.5-turbo">GPT-3.5-Turbo (fast, cheap)</option>
+                <option value="gpt-4o-mini">GPT-4o-Mini (smarter, affordable)</option>
+                <option value="gpt-4o">GPT-4o (advanced, costly)</option>
+            </select>
+        </label>
+        <label>Max Tokens: <input type="number" id="max-tokens" value="1000" min="50" max="4096"> (50-4096, output
+            length limit)</label>
+        <br>
+        <button id="save-settings">Save</button>
+        <button id="close-settings">Close</button>
+    </div>
+    <script src="config.js" defer></script>
+    <script src="ui.js" defer></script>
+    <script src="bible.js" defer></script>
+    <script src="ai.js" defer></script>
 </body>
 
 </html>

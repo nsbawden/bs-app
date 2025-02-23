@@ -5,37 +5,58 @@ A web-based application for exploring and studying the Bible, built collaborativ
 **Repository**: [https://github.com/nsbawden/bs-app](https://github.com/nsbawden/bs-app)  
 **Raw Base URL**: [https://raw.githubusercontent.com/nsbawden/bs-app/main/](https://raw.githubusercontent.com/nsbawden/bs-app/main/)
 
+**Note for Collaboration**: This document serves dual purposes: it describes the app for human users and provides a comprehensive starting point for future work sessions with Grok 3. Hand this README to Grok 3 to resume development seamlessly.
+
 ## Project Goals
-- Provide an intuitive, feature-rich tool for casual readers and serious Bible scholars.
-- Launch as a web app with a clean, accessible interface, with potential for future mobile expansion.
+- Deliver an intuitive, feature-rich tool for casual readers and serious Bible scholars.
+- Operate as a web app with a clean, accessible interface, with potential for future mobile expansion.
 
 ## Key Features
-- **Navigation**: Browse books, chapters, and verses via dropdown selectors or "Next/Previous Chapter/Book" buttons. Opens to the last viewed location stored in localStorage.
-- **Bible Versions**: Switch between translations (e.g., WEB, KJV, ASV) via a selector, with plans to add ESV support.
-- **Verse Interaction**: Click any verse to highlight it, updating the current location.
-- **AI Assistance**: Ask questions about the selected verse with a manual query system (copy to clipboard, paste response from external AI like Grok or ChatGPT), displayed with Markdown rendering and an expand/collapse toggle.
-- **Responsive UI**: Light text on a dark background with a green accent for interactive elements, designed for readability and usability.
+- **Navigation**: Browse books, chapters, and verses via dropdown selectors or "Next/Previous Chapter/Book" buttons, with state (last viewed location) persisted in `localStorage`.
+- **Bible Versions**: Switch between translations (WEB, KJV, ASV, BBE, DRA, YLT) via a selector, with plans to add ESV support.
+- **Verse Interaction**: Click any verse to highlight it and update the current location.
+- **AI Assistance**: Query an integrated OpenAI API (e.g., `gpt-4o-mini`) about the selected verse, with responses rendered in Markdown and an expand/collapse toggle. Supports manual fallback (copy to clipboard, paste from external AI).
+- **Settings**: Customize AI behavior via a top-bar gear button popup, controlling:
+  - **Max AI History Length**: Limits stored question/answer pairs (default: 10).
+  - **Temperature**: Adjusts response creativity (0-2).
+  - **OpenAI Model**: Selects model (`gpt-3.5-turbo`, `gpt-4o-mini`, `gpt-4o`).
+  - **Max Tokens**: Sets output length limit (50-4096).
+- **Responsive UI**: Dark background (`#1A1A1A`) with light text (`#F0F0F0`) and green accents (`#4A704A`) for interactive elements, optimized for readability.
 
 ## Tech Stack
 - **Frontend**: HTML, CSS, JavaScript (vanilla, with `marked.js` for Markdown rendering).
-- **Data**: Bible-API.com for verse text (WEB, KJV, etc.), with localStorage for state persistence.
+- **Data**: Bible-API.com for verse text, OpenAI API for AI queries, `localStorage` for state and settings persistence.
 - **Tools**: VS Code, GitHub for version control.
 
+## File Structure
+- **`index.html`**: Primary app HTML.
+- **`styles.css`**: App HTML styles.
+- **`config.js`**: Centralized defaults, state management, and constants (e.g., `books`, `bookOrder`).
+- **`ui.js`**: DOM elements, event listeners, and settings popup logic.
+- **`bible.js`**: Bible navigation, verse fetching, and display rendering.
+- **`ai.js`**: OpenAI integration, AI query handling, and token usage tracking.
+
 ## Workflow Notes
-- **State**: Maintained in `localStorage` (current verse, version, AI history) and documented broadly here.
-- **File Access**: Use the Raw Base URL + file path (e.g., `script.js`) to view source files.
-- **Branch**: Development occurs on `main`.
-- **Collaboration**: Features and updates driven by discussions with Grok 3, committed by nsbawden.
+- **State**: Persisted in `localStorage` (`bibleState` for verse data, separate keys for settings like `temperature`, `openaiModel`).
+- **Defaults**: All defaults (e.g., `maxHistoryLength`, `openaiSettings`) defined in `config.js` under `defaults`.
+- **File Access**: Use Raw Base URL + file path (e.g., `/config.js`) to view source files.
+- **Branch**: Development on `main`.
+- **Collaboration**: Features shaped via Grok 3 discussions, committed by nsbawden.
 
 ## Progress Log
-- **2025-02-22**: Initial repo setup, core navigation, version switching, and AI query system implemented with manual Grok/ChatGPT integration.
-- **Recent Updates**: Added chapter/book navigation buttons, AI output expand/collapse functionality.
+- **2025-02-22**: Initial setup with navigation, version switching, and manual AI query system.
+- **2025-02-23**: Major updates in this session:
+  - Refactored single `script.js` into four files (`config.js`, `ui.js`, `bible.js`, `ai.js`) for modularity.
+  - Integrated OpenAI API (`gpt-3.5-turbo` initially, now defaults to `gpt-4o-mini`) with dynamic cost tracking.
+  - Added settings popup in top bar (gear button) for `maxHistoryLength`, `temperature`, `openaiModel`, and `maxTokens`.
+  - Centralized defaults in `config.js`, removing redundancy.
+  - Optimized top bar layout: select boxes grouped left, gear button right, all on one line.
 
 ## Future Goals
-- Integrate ESV via API for additional translation support and section headings.
-- Automate AI queries with xAI or OpenAI APIs when freely available.
-- Enhance study tools (e.g., notes, highlights persistence, cross-references).
-- Explore multimedia integration (audio readings, images).
+- Add ESV support via API with section headings.
+- Enhance AI prompts for even richer responses (e.g., custom system messages via settings).
+- Expand study tools (notes, highlights persistence, cross-references).
+- Integrate multimedia (audio readings, images).
 
 ---
-*Last Updated: 2025-02-22*
+*Last Updated: 2025-02-23*

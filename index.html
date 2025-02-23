@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Study Browser</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <select id="book-select"></select>
+            <select id="chapter-select"></select>
+            <select id="verse-select"></select>
+            <select id="version-select">
+                <option value="web">WEB</option>
+                <option value="kjv">KJV</option>
+                <option value="asv">ASV</option>
+                <option value="bbe">BBE</option>
+                <option value="dra">DRA</option>
+                <option value="ylt">YLT</option>
+            </select>
+        </header>
+        <main id="verse-display"></main>
+        <footer>
+            <div class="ai-input-container">
+                <input type="text" id="ai-prompt" placeholder="Ask AI about the verse...">
+                <button id="ai-submit">✔</button>
+            </div>
+            <div id="ai-output-container">
+                <div id="ai-output"></div>
+                <button id="ai-toggle">Expand</button>
+            </div>
+        </footer>
+    </div>
+    <div id="ai-popup" class="popup hidden">
+        <textarea id="ai-response-input" placeholder="Paste Grok's response here..."></textarea>
+        <button id="ai-response-submit">Submit</button>
+    </div>
+    <script src="script.js" defer></script>
+</body>
+
+</html>

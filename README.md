@@ -3,43 +3,39 @@
 A web-based application for exploring and studying the Bible, built collaboratively with Grok 3 by xAI.
 
 **Repository**: [https://github.com/nsbawden/bs-app](https://github.com/nsbawden/bs-app)  
-**Raw Base URL**: [https://raw.githubusercontent.com/nsbawden/bs-app/main/](https://raw.githubusercontent.com/nsbawden/bs-app/main/) *(append file paths to this for direct access)*
+**Raw Base URL**: [https://raw.githubusercontent.com/nsbawden/bs-app/main/](https://raw.githubusercontent.com/nsbawden/bs-app/main/)
 
 ## Project Goals
-- Create an intuitive, feature-rich tool for casual readers and serious scholars.
-- Launch as a web app, with potential mobile expansion later.
+- Provide an intuitive, feature-rich tool for casual readers and serious Bible scholars.
+- Launch as a web app with a clean, accessible interface, with potential for future mobile expansion.
 
-## Feature List
-- **Search & Navigation**: Keyword/phrase search, easy book/chapter/verse navigation.
-- **Study Tools**: Commentaries, cross-references, notes, bookmarks, highlights.
-- **Multimedia**: Audio readings, images/videos for context (optional).
-- **UI Customization**: Adjustable fonts, themes, night mode.
+## Key Features
+- **Navigation**: Browse books, chapters, and verses via dropdown selectors or "Next/Previous Chapter/Book" buttons. Opens to the last viewed location stored in localStorage.
+- **Bible Versions**: Switch between translations (e.g., WEB, KJV, ASV) via a selector, with plans to add ESV support.
+- **Verse Interaction**: Click any verse to highlight it, updating the current location.
+- **AI Assistance**: Ask questions about the selected verse with a manual query system (copy to clipboard, paste response from external AI like Grok or ChatGPT), displayed with Markdown rendering and an expand/collapse toggle.
+- **Responsive UI**: Light text on a dark background with a green accent for interactive elements, designed for readability and usability.
 
 ## Tech Stack
-- **Frontend**: TBD (e.g., HTML/CSS/JS, React?)
-- **Backend**: TBD (e.g., Node.js, API-driven?)
-- **Database**: Bible text API or open-source text (e.g., ESV API, BibleGateway).
+- **Frontend**: HTML, CSS, JavaScript (vanilla, with `marked.js` for Markdown rendering).
+- **Data**: Bible-API.com for verse text (WEB, KJV, etc.), with localStorage for state persistence.
 - **Tools**: VS Code, GitHub for version control.
 
 ## Workflow Notes
-- **State**: Maintained in this `README.md`. Check here for latest project status.
-- **File Access**: Use the Raw Base URL above + file path (e.g., `README.md`, `src/script.js`) to fetch files directly.
-- **Branch**: Working on `main` unless specified otherwise.
-- **Collaboration**: Updates discussed with Grok 3, committed by nsbawden.
+- **State**: Maintained in `localStorage` (current verse, version, AI history) and documented broadly here.
+- **File Access**: Use the Raw Base URL + file path (e.g., `script.js`) to view source files.
+- **Branch**: Development occurs on `main`.
+- **Collaboration**: Features and updates driven by discussions with Grok 3, committed by nsbawden.
 
 ## Progress Log
-- **2025-02-22**: Project initialized. Repo created, state document drafted.
-- **2025-02-22**: Repo made public, URL added to README.
+- **2025-02-22**: Initial repo setup, core navigation, version switching, and AI query system implemented with manual Grok/ChatGPT integration.
+- **Recent Updates**: Added chapter/book navigation buttons, AI output expand/collapse functionality.
 
-## Open Questions
-- Which Bible text source to use?
-- Minimal viable product (MVP) scope?
-- Preferred frontend framework?
-
-## To-Dos
-- Define MVP features.
-- Select tech stack.
-- Wireframe initial UI.
+## Future Goals
+- Integrate ESV via API for additional translation support and section headings.
+- Automate AI queries with xAI or OpenAI APIs when freely available.
+- Enhance study tools (e.g., notes, highlights persistence, cross-references).
+- Explore multimedia integration (audio readings, images).
 
 ---
 *Last Updated: 2025-02-22*

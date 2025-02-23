@@ -1,0 +1,155 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #1A1A1A;
+    color: #F0F0F0;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+header {
+    background-color: #4A704A;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+select {
+    padding: 5px;
+    background-color: #F0F0F0;
+    color: #1A1A1A;
+}
+
+main {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+p {
+    margin: 0 0 15px 0;
+}
+
+.verse {
+    cursor: pointer;
+}
+
+.verse-num {
+    color: #FFD700;
+    margin-right: 5px;
+}
+
+.verse.selected {
+    background-color: #4A704A;
+}
+
+footer {
+    padding: 10px;
+    background-color: #2A2A2A;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ai-input-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#ai-prompt {
+    flex-grow: 1;
+    padding: 5px;
+    background-color: #F0F0F0;
+    border: none;
+}
+
+#ai-submit {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background-color: #4A704A;
+    color: #F0F0F0;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 30px;
+    text-align: center;
+}
+
+#ai-output-container {
+    position: relative;
+    margin-top: 10px;
+}
+
+#ai-output {
+    background-color: #3A3A3A;
+    padding: 10px;
+    max-height: 3em;
+    /* ~2 lines, adjust as needed */
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+#ai-output.expanded {
+    max-height: none;
+    overflow-y: auto;
+}
+
+#ai-toggle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 8px;
+    background-color: #4A704A;
+    color: #F0F0F0;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #2A2A2A;
+    padding: 20px;
+    border: 1px solid #4A704A;
+    z-index: 1000;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+#ai-response-input {
+    width: 300px;
+    height: 100px;
+    padding: 5px;
+    background-color: #F0F0F0;
+    color: #1A1A1A;
+    border: none;
+}
+
+#ai-response-submit {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #4A704A;
+    color: #F0F0F0;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-button {
+    margin: 10px 0;
+    padding: 5px 10px;
+    background-color: #4A704A;
+    color: #F0F0F0;
+    border: none;
+    cursor: pointer;
+}

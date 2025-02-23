@@ -1,3 +1,5 @@
+**At the beginning of any session, AI will retrieve all of the project files using the below raw url base, so that all content is in sync for the session, and confirm to user that the files have been successfully read.**
+
 # Bible Study Browser App
 
 A web-based application for exploring and studying the Bible, built collaboratively with Grok 3 by xAI.

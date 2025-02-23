@@ -16,17 +16,19 @@ const settingsPopup = document.getElementById('settings-popup');
 const maxHistoryInput = document.getElementById('max-history-length');
 const temperatureInput = document.getElementById('temperature');
 const openaiModelSelect = document.getElementById('openai-model');
+const openaiApiKeyInput = document.getElementById('openai-api-key');
 const maxTokensInput = document.getElementById('max-tokens');
 const saveSettingsBtn = document.getElementById('save-settings');
 const closeSettingsBtn = document.getElementById('close-settings');
 
-// Set initial values from config.js
-maxHistoryInput.value = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-temperatureInput.value = openaiSettings.temperature;
-openaiModelSelect.value = openaiSettings.model;
-maxTokensInput.value = openaiSettings.maxTokens;
-
 settingsBtn.addEventListener('click', () => {
+    // Set initial values from config.js
+    maxHistoryInput.value = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
+    temperatureInput.value = openaiSettings.temperature;
+    openaiModelSelect.value = openaiSettings.model;
+    maxTokensInput.value = openaiSettings.maxTokens;
+    openaiApiKeyInput.value = localStorage.getItem('openAI_apiKey');
+
     settingsPopup.classList.toggle('hidden');
 });
 
@@ -35,6 +37,11 @@ saveSettingsBtn.addEventListener('click', () => {
     openaiSettings.temperature = parseFloat(temperatureInput.value) || defaults.openaiSettings.temperature;
     openaiSettings.model = openaiModelSelect.value;
     openaiSettings.maxTokens = parseInt(maxTokensInput.value) || defaults.openaiSettings.maxTokens;
+
+    let apikey = openaiApiKeyInput.value.trim();
+    if (apikey) {
+        localStorage.setItem('openAI_apiKey', apikey);
+    }
 
     // Clamp values to valid ranges
     openaiSettings.temperature = Math.max(0, Math.min(2, openaiSettings.temperature));

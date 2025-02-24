@@ -37,14 +37,19 @@ async function refreshDisplay() {
 
     let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
 
+    const notes = getNotes(); // Get notes from localStorage
     let paragraphs = [];
     let currentParagraph = '';
     data.verses.forEach((v, i) => {
         const verseNum = i + 1;
         const selected = verseNum === state.currentVerse.verse ? 'selected' : '';
-        const verseText = `<span class="verse-num">${verseNum}</span> ${v.text}`;
+        const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNum}`;
+        const hasNote = notes[reference];
+        const addOrEdit = hasNote ? 'edit' : 'add';
+        const hasNoteClass = hasNote ? 'has-note' : '';
+        const verseText = `<span class="verse-num" onclick="showNotePopup('${reference}', this.parentElement, '${notes[reference] || ''}')" title="${addOrEdit} note">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
 
-        currentParagraph += `<span class="verse ${selected}" data-verse="${verseNum}">${verseText}</span> `;
+        currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
             paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
             currentParagraph = '';

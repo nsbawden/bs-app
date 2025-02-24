@@ -61,8 +61,23 @@ p {
     margin-right: 5px;
 }
 
-.verse.selected {
+.verse.selected .verse-text {
     background-color: #4A704A;
+}
+
+.verse-num {
+    position: relative;
+}
+
+.has-note .verse-num::after {
+    content: '📝';
+    font-size: 0.8em;
+    margin-left: 2px;
+    vertical-align: top;
+}
+
+.has-note .verse-text {
+    text-decoration: underline;
 }
 
 footer {
@@ -144,12 +159,15 @@ footer {
     display: none;
 }
 
+#settings-popup input[type=number] {
+    width: 38px;
+}
+
 #ai-response-input,
 #max-history-length,
 #temperature,
 #max-tokens,
 #openai-model {
-    width: 300px;
     padding: 5px;
     background-color: #F0F0F0;
     color: #1A1A1A;
@@ -187,4 +205,18 @@ footer {
     color: #F0F0F0;
     border: none;
     cursor: pointer;
+}
+
+.note-popup {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+}
+
+.note-popup textarea {
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.note-popup button:hover {
+    background: #5A805A;
 }

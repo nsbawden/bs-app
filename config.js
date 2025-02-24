@@ -70,3 +70,21 @@ function saveState() {
     localStorage.setItem('openaiModel', openaiSettings.model);
     localStorage.setItem('maxTokens', openaiSettings.maxTokens);
 }
+
+// Notes management
+const getNotes = () => {
+    const notes = localStorage.getItem('bibleNotes');
+    return notes ? JSON.parse(notes) : {};
+};
+
+const saveNote = (reference, note) => {
+    const notes = getNotes();
+    notes[reference] = note;
+    localStorage.setItem('bibleNotes', JSON.stringify(notes));
+};
+
+const deleteNote = (reference) => {
+    const notes = getNotes();
+    delete notes[reference];
+    localStorage.setItem('bibleNotes', JSON.stringify(notes));
+};

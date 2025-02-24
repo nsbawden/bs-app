@@ -118,7 +118,7 @@ async function queryAI(question) {
         verse: state.currentVerse.verse,
         version: state.bibleVersion.toUpperCase()
     };
-    aiOutput.textContent = 'Query copied to clipboard. Paste it to Grok/ChatGPT, then paste the answer in the popup.';
+    aiOutput.textContent = 'working ...';
     const response = await currentAIModule.query(question, context);
     if (typeof marked !== 'undefined') {
         aiOutput.innerHTML = marked.parse(response);

@@ -32,6 +32,7 @@ A web-based application for exploring and studying the Bible, built collaborativ
 
 ## File Structure
 - **`index.html`**: Primary app HTML.
+- **`apikey.html`**: Help screen for creating API Key.
 - **`styles.css`**: App HTML styles.
 - **`config.js`**: Centralized defaults, state management, and constants (e.g., `books`, `bookOrder`).
 - **`ui.js`**: DOM elements, event listeners, and settings popup logic.

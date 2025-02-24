@@ -3,7 +3,7 @@ const BIBLE_API_BASE = 'https://bible-api.com';
 
 // Centralized defaults for the entire app
 const defaults = {
-    bibleVersion: 'web',
+    bibleVersion: 'asv',
     currentVerse: { book: 'john', chapter: 1, verse: 1 },
     notes: {},
     highlights: {},
@@ -62,6 +62,15 @@ const bookOrder = [
     '2 thessalonians', '1 timothy', '2 timothy', 'titus', 'philemon', 'hebrews', 'james',
     '1 peter', '2 peter', '1 john', '2 john', '3 john', 'jude', 'revelation', '1 enoch'
 ];
+
+// 1 Enoch (R.H.Charles’s 1917 translation)
+
+function loadState() {
+    const savedState = localStorage.getItem('bibleState');
+    if (savedState) {
+        state = JSON.parse(savedState);
+    }
+}
 
 function saveState() {
     localStorage.setItem('bibleState', JSON.stringify(state));

@@ -143,7 +143,6 @@ function showNotePopup(reference, verseDiv, existingNote) {
     const popup = document.createElement('div');
     popup.className = 'note-popup';
     popup.style.position = 'absolute';
-    popup.style.left = `${verseDiv.offsetLeft}px`;
     popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
     popup.style.background = '#2A2A2A';
     popup.style.color = '#F0F0F0';
@@ -154,7 +153,7 @@ function showNotePopup(reference, verseDiv, existingNote) {
 
     // Textarea for note
     const textarea = document.createElement('textarea');
-    textarea.value = existingNote;
+    textarea.value = existingNote || '';
     textarea.style.width = '100%';
     textarea.style.height = '150px';
     textarea.style.background = '#1A1A1A';
@@ -172,12 +171,12 @@ function showNotePopup(reference, verseDiv, existingNote) {
     saveButton.onclick = () => {
         const note = textarea.value.trim();
         if (note) {
-            saveNote(reference, note); // Save non-empty note
+            saveNote(reference, note);
         } else {
-            deleteNote(reference); // Remove note if empty
+            deleteNote(reference);
         }
-        popup.remove();
-        refreshDisplay(); // Refresh the display to update styling
+        cleanupAndRemove();
+        refreshDisplay();
     };
 
     // Cancel button
@@ -187,13 +186,38 @@ function showNotePopup(reference, verseDiv, existingNote) {
     cancelButton.style.color = '#F0F0F0';
     cancelButton.style.border = 'none';
     cancelButton.style.padding = '5px 10px';
-    cancelButton.onclick = () => popup.remove();
+    cancelButton.onclick = cleanupAndRemove;
 
     // Assemble popup
     popup.appendChild(textarea);
     popup.appendChild(saveButton);
     popup.appendChild(cancelButton);
     document.body.appendChild(popup);
+
+    // Position adjustment: Ensure popup stays within viewport
+    const verseLeft = verseDiv.offsetLeft;
+    const popupWidth = popup.offsetWidth;
+    const viewportWidth = window.innerWidth;
+    let newLeft = verseLeft;
+    if (verseLeft + popupWidth > viewportWidth) {
+        newLeft = viewportWidth - popupWidth;
+        newLeft = Math.max(0, newLeft);
+    }
+    popup.style.left = `${newLeft}px`;
+
+    // Escape key listener
+    const handleEscape = (event) => {
+        if (event.key === 'Escape') {
+            cleanupAndRemove();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup function to remove popup and listener
+    function cleanupAndRemove() {
+        document.removeEventListener('keydown', handleEscape);
+        popup.remove();
+    }
 
     // Focus textarea
     textarea.focus();

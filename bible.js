@@ -108,4 +108,5 @@ window.goToPrevious = function () {
 };
 
 // Initialize
+loadState();
 populateSelectors();

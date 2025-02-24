@@ -1,8 +1,21 @@
 // bible.js
+// async function fetchChapter(book, chapter, version) {
+//     const response = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
+//     const data = await response.json();
+//     return data;
+// }
+
 async function fetchChapter(book, chapter, version) {
-    const response = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
-    const data = await response.json();
-    return data;
+    if (book === "1 enoch") {
+        const response = await fetch('./1enoch.json'); // Relative path
+        const data = await response.json();
+        const chapterData = data.chapters.find(ch => ch.chapter === parseInt(chapter));
+        return chapterData || { verses: [] };
+    } else {
+        const response = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
+        const data = await response.json();
+        return data;
+    }
 }
 
 function populateSelectors() {

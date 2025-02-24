@@ -48,7 +48,7 @@ const books = {
     'philippians': 4, 'colossians': 4, '1 thessalonians': 5, '2 thessalonians': 3,
     '1 timothy': 6, '2 timothy': 4, 'titus': 3, 'philemon': 1, 'hebrews': 13,
     'james': 5, '1 peter': 5, '2 peter': 3, '1 john': 5, '2 john': 1, '3 john': 1,
-    'jude': 1, 'revelation': 22
+    'jude': 1, 'revelation': 22, '1 enoch': 2
 };
 
 const bookOrder = [
@@ -60,7 +60,7 @@ const bookOrder = [
     'malachi', 'matthew', 'mark', 'luke', 'john', 'acts', 'romans', '1 corinthians',
     '2 corinthians', 'galatians', 'ephesians', 'philippians', 'colossians', '1 thessalonians',
     '2 thessalonians', '1 timothy', '2 timothy', 'titus', 'philemon', 'hebrews', 'james',
-    '1 peter', '2 peter', '1 john', '2 john', '3 john', 'jude', 'revelation'
+    '1 peter', '2 peter', '1 john', '2 john', '3 john', 'jude', 'revelation', '1 enoch'
 ];
 
 function saveState() {

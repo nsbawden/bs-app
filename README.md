@@ -41,20 +41,12 @@ A web-based application for exploring and studying the Bible and related texts, 
 - **`ai.js`**: OpenAI integration, AI query handling, and token usage tracking.
 - **`1enoch.json`**: Full text of 1 Enoch (108 chapters) in JSON format, based on R.H. Charles’s 1917 translation.
 
-## Workflow Notes
-- **State**: Persisted in `localStorage` (`bibleState` for verse data, separate keys for settings like `temperature`, `openaiModel`, and `bibleNotes` for user notes).
-- **Defaults**: All defaults (e.g., `maxHistoryLength`, `openaiSettings`) defined in `config.js` under `defaults`.
-- **File Access**: Use Raw Base URL + file path (e.g., `/config.js`) to view source files. `1enoch.json` fetched locally as `/1enoch.json`.
-- **Branch**: Development on `main`.
-- **Collaboration**: Features shaped via Grok 3 discussions, committed by nsbawden.
-- **Local Development**: Use a local server (e.g., VS Code Live Server) to avoid CORS issues with `file://` paths when fetching `1enoch.json`.
-
 ## Progress Log
 - **2025-02-22**: Initial setup with navigation, version switching, and manual AI query system.
 - **2025-02-23**: Major updates:
   - Refactored single `script.js` into four files (`config.js`, `ui.js`, `bible.js`, `ai.js`) for modularity.
   - Integrated OpenAI API (`gpt-3.5-turbo` initially, now defaults to `gpt-4o-mini`) with dynamic cost tracking.
-  - Added settings popup in top bar (gear button) for `maxHistoryLength`, `temperature`, `openaiModel`, and `maxTokens`.
+  - Added settings popup in top bar (gear button) for `maxHistoryLength`, `temperature`, `model`, and `maxTokens`.
   - Centralized defaults in `config.js`, removing redundancy.
   - Optimized top bar layout: select boxes grouped left, gear button right, all on one line.
 - **2025-02-24**: Updates in this session:

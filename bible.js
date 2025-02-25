@@ -5,7 +5,7 @@ async function fetchChapter(book, chapter, version) {
 
     switch (bookData.handler) {
         case 'localJson':
-            const response = await fetch('./1enoch.json');
+            const response = await fetch(bookData.url);
             const data = await response.json();
             const chapterData = data.chapters.find(ch => ch.chapter === parseInt(chapter));
             return chapterData || { verses: [] };

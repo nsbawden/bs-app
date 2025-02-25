@@ -3,16 +3,18 @@ const BIBLE_API_BASE = 'https://bible-api.com';
 
 const defaults = {
     currentVerse: { book: 'John', chapter: 1, verse: 1 },
-    bibleVersion: 'WEB',
+    bibleVersion: 'asv',
     maxHistoryLength: 10,
+    aiHistory: [],
     openaiSettings: {
-        temperature: 0.7,
-        openaiModel: 'gpt-4o-mini',
+        temperature: 1.0,
+        model: 'gpt-4o-mini',
         maxTokens: 500
     }
 };
 
 let state = { ...defaults };
+let openaiSettings = state.openaiSettings;
 
 const books = [
     { key: 'Genesis', label: 'Genesis', chapters: 50, handler: 'api' },
@@ -81,7 +83,7 @@ const books = [
     { key: '3 John', label: '3 John', chapters: 1, handler: 'api' },
     { key: 'Jude', label: 'Jude', chapters: 1, handler: 'api' },
     { key: 'Revelation', label: 'Revelation', chapters: 22, handler: 'api' },
-    { key: '1 enoch', label: '1 Enoch (R.H. Charles’s 1917 translation)', chapters: 108, handler: 'localJson' }
+    { key: '1 Enoch', label: '1 Enoch (1917 translation)', chapters: 108, handler: 'localJson', url: './1enoch.json', notes: 'R.H. Charles’s 1917 translation' }
 ];
 
 function loadState() {
@@ -89,6 +91,7 @@ function loadState() {
     if (savedState) {
         state = JSON.parse(savedState);
     }
+    openaiSettings = state.openaiSettings;
 }
 
 function saveState() {

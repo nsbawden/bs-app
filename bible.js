@@ -1,32 +1,33 @@
 // bible.js
-// async function fetchChapter(book, chapter, version) {
-//     const response = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
-//     const data = await response.json();
-//     return data;
-// }
-
 async function fetchChapter(book, chapter, version) {
-    if (book === "1 enoch") {
-        const response = await fetch('./1enoch.json'); // Relative path
-        const data = await response.json();
-        const chapterData = data.chapters.find(ch => ch.chapter === parseInt(chapter));
-        return chapterData || { verses: [] };
-    } else {
-        const response = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
-        const data = await response.json();
-        return data;
+    const bookData = books.find(b => b.key === book);
+    if (!bookData) throw new Error(`Book ${book} not found in books array`);
+
+    switch (bookData.handler) {
+        case 'localJson':
+            const response = await fetch('./1enoch.json');
+            const data = await response.json();
+            const chapterData = data.chapters.find(ch => ch.chapter === parseInt(chapter));
+            return chapterData || { verses: [] };
+        case 'api':
+            const apiResponse = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
+            const apiData = await apiResponse.json();
+            return apiData;
+        default:
+            throw new Error(`Unknown handler type: ${bookData.handler} for book ${book}`);
     }
 }
 
 function populateSelectors() {
-    bookSelect.innerHTML = bookOrder.map(b => `<option value="${b}">${b}</option>`).join('');
+    bookSelect.innerHTML = books.map(b => `<option value="${b.key}">${b.label}</option>`).join('');
     bookSelect.value = state.currentVerse.book;
     versionSelect.value = state.bibleVersion;
     updateChapters();
 }
 
 async function updateChapters() {
-    const chapterCount = books[state.currentVerse.book];
+    const book = books.find(b => b.key === state.currentVerse.book);
+    const chapterCount = book.chapters;
     chapterSelect.innerHTML = Array.from({ length: chapterCount }, (_, i) =>
         `<option value="${i + 1}">${i + 1}</option>`
     ).join('');
@@ -43,14 +44,15 @@ async function refreshDisplay() {
     ).join('');
     verseSelect.value = state.currentVerse.verse;
 
-    const currentBookIndex = bookOrder.indexOf(state.currentVerse.book);
-    const chapterCount = books[state.currentVerse.book];
+    const currentBook = books.find(b => b.key === state.currentVerse.book);
+    const currentBookIndex = books.indexOf(currentBook);
+    const chapterCount = currentBook.chapters;
     let prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
-    let nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < bookOrder.length - 1 ? 'Next Book' : '');
+    let nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
 
     let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
 
-    const notes = getNotes(); // Get notes from localStorage
+    const notes = getNotes();
     let paragraphs = [];
     let currentParagraph = '';
     data.verses.forEach((v, i) => {
@@ -77,13 +79,14 @@ async function refreshDisplay() {
 }
 
 window.goToNext = function () {
-    const currentBookIndex = bookOrder.indexOf(state.currentVerse.book);
-    const chapterCount = books[state.currentVerse.book];
+    const currentBook = books.find(b => b.key === state.currentVerse.book);
+    const currentBookIndex = books.indexOf(currentBook);
+    const chapterCount = currentBook.chapters;
 
     if (state.currentVerse.chapter < chapterCount) {
         state.currentVerse.chapter++;
-    } else if (currentBookIndex < bookOrder.length - 1) {
-        state.currentVerse.book = bookOrder[currentBookIndex + 1];
+    } else if (currentBookIndex < books.length - 1) {
+        state.currentVerse.book = books[currentBookIndex + 1].key;
         state.currentVerse.chapter = 1;
     } else {
         return;
@@ -93,19 +96,99 @@ window.goToNext = function () {
 };
 
 window.goToPrevious = function () {
-    const currentBookIndex = bookOrder.indexOf(state.currentVerse.book);
+    const currentBook = books.find(b => b.key === state.currentVerse.book);
+    const currentBookIndex = books.indexOf(currentBook);
 
     if (state.currentVerse.chapter > 1) {
         state.currentVerse.chapter--;
     } else if (currentBookIndex > 0) {
-        state.currentVerse.book = bookOrder[currentBookIndex - 1];
-        state.currentVerse.chapter = books[state.currentVerse.book];
+        state.currentVerse.book = books[currentBookIndex - 1].key;
+        state.currentVerse.chapter = books[currentBookIndex - 1].chapters;
     } else {
         return;
     }
     state.currentVerse.verse = 1;
     populateSelectors();
 };
+
+function showNotePopup(reference, verseDiv, existingNote) {
+    const existingPopup = document.querySelector('.note-popup');
+    if (existingPopup) existingPopup.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'note-popup';
+    popup.style.position = 'absolute';
+    popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
+    popup.style.background = '#2A2A2A';
+    popup.style.color = '#F0F0F0';
+    popup.style.padding = '10px';
+    popup.style.border = '1px solid #4A704A';
+    popup.style.zIndex = '1000';
+    popup.style.maxWidth = '400px';
+
+    const textarea = document.createElement('textarea');
+    textarea.value = existingNote || '';
+    textarea.style.width = '100%';
+    textarea.style.height = '150px';
+    textarea.style.background = '#1A1A1A';
+    textarea.style.color = '#F0F0F0';
+    textarea.style.border = '1px solid #4A704A';
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save';
+    saveButton.style.background = '#4A704A';
+    saveButton.style.color = '#F0F0F0';
+    saveButton.style.border = 'none';
+    saveButton.style.padding = '5px 10px';
+    saveButton.style.marginRight = '5px';
+    saveButton.onclick = () => {
+        const note = textarea.value.trim();
+        if (note) {
+            saveNote(reference, note);
+        } else {
+            deleteNote(reference);
+        }
+        cleanupAndRemove();
+        refreshDisplay();
+    };
+
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = 'Cancel';
+    cancelButton.style.background = '#4A704A';
+    cancelButton.style.color = '#F0F0F0';
+    cancelButton.style.border = 'none';
+    cancelButton.style.padding = '5px 10px';
+    cancelButton.onclick = cleanupAndRemove;
+
+    popup.appendChild(textarea);
+    popup.appendChild(saveButton);
+    popup.appendChild(cancelButton);
+    document.body.appendChild(popup);
+
+    const verseLeft = verseDiv.offsetLeft;
+    const popupWidth = popup.offsetWidth;
+    const viewportWidth = window.innerWidth;
+    let newLeft = verseLeft;
+    if (verseLeft + popupWidth > viewportWidth) {
+        newLeft = viewportWidth - popupWidth;
+        newLeft = Math.max(0, newLeft);
+    }
+    popup.style.left = `${newLeft}px`;
+
+    const handleEscape = (event) => {
+        if (event.key === 'Escape') {
+            cleanupAndRemove();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    function cleanupAndRemove() {
+        document.removeEventListener('keydown', handleEscape);
+        popup.remove();
+    }
+
+    textarea.focus();
+}
 
 // Initialize
 loadState();

@@ -36,6 +36,11 @@ body {
     box-sizing: border-box;
 }
 
+a {
+    color: gold;
+    text-decoration: none;
+}
+
 select {
     padding: 5px;
     background-color: #F0F0F0;
@@ -80,6 +85,11 @@ p {
     text-decoration: underline;
 }
 
+.question {
+    display: block;
+    margin-bottom: 10px;
+}
+
 footer {
     padding: 10px;
     background-color: #2A2A2A;
@@ -116,7 +126,7 @@ footer {
 
 #ai-output-container {
     position: relative;
-    margin-top: 10px;
+    margin-top: 2px;
 }
 
 #ai-output {
@@ -160,7 +170,7 @@ footer {
 }
 
 #settings-popup input[type=number] {
-    width: 38px;
+    width: 4em;
 }
 
 #ai-response-input,
@@ -219,4 +229,35 @@ footer {
 
 .note-popup button:hover {
     background: #5A805A;
+}
+
+.tabs-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin: 1px 0;
+    gap: 2px;
+}
+
+.tab {
+    flex: 1;
+    text-align: center;
+    color: black;
+    padding: 2px 0;
+    background-color: #517420;
+    border: 1px solid #ddd;
+    border-radius: 4px 4px 4px 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 11px;
+}
+
+.tab:hover {
+    background-color: #e0e0e0;
+}
+
+.tab.active {
+    background-color: #4d8acd;
+    color: white;
+    border-bottom: none;
 }

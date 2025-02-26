@@ -53,8 +53,7 @@ const aiModules = {
             localStorage.setItem('openAI_tokenUsage', JSON.stringify(usage));
         },
         async query(question, context) {
-            const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}), ${question} - return as Markdown`;
-            console.log(fullQuestion);
+            console.log(question);
             try {
                 const apiKey = this.getApiKey();
                 const response = await fetch(this.apiEndpoint, {
@@ -68,9 +67,9 @@ const aiModules = {
                         messages: [
                             {
                                 role: 'system',
-                                content: 'You are a Bible scholar. Provide detailed, accurate answers with multiple relevant verses and explanations, formatted in Markdown.'
+                                content: 'Answer from Bible with multiple verses and explanations, formatted in Markdown.'
                             },
-                            { role: 'user', content: fullQuestion }
+                            { role: 'user', content: `${question}` }
                         ],
                         max_tokens: openaiSettings.maxTokens,
                         temperature: openaiSettings.temperature
@@ -118,20 +117,23 @@ async function queryAI(question) {
         verse: state.currentVerse.verse,
         version: state.bibleVersion.toUpperCase()
     };
-    aiOutput.textContent = 'working ...';
-    const response = await currentAIModule.query(question, context);
-    if (typeof marked !== 'undefined') {
-        aiOutput.innerHTML = marked.parse(response);
-        aiOutput.classList.add('expanded');
-        aiToggle.textContent = 'Collapse';
-    } else {
-        console.error('Marked.js not loaded; displaying plain text');
-        aiOutput.textContent = response;
-    }
+    const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}): ${question}`;
+    aiOutput.textContent = `asking ... ${fullQuestion}`;
+    const response = await currentAIModule.query(fullQuestion, context);
+    displayResult(fullQuestion, response);
+    
+    // push to the front of the history stack
     const maxHistoryLength = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-    state.aiHistory.push({ question, answer: response, context: `${context.book} ${context.chapter}:${context.verse} (${context.version})` });
-    if (state.aiHistory.length > maxHistoryLength) {
-        state.aiHistory = state.aiHistory.slice(-maxHistoryLength);
+    aiHistory.unshift({ question: fullQuestion, answer: response, context: `${context.book} ${context.chapter}:${context.verse} (${context.version})` });
+    if (aiHistory.length > maxHistoryLength) {
+        aiHistory = aiHistory.slice(0, maxHistoryLength);
     }
+    adjustTabCount(); // Show existing tabs and hide the rest
+
     saveState();
+}
+
+// load last history if available
+if (aiHistory.length > 0) {
+    displayResult(aiHistory[0].question, aiHistory[0].answer, false);
 }

@@ -5,15 +5,15 @@ const defaults = {
     currentVerse: { book: 'John', chapter: 1, verse: 1 },
     bibleVersion: 'asv',
     maxHistoryLength: 10,
-    aiHistory: [],
     openaiSettings: {
         temperature: 1.0,
         model: 'gpt-4o-mini',
-        maxTokens: 500
+        maxTokens: 1000
     }
 };
 
 let state = { ...defaults };
+let aiHistory = [];
 let openaiSettings = state.openaiSettings;
 
 const books = [
@@ -86,16 +86,25 @@ const books = [
     { key: '1 Enoch', label: '1 Enoch (1917 translation)', chapters: 108, handler: 'localJson', url: './1enoch.json', notes: 'R.H. Charles’s 1917 translation' }
 ];
 
+function loadAiHistory() {
+    const saved = localStorage.getItem('aiHistory');
+    if (saved) {
+        aiHistory = JSON.parse(saved);
+    }
+}
+
 function loadState() {
     const savedState = localStorage.getItem('bibleState');
     if (savedState) {
         state = JSON.parse(savedState);
     }
     openaiSettings = state.openaiSettings;
+    loadAiHistory();
 }
 
 function saveState() {
     localStorage.setItem('bibleState', JSON.stringify(state));
+    localStorage.setItem('aiHistory', JSON.stringify(aiHistory));
 }
 
 function getNotes() {
@@ -113,3 +122,27 @@ function deleteNote(reference) {
     delete notes[reference];
     localStorage.setItem('bibleNotes', JSON.stringify(notes));
 }
+
+function loadQueryString() {
+    // Parse URL query string and update state.currentVerse if parameters exist
+    const queryParams = new URLSearchParams(window.location.search);
+
+    // Check and update book
+    const bookParam = queryParams.get('book');
+    if (bookParam) {
+        state.currentVerse.book = bookParam;
+    }
+
+    // Check and update chapter
+    const chapterParam = queryParams.get('chapter');
+    if (chapterParam) {
+        state.currentVerse.chapter = parseInt(chapterParam, 10); // Convert to integer
+    }
+
+    // Check and update verse
+    const verseParam = queryParams.get('verse');
+    if (verseParam) {
+        state.currentVerse.verse = parseInt(verseParam, 10); // Convert to integer
+    }
+}
+

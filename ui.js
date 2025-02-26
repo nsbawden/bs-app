@@ -48,8 +48,8 @@ saveSettingsBtn.addEventListener('click', () => {
     openaiSettings.maxTokens = Math.max(50, Math.min(4096, openaiSettings.maxTokens));
 
     // Trim history if needed
-    if (state.aiHistory.length > newMaxHistoryLength) {
-        state.aiHistory = state.aiHistory.slice(-newMaxHistoryLength);
+    if (aiHistory.length > newMaxHistoryLength) {
+        aiHistory = aiHistory.slice(-newMaxHistoryLength);
     }
     localStorage.setItem('maxHistoryLength', newMaxHistoryLength);
 
@@ -90,6 +90,7 @@ versionSelect.addEventListener('change', () => {
 });
 
 verseDisplay.addEventListener('click', (e) => {
+    aiCollapse();
     const verseSpan = e.target.closest('.verse');
     if (verseSpan) {
         document.querySelectorAll('.verse').forEach(v => v.classList.remove('selected'));
@@ -98,6 +99,10 @@ verseDisplay.addEventListener('click', (e) => {
         verseSelect.value = state.currentVerse.verse;
         saveState();
     }
+});
+
+aiOutput.addEventListener('click', (e) => {
+    aiExpand();
 });
 
 function submitAIQuery() {
@@ -116,23 +121,31 @@ aiPrompt.addEventListener('keydown', (e) => {
     }
 });
 
+function aiExpand() {
+    aiOutput.classList.add('expanded');
+    aiToggle.textContent = '▼';
+}
+
+function aiCollapse() {
+    aiOutput.classList.remove('expanded');
+    aiToggle.textContent = '▲';
+}
+
 aiToggle.addEventListener('click', () => {
     if (aiOutput.classList.contains('expanded')) {
-        aiOutput.classList.remove('expanded');
-        aiToggle.textContent = 'Expand';
+        aiCollapse();
     } else {
-        aiOutput.classList.add('expanded');
-        aiToggle.textContent = 'Collapse';
+        aiExpand();
     }
 });
 
-if (aiOutput.innerHTML) {
-    aiOutput.classList.add('expanded');
-    aiToggle.textContent = 'Collapse';
-} else {
-    aiOutput.classList.remove('expanded');
-    aiToggle.textContent = 'Expand';
-}
+// if (aiOutput.innerHTML) {
+//     aiOutput.classList.add('expanded');
+//     aiToggle.textContent = '▼';
+// } else {
+//     aiOutput.classList.remove('expanded');
+//     aiToggle.textContent = '▲';
+// }
 
 function showNotePopup(reference, verseDiv, existingNote) {
     // Remove any existing popup
@@ -222,3 +235,42 @@ function showNotePopup(reference, verseDiv, existingNote) {
     // Focus textarea
     textarea.focus();
 }
+
+function adjustTabCount() {
+    let tabCount = aiHistory.length;
+    const tabs = document.querySelectorAll('.tab');
+
+    // Ensure tabCount doesn't exceed 10
+    tabCount = Math.min(tabCount, 10);
+
+    // Show tabs up to tabCount and hide the rest
+    tabs.forEach((tab, index) => {
+        if (index < tabCount) {
+            tab.style.display = 'block'; // Show tab
+        } else {
+            tab.style.display = 'none'; // Hide tab
+        }
+    });
+}
+
+function setActiveTab(tabNum) {
+    let tabs = document.querySelectorAll('.tab');
+    // Remove active class from all tabs
+    tabs.forEach(t => t.classList.remove('active'));
+    // Add active class to clicked tab
+    tabs[tabNum - 1].classList.add('active');
+}
+
+// Add question Tab handlers
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        let tabNum = parseInt(tab.dataset.tab);
+        setActiveTab(tabNum);
+        // When tab is clicked
+        if (aiHistory[tabNum - 1]) {
+            displayResult(aiHistory[tabNum - 1].question, aiHistory[tabNum - 1].answer);
+        } else {
+            console.log(`Tab ${tabNum} clicked without content`);
+        }
+    });
+});

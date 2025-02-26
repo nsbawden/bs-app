@@ -190,6 +190,47 @@ function showNotePopup(reference, verseDiv, existingNote) {
     textarea.focus();
 }
 
+function linkVerses(text) {
+    // Extract book names from the books array
+    const bookNames = books.map(book => book.key);
+
+    // Create the regex pattern
+    const bookPattern = bookNames.join('|');
+    const regex = new RegExp(`(${bookPattern})\\s+(\\d+):(\\d+)(?:-(\\d+))?`, 'g');
+
+    // Replace references with links in the provided text
+    const linkedText = text.replace(regex, (match, book, chapter, startVerse, endVerse) => {
+        const encodedBook = encodeURIComponent(book);
+        const url = `/index.html?book=${encodedBook}&chapter=${chapter}&verse=${startVerse}`;
+        return `<a href="${url}">${match}</a>`;
+    });
+    return linkedText;
+}
+
+function convertMarkdown(text) {
+    if (typeof marked !== 'undefined') {
+        return marked.parse(text);
+    }
+    return text;
+}
+
+function displayResult(question, response, expand = true) {
+    let htmlText = convertMarkdown(response);
+    let linkedContent = linkVerses(htmlText);
+    aiOutput.innerHTML = `<span class="question">QUESTION: ${question}</span>${linkedContent}`;
+    if (expand) {
+        aiOutput.classList.add('expanded');
+        aiToggle.textContent = '▼';
+    }
+    else {
+        aiOutput.classList.remove('expanded');
+        aiToggle.textContent = '▲';
+    }
+}
+
 // Initialize
 loadState();
+loadQueryString();
 populateSelectors();
+adjustTabCount();
+setActiveTab(1);

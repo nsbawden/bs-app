@@ -52,7 +52,7 @@ async function refreshDisplay() {
 
     let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
 
-    const notes = getNotes();
+    let notes = getNotes();
     let paragraphs = [];
     let currentParagraph = '';
     data.verses.forEach((v, i) => {
@@ -62,7 +62,7 @@ async function refreshDisplay() {
         const hasNote = notes[reference];
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
-        const verseText = `<span class="verse-num" onclick="showNotePopup('${reference}', this.parentElement, '${notes[reference] || ''}')" title="${addOrEdit} note">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
+        const verseText = `<span class="verse-num" onclick="showNotePopup('${reference}', this.parentElement)" title="${addOrEdit} note">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
 
         currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
@@ -76,6 +76,7 @@ async function refreshDisplay() {
 
     verseDisplay.innerHTML = content;
     saveState();
+    scrollToSelectedVerse();
 }
 
 window.goToNext = function () {
@@ -111,14 +112,14 @@ window.goToPrevious = function () {
     populateSelectors();
 };
 
-function showNotePopup(reference, verseDiv, existingNote) {
+function showNotePopup(reference, verseDiv) {
+    const existingNote = getNotes()[reference];
     const existingPopup = document.querySelector('.note-popup');
     if (existingPopup) existingPopup.remove();
 
     const popup = document.createElement('div');
     popup.className = 'note-popup';
     popup.style.position = 'absolute';
-    popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
     popup.style.background = '#2A2A2A';
     popup.style.color = '#F0F0F0';
     popup.style.padding = '10px';
@@ -141,16 +142,7 @@ function showNotePopup(reference, verseDiv, existingNote) {
     saveButton.style.border = 'none';
     saveButton.style.padding = '5px 10px';
     saveButton.style.marginRight = '5px';
-    saveButton.onclick = () => {
-        const note = textarea.value.trim();
-        if (note) {
-            saveNote(reference, note);
-        } else {
-            deleteNote(reference);
-        }
-        cleanupAndRemove();
-        refreshDisplay();
-    };
+    saveButton.onclick = saveAndClose;
 
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'Cancel';
@@ -165,29 +157,64 @@ function showNotePopup(reference, verseDiv, existingNote) {
     popup.appendChild(cancelButton);
     document.body.appendChild(popup);
 
-    const verseLeft = verseDiv.offsetLeft;
+    // Positioning logic using the verse-num element
+    const verseNum = verseDiv.querySelector('.verse-num'); // Get the verse number element
+    const popupHeight = popup.offsetHeight;
     const popupWidth = popup.offsetWidth;
     const viewportWidth = window.innerWidth;
-    let newLeft = verseLeft;
-    if (verseLeft + popupWidth > viewportWidth) {
-        newLeft = viewportWidth - popupWidth;
-        newLeft = Math.max(0, newLeft);
-    }
-    popup.style.left = `${newLeft}px`;
+    const viewportHeight = window.innerHeight;
+    const numRect = verseNum.getBoundingClientRect();
+    const desiredTop = numRect.bottom; // Position below the verse number
+    const desiredLeft = numRect.left;  // Align with verse number's left edge
 
-    const handleEscape = (event) => {
+    // Check if popup fits at desired position
+    const fitsBelow = (desiredTop + popupHeight) <= viewportHeight;
+    const fitsHorizontally = (desiredLeft >= 0) && ((desiredLeft + popupWidth) <= viewportWidth);
+
+    if (fitsBelow && fitsHorizontally) {
+        // Position below verse number and aligned with its left edge
+        popup.style.top = `${desiredTop}px`;
+        popup.style.left = `${desiredLeft}px`;
+    } else {
+        // Center on screen
+        popup.style.position = 'fixed';
+        popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
+        popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
+    }
+
+    const handleKeyPress = (event) => {
         if (event.key === 'Escape') {
             cleanupAndRemove();
+        } else if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            saveAndClose();
         }
     };
-    document.addEventListener('keydown', handleEscape);
+
+    document.addEventListener('keydown', handleKeyPress);
+
+    function saveAndClose() {
+        const note = textarea.value.trim();
+        if (note) {
+            saveNote(reference, note);
+        } else {
+            deleteNote(reference);
+        }
+        cleanupAndRemove();
+        refreshDisplay();
+    }
 
     function cleanupAndRemove() {
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener('keydown', handleKeyPress);
         popup.remove();
     }
 
+    // Set cursor to beginning and scroll to top
     textarea.focus();
+    if (textarea.value) {
+        textarea.setSelectionRange(0, 0);
+        textarea.scrollTop = 0;
+    }
 }
 
 function linkVerses(text) {
@@ -214,10 +241,10 @@ function convertMarkdown(text) {
     return text;
 }
 
-function displayResult(question, response, expand = true) {
-    let htmlText = convertMarkdown(response);
+function displayResult(question, answer, expand = true) {
+    let htmlText = convertMarkdown(answer);
     let linkedContent = linkVerses(htmlText);
-    aiOutput.innerHTML = `<span class="question">QUESTION: ${question}</span>${linkedContent}`;
+    aiOutput.innerHTML = `<span class="question">TO AI: ${question}</span>${linkedContent}`;
     if (expand) {
         aiOutput.classList.add('expanded');
         aiToggle.textContent = '▼';

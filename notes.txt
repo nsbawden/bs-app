@@ -1,0 +1,36 @@
+/* Prompts to translate a verse:
+
+(Prompt 1: Standard Root-Based Analysis)
+Translate [insert verse] from its original language with an emphasis on root meanings.
+Break down each word individually, showing its root form, literal meaning, and grammatical role.
+Avoid modern translation biases by keeping as close to the original intent as possible.
+After the breakdown, provide a final translation based strictly on root meanings rather than common doctrinal interpretations.
+
+Translation Colossians 3:20 (Prompt 1):
+"Children, listen attentively and heed your parents in all things, for this is well-pleasing in the Lord."
+
+Summary Analysis:
+This translation focuses strictly on the root meanings of the words without modern assumptions.
+"ὑπακούετε (hypakouete)" is rendered as "listen attentively and heed" rather than the modern "obey."
+The phrase maintains the original Greek structure, emphasizing an active listening and response rather than blind submission.
+The phrase "in all things" (κατὰ πάντα) is included as it appears in the text, indicating that this listening is broad but does not necessarily imply absolute obedience.
+The phrase "well-pleasing" is used instead of simply "pleasing" to capture the nuance of εὐάρεστόν (euareston).
+
+
+(Prompt 2: Expanded Etymological & Historical Analysis)
+Translate [insert verse] from its original language by breaking down each word into its root form, literal meaning, and grammatical function.
+Provide historical and etymological context where relevant.
+Avoid modern translation biases, focusing only on the original linguistic structure and meaning.
+After the breakdown, construct a final translation based solely on root meanings, preserving as much accuracy as possible.
+
+Translation Colossians 3:20 (Prompt 2):
+"Children, pay close attention and respond to your parents in all things, for this is genuinely desirable in the Lord."
+
+Summary Analysis:
+This version adds more historical and etymological depth. "ὑπακούετε (hypakouete)" is translated as "pay close attention and respond" to reflect its origin from ὑπό (hypo, "under") and ἀκούω (akouō, "to hear, listen").
+This captures the cultural and linguistic nuance of Greek familial relationships, where children were expected to listen closely and consider their parents’ words rather than blindly follow.
+
+"εὐάρεστόν (euareston)" is rendered as "genuinely desirable" instead of just "pleasing," emphasizing the εὖ (eu, "good, well") prefix, which indicates a deeper sense of something being inherently good.
+
+This version provides slightly more historical context and a refined, culturally nuanced translation, rather than just a direct linguistic breakdown.
+*/

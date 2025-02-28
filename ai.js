@@ -67,12 +67,12 @@ const aiModules = {
                         messages: [
                             {
                                 role: 'system',
-                                content: 'Answer from Bible with multiple verses and explanations, formatted in Markdown.'
+                                content: (context.system || "")
                             },
                             { role: 'user', content: `${question}` }
                         ],
                         max_tokens: openaiSettings.maxTokens,
-                        temperature: openaiSettings.temperature
+                        temperature: (context.temperature || openaiSettings.temperature)
                     })
                 });
 
@@ -110,21 +110,13 @@ const aiModules = {
 
 const currentAIModule = aiModules.openAI;
 
-async function queryAI(question) {
-    const context = {
-        book: state.currentVerse.book,
-        chapter: state.currentVerse.chapter,
-        verse: state.currentVerse.verse,
-        version: state.bibleVersion.toUpperCase()
-    };
-    const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}): ${question}`;
-    aiOutput.textContent = `asking ... ${fullQuestion}`;
-    const response = await currentAIModule.query(fullQuestion, context);
-    displayResult(fullQuestion, response);
+async function queryAI(question, context) {
+    const response = await currentAIModule.query(question, context);
+    displayResult(question, response);
     
     // push to the front of the history stack
     const maxHistoryLength = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-    aiHistory.unshift({ question: fullQuestion, answer: response, context: `${context.book} ${context.chapter}:${context.verse} (${context.version})` });
+    aiHistory.unshift({ question: question, answer: response, context: `${context.book} ${context.chapter}:${context.verse} (${context.version})` });
     if (aiHistory.length > maxHistoryLength) {
         aiHistory = aiHistory.slice(0, maxHistoryLength);
     }

@@ -6,6 +6,7 @@ const versionSelect = document.getElementById('version-select');
 const verseDisplay = document.getElementById('verse-display');
 const aiPrompt = document.getElementById('ai-prompt');
 const aiSubmit = document.getElementById('ai-submit');
+const aiTranslate = document.getElementById('ai-translate');
 const aiOutput = document.getElementById('ai-output');
 const aiToggle = document.getElementById('ai-toggle');
 const aiPopup = document.getElementById('ai-popup');
@@ -107,13 +108,50 @@ aiOutput.addEventListener('click', (e) => {
 
 function submitAIQuery() {
     const question = aiPrompt.value.trim();
+    const context = {
+        book: state.currentVerse.book,
+        chapter: state.currentVerse.chapter,
+        verse: state.currentVerse.verse,
+        version: state.bibleVersion.toUpperCase(),
+        system:  "Answer from Bible with multiple verses and explanations, formatted in Markdown."
+    };
+    const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}): ${question}`;
+    aiOutput.textContent = `asking ... ${fullQuestion}`;
     if (question) {
-        queryAI(question);
+        queryAI(fullQuestion, context);
         aiPrompt.value = '';
     }
 }
 
 aiSubmit.addEventListener('click', submitAIQuery);
+
+function submitAITranslate() {
+    const context = {
+        book: state.currentVerse.book,
+        chapter: state.currentVerse.chapter,
+        verse: state.currentVerse.verse,
+        version: state.bibleVersion.toUpperCase(),
+        system: "format answer in Markdown",
+        temperature: 1
+    };
+
+    const verseReference = `${context.book} ${context.chapter}:${context.verse}`;
+    const fullQuestion = constructTranslationPrompt(verseReference);
+
+    aiOutput.textContent = `translating ...`;
+    queryAI(fullQuestion, context);
+}
+
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots but adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal bias; use neutral swaps (e.g., 'children' for 'things born') for readability. Give both literal and easily readable final translations ensuring the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
+// }
+
+function constructTranslationPrompt(verseReference) {
+    return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal bias; use neutral swaps (e.g., 'children' for 'things born') for readability. Give both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
+}
+
+
+aiTranslate.addEventListener('click', submitAITranslate);
 
 aiPrompt.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -147,93 +185,116 @@ aiToggle.addEventListener('click', () => {
 //     aiToggle.textContent = '▲';
 // }
 
-function showNotePopup(reference, verseDiv, existingNote) {
-    // Remove any existing popup
-    const existingPopup = document.querySelector('.note-popup');
-    if (existingPopup) existingPopup.remove();
+// function showNotePopup(reference, verseDiv, existingNote) {
+//     // Remove any existing popup
+//     const existingPopup = document.querySelector('.note-popup');
+//     if (existingPopup) existingPopup.remove();
 
-    // Create popup
-    const popup = document.createElement('div');
-    popup.className = 'note-popup';
-    popup.style.position = 'absolute';
-    popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
-    popup.style.background = '#2A2A2A';
-    popup.style.color = '#F0F0F0';
-    popup.style.padding = '10px';
-    popup.style.border = '1px solid #4A704A';
-    popup.style.zIndex = '1000';
-    popup.style.maxWidth = '400px';
+//     // Create popup
+//     const popup = document.createElement('div');
+//     popup.className = 'note-popup';
+//     popup.style.position = 'absolute';
+//     popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
+//     popup.style.background = '#2A2A2A';
+//     popup.style.color = '#F0F0F0';
+//     popup.style.padding = '10px';
+//     popup.style.border = '1px solid #4A704A';
+//     popup.style.zIndex = '1000';
+//     popup.style.maxWidth = '400px';
 
-    // Textarea for note
-    const textarea = document.createElement('textarea');
-    textarea.value = existingNote || '';
-    textarea.style.width = '100%';
-    textarea.style.height = '150px';
-    textarea.style.background = '#1A1A1A';
-    textarea.style.color = '#F0F0F0';
-    textarea.style.border = '1px solid #4A704A';
+//     // Textarea for note
+//     const textarea = document.createElement('textarea');
+//     textarea.value = existingNote || '';
+//     textarea.style.width = '100%';
+//     textarea.style.height = '150px';
+//     textarea.style.background = '#1A1A1A';
+//     textarea.style.color = '#F0F0F0';
+//     textarea.style.border = '1px solid #4A704A';
 
-    // Save button
-    const saveButton = document.createElement('button');
-    saveButton.textContent = 'Save';
-    saveButton.style.background = '#4A704A';
-    saveButton.style.color = '#F0F0F0';
-    saveButton.style.border = 'none';
-    saveButton.style.padding = '5px 10px';
-    saveButton.style.marginRight = '5px';
-    saveButton.onclick = () => {
-        const note = textarea.value.trim();
-        if (note) {
-            saveNote(reference, note);
-        } else {
-            deleteNote(reference);
-        }
-        cleanupAndRemove();
-        refreshDisplay();
-    };
+//     // Save button
+//     const saveButton = document.createElement('button');
+//     saveButton.textContent = 'Save';
+//     saveButton.style.background = '#4A704A';
+//     saveButton.style.color = '#F0F0F0';
+//     saveButton.style.border = 'none';
+//     saveButton.style.padding = '5px 10px';
+//     saveButton.style.marginRight = '5px';
+//     saveButton.onclick = () => {
+//         const note = textarea.value.trim();
+//         if (note) {
+//             saveNote(reference, note);
+//         } else {
+//             deleteNote(reference);
+//         }
+//         cleanupAndRemove();
+//         refreshDisplay();
+//     };
 
-    // Cancel button
-    const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Cancel';
-    cancelButton.style.background = '#4A704A';
-    cancelButton.style.color = '#F0F0F0';
-    cancelButton.style.border = 'none';
-    cancelButton.style.padding = '5px 10px';
-    cancelButton.onclick = cleanupAndRemove;
+//     // Cancel button
+//     const cancelButton = document.createElement('button');
+//     cancelButton.textContent = 'Cancel';
+//     cancelButton.style.background = '#4A704A';
+//     cancelButton.style.color = '#F0F0F0';
+//     cancelButton.style.border = 'none';
+//     cancelButton.style.padding = '5px 10px';
+//     cancelButton.onclick = cleanupAndRemove;
 
-    // Assemble popup
-    popup.appendChild(textarea);
-    popup.appendChild(saveButton);
-    popup.appendChild(cancelButton);
-    document.body.appendChild(popup);
+//     // Assemble popup
+//     popup.appendChild(textarea);
+//     popup.appendChild(saveButton);
+//     popup.appendChild(cancelButton);
+//     document.body.appendChild(popup);
 
-    // Position adjustment: Ensure popup stays within viewport
-    const verseLeft = verseDiv.offsetLeft;
-    const popupWidth = popup.offsetWidth;
-    const viewportWidth = window.innerWidth;
-    let newLeft = verseLeft;
-    if (verseLeft + popupWidth > viewportWidth) {
-        newLeft = viewportWidth - popupWidth;
-        newLeft = Math.max(0, newLeft);
-    }
-    popup.style.left = `${newLeft}px`;
+//     // Position adjustment: Ensure popup stays within viewport
+//     const verseLeft = verseDiv.offsetLeft;
+//     const popupWidth = popup.offsetWidth;
+//     const viewportWidth = window.innerWidth;
+//     let newLeft = verseLeft;
+//     if (verseLeft + popupWidth > viewportWidth) {
+//         newLeft = viewportWidth - popupWidth;
+//         newLeft = Math.max(0, newLeft);
+//     }
+//     popup.style.left = `${newLeft}px`;
 
-    // Escape key listener
-    const handleEscape = (event) => {
-        if (event.key === 'Escape') {
-            cleanupAndRemove();
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
+//     // Escape key listener
+//     const handleEscape = (event) => {
+//         if (event.key === 'Escape') {
+//             cleanupAndRemove();
+//         }
+//     };
+//     document.addEventListener('keydown', handleEscape);
 
-    // Cleanup function to remove popup and listener
-    function cleanupAndRemove() {
-        document.removeEventListener('keydown', handleEscape);
-        popup.remove();
-    }
+//     // Cleanup function to remove popup and listener
+//     function cleanupAndRemove() {
+//         document.removeEventListener('keydown', handleEscape);
+//         popup.remove();
+//     }
 
-    // Focus textarea
-    textarea.focus();
+//     // Focus textarea
+//     textarea.focus();
+// }
+
+function scrollToSelectedVerse() {
+    const selectedVerse = document.querySelector('.verse.selected');
+    if (!selectedVerse) return;
+
+    const verseDisplay = document.getElementById('verse-display');
+    if (!verseDisplay) return; // Exit if the container isn't found
+
+    const lineHeight = parseInt(window.getComputedStyle(selectedVerse).lineHeight) || 20;
+    const bufferLines = 3;
+    const offset = lineHeight * bufferLines;
+
+    // Get position relative to the verse-display container
+    const rect = selectedVerse.getBoundingClientRect();
+    const containerRect = verseDisplay.getBoundingClientRect();
+    const topPosition = rect.top - containerRect.top + verseDisplay.scrollTop;
+
+    // Scroll the verse-display container
+    verseDisplay.scrollTo({
+        top: topPosition - offset,
+        behavior: 'smooth'
+    });
 }
 
 function adjustTabCount() {
@@ -273,4 +334,148 @@ document.querySelectorAll('.tab').forEach(tab => {
             console.log(`Tab ${tabNum} clicked without content`);
         }
     });
+});
+
+function goToNote(index) {
+    const notes = getNotes();
+    const noteKeys = Object.keys(notes);
+    if (index >= 0 && index < noteKeys.length) {
+        const key = noteKeys[index];
+        const parts = key.split('/');
+        document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+    } else {
+        console.error("Invalid note index:", index);
+    }
+}
+
+function goToTag(index) {
+    const tags = JSON.parse(localStorage.getItem('tagStorage') || '{}');
+    const tagKeys = Object.keys(tags); // Original case tags
+    const selectedTag = tagKeys[index]; // e.g., "#SermonOnTheMount"
+    const noteKeys = tags[selectedTag];
+
+    if (noteKeys.length === 1) {
+        const parts = noteKeys[0].split('/');
+        document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+    } else {
+        const tagTab = [{
+            label: `${selectedTag} Locations`,
+            items: noteKeys.map(key => {
+                const [book, chapter, verse] = key.split('/');
+                return { label: `${selectedTag} ${book} ${chapter}:${verse}` };
+            }),
+            editable: false
+        }];
+
+        showListPopup(tagTab).then(result => {
+            if (result.itemIndex >= 0) {
+                const selectedNoteKey = noteKeys[result.itemIndex];
+                const parts = selectedNoteKey.split('/');
+                document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+            }
+        });
+    }
+}
+
+function renameTag(oldTag, newTag) {
+    if (oldTag === newTag) {
+        return false;
+    }
+    if (!newTag.startsWith('#')) {
+        console.log("Invalid rename: new tag must start with '#'");
+        return false;
+    }
+    const notes = getNotes(); // { "1 Corinthians/4/2": "This note #judgment", ... }
+    let tagFound = false;
+    const tagRegex = new RegExp(`${oldTag}\\b`, 'gi');
+
+    Object.entries(notes).forEach(([key, note]) => {
+        if (tagRegex.test(note)) {
+            tagFound = true;
+            notes[key] = note.replaceAll(tagRegex, newTag);
+        }
+    });
+
+    if (!tagFound) {
+        console.log(`Tag '${oldTag}' not found in any notes`);
+        return false;
+    }
+
+    localStorage.setItem('bibleNotes', JSON.stringify(notes));
+    return true;
+}
+
+function constructTabs() {
+    const notes = getNotes();
+    const tagStorage = {};
+    const tagCaseMap = {}; // Maps lowercase tag to preferred case
+
+    Object.entries(notes).forEach(([key, note]) => {
+        const tags = (note.match(/#\w+\b/g) || []);
+        tags.forEach(tag => {
+            const lowerTag = tag.toLowerCase(); // For case-insensitive comparison
+            if (!tagCaseMap[lowerTag]) {
+                tagCaseMap[lowerTag] = tag; // Store first-seen case
+                tagStorage[tag] = []; // Use original case as key
+            }
+            const preferredTag = tagCaseMap[lowerTag];
+            if (!tagStorage[preferredTag].includes(key)) {
+                tagStorage[preferredTag].push(key);
+            }
+        });
+    });
+
+    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
+
+    return [
+        {
+            label: "questions",
+            items: savedQuestions,
+            editable: true
+        },
+        {
+            label: "notes",
+            items: getNotesList(),
+            editable: false
+        },
+        {
+            label: "tags",
+            items: Object.keys(tagStorage).map(tag => ({
+                label: tag,
+                editHandler: (oldName, newName) => renameTag(oldName, newName)
+            })),
+            editable: true
+        }
+    ];
+}
+
+// Example: Update a note and rebuild tabs
+// function updateNote(key, newText) {
+//     const notes = getNotes();
+//     notes[key] = newText;
+//     localStorage.setItem('notes', JSON.stringify(notes)); // Persist notes
+//     constructTabs(); // Rebuild tabs and tagStorage
+// }
+
+document.getElementById('show-list').addEventListener('click', async () => {
+    const tabs = constructTabs();
+    const result = await showListPopup(tabs);
+    if (result.itemIndex >= 0) {
+        console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
+        switch (result.tabIndex) {
+            case 0: // Questions
+                const question = savedQuestions[result.itemIndex];
+                displayResult(question.label, question.data);
+                break;
+            case 1: // Notes
+                goToNote(result.itemIndex);
+                break;
+            case 2: // Tags
+                let newLabel = tabs[2].items[result.itemIndex].label;
+                goToTag(result.itemIndex);
+                break;
+        }
+    } else {
+        console.log("Popup canceled");
+    }
 });

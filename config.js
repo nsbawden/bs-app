@@ -15,6 +15,12 @@ const defaults = {
 let state = { ...defaults };
 let aiHistory = [];
 let openaiSettings = state.openaiSettings;
+const savedQuestions = [
+    {
+        label: "Against Harmful Secrets & Deception",
+        data: "### Against Harmful Secrets & Deception\n1. ** Luke 12:2-3 ** – * There is nothing concealed that will not be disclosed, or hidden that will not be made known. What you have said in the dark will be heard in the daylight, and what you have whispered in the ear in the inner rooms will be proclaimed from the roofs.*\n2. ** Ecclesiastes 12:14 ** – * For God will bring every deed into judgment, including every hidden thing, whether it is good or evil.*\n3. ** Proverbs 10:18 ** – * Whoever conceals hatred with lying lips and spreads slander is a fool.*\n4. ** 1 Corinthians 4:5 ** – * He will bring to light what is hidden in darkness and will expose the motives of the heart.*\n5. ** Mark 4:22 ** – * For whatever is hidden is meant to be disclosed, and whatever is concealed is meant to be brought out into the open.*\n\nThese verses show that the Bible strongly warns against gossip, backbiting, and keeping secrets that are intended for harm. It also reminds us that all things will ultimately be revealed by God. Let me know if you need more!"
+    }
+];
 
 const books = [
     { key: 'Genesis', label: 'Genesis', chapters: 50, handler: 'api' },
@@ -109,6 +115,23 @@ function saveState() {
 
 function getNotes() {
     return JSON.parse(localStorage.getItem('bibleNotes')) || {};
+}
+
+function getNotesList() {
+    let obj = getNotes();
+    return Object.entries(obj).map(([key, value]) => {
+        // Convert key from "Book/chapter/verse" to "Book chapter:verse"
+        const parts = key.split('/');
+        const displayKey = `${parts[0]} ${parts[1]}:${parts[2]}`;
+
+        // Truncate value at 80 characters and add ellipsis if needed
+        let displayValue = value;
+        if (value.length > 80) {
+            displayValue = value.substring(0, 80) + '...';
+        }
+
+        return { label: `${displayKey} : ${displayValue}` };
+    });
 }
 
 function saveNote(reference, note) {

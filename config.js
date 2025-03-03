@@ -5,6 +5,7 @@ const defaults = {
     currentVerse: { book: 'John', chapter: 1, verse: 1 },
     bibleVersion: 'asv',
     maxHistoryLength: 10,
+    apiSource: 'api.bible', /* api.bible or bible-api.com */
     openaiSettings: {
         temperature: 1.0,
         model: 'gpt-4o-mini',
@@ -22,75 +23,178 @@ const savedQuestions = [
     }
 ];
 
-const books = [
-    { key: 'Genesis', label: 'Genesis', chapters: 50, handler: 'api' },
-    { key: 'Exodus', label: 'Exodus', chapters: 40, handler: 'api' },
-    { key: 'Leviticus', label: 'Leviticus', chapters: 27, handler: 'api' },
-    { key: 'Numbers', label: 'Numbers', chapters: 36, handler: 'api' },
-    { key: 'Deuteronomy', label: 'Deuteronomy', chapters: 34, handler: 'api' },
-    { key: 'Joshua', label: 'Joshua', chapters: 24, handler: 'api' },
-    { key: 'Judges', label: 'Judges', chapters: 21, handler: 'api' },
-    { key: 'Ruth', label: 'Ruth', chapters: 4, handler: 'api' },
-    { key: '1 Samuel', label: '1 Samuel', chapters: 31, handler: 'api' },
-    { key: '2 Samuel', label: '2 Samuel', chapters: 24, handler: 'api' },
-    { key: '1 Kings', label: '1 Kings', chapters: 22, handler: 'api' },
-    { key: '2 Kings', label: '2 Kings', chapters: 25, handler: 'api' },
-    { key: '1 Chronicles', label: '1 Chronicles', chapters: 29, handler: 'api' },
-    { key: '2 Chronicles', label: '2 Chronicles', chapters: 36, handler: 'api' },
-    { key: 'Ezra', label: 'Ezra', chapters: 10, handler: 'api' },
-    { key: 'Nehemiah', label: 'Nehemiah', chapters: 13, handler: 'api' },
-    { key: 'Esther', label: 'Esther', chapters: 10, handler: 'api' },
-    { key: 'Job', label: 'Job', chapters: 42, handler: 'api' },
-    { key: 'Psalms', label: 'Psalms', chapters: 150, handler: 'api' },
-    { key: 'Proverbs', label: 'Proverbs', chapters: 31, handler: 'api' },
-    { key: 'Ecclesiastes', label: 'Ecclesiastes', chapters: 12, handler: 'api' },
-    { key: 'Song of Solomon', label: 'Song of Solomon', chapters: 8, handler: 'api' },
-    { key: 'Isaiah', label: 'Isaiah', chapters: 66, handler: 'api' },
-    { key: 'Jeremiah', label: 'Jeremiah', chapters: 52, handler: 'api' },
-    { key: 'Lamentations', label: 'Lamentations', chapters: 5, handler: 'api' },
-    { key: 'Ezekiel', label: 'Ezekiel', chapters: 48, handler: 'api' },
-    { key: 'Daniel', label: 'Daniel', chapters: 12, handler: 'api' },
-    { key: 'Hosea', label: 'Hosea', chapters: 14, handler: 'api' },
-    { key: 'Joel', label: 'Joel', chapters: 3, handler: 'api' },
-    { key: 'Amos', label: 'Amos', chapters: 9, handler: 'api' },
-    { key: 'Obadiah', label: 'Obadiah', chapters: 1, handler: 'api' },
-    { key: 'Jonah', label: 'Jonah', chapters: 4, handler: 'api' },
-    { key: 'Micah', label: 'Micah', chapters: 7, handler: 'api' },
-    { key: 'Nahum', label: 'Nahum', chapters: 3, handler: 'api' },
-    { key: 'Habakkuk', label: 'Habakkuk', chapters: 3, handler: 'api' },
-    { key: 'Zephaniah', label: 'Zephaniah', chapters: 3, handler: 'api' },
-    { key: 'Haggai', label: 'Haggai', chapters: 2, handler: 'api' },
-    { key: 'Zechariah', label: 'Zechariah', chapters: 14, handler: 'api' },
-    { key: 'Malachi', label: 'Malachi', chapters: 4, handler: 'api' },
-    { key: 'Matthew', label: 'Matthew', chapters: 28, handler: 'api' },
-    { key: 'Mark', label: 'Mark', chapters: 16, handler: 'api' },
-    { key: 'Luke', label: 'Luke', chapters: 24, handler: 'api' },
-    { key: 'John', label: 'John', chapters: 21, handler: 'api' },
-    { key: 'Acts', label: 'Acts', chapters: 28, handler: 'api' },
-    { key: 'Romans', label: 'Romans', chapters: 16, handler: 'api' },
-    { key: '1 Corinthians', label: '1 Corinthians', chapters: 16, handler: 'api' },
-    { key: '2 Corinthians', label: '2 Corinthians', chapters: 13, handler: 'api' },
-    { key: 'Galatians', label: 'Galatians', chapters: 6, handler: 'api' },
-    { key: 'Ephesians', label: 'Ephesians', chapters: 6, handler: 'api' },
-    { key: 'Philippians', label: 'Philippians', chapters: 4, handler: 'api' },
-    { key: 'Colossians', label: 'Colossians', chapters: 4, handler: 'api' },
-    { key: '1 Thessalonians', label: '1 Thessalonians', chapters: 5, handler: 'api' },
-    { key: '2 Thessalonians', label: '2 Thessalonians', chapters: 3, handler: 'api' },
-    { key: '1 Timothy', label: '1 Timothy', chapters: 6, handler: 'api' },
-    { key: '2 Timothy', label: '2 Timothy', chapters: 4, handler: 'api' },
-    { key: 'Titus', label: 'Titus', chapters: 3, handler: 'api' },
-    { key: 'Philemon', label: 'Philemon', chapters: 1, handler: 'api' },
-    { key: 'Hebrews', label: 'Hebrews', chapters: 13, handler: 'api' },
-    { key: 'James', label: 'James', chapters: 5, handler: 'api' },
-    { key: '1 Peter', label: '1 Peter', chapters: 5, handler: 'api' },
-    { key: '2 Peter', label: '2 Peter', chapters: 3, handler: 'api' },
-    { key: '1 John', label: '1 John', chapters: 5, handler: 'api' },
-    { key: '2 John', label: '2 John', chapters: 1, handler: 'api' },
-    { key: '3 John', label: '3 John', chapters: 1, handler: 'api' },
-    { key: 'Jude', label: 'Jude', chapters: 1, handler: 'api' },
-    { key: 'Revelation', label: 'Revelation', chapters: 22, handler: 'api' },
+// In-memory cache object to store retrieved chapters
+// For production, set MAX_CHAPTERS to 15 and use sessionStorage in functions to conformm to esv.org policy
+const MAX_CHAPTERS = 500; // Chapter cache size (max 500 avoids filling memory)
+let chapterCache = {};
+
+// Translation cache stored in localStorage
+const MAX_TRANSLATION_CACHE_SIZE = 50; // Limit to 50 translations
+let translationCache = {};
+
+let books = [
+    { key: 'Genesis', label: 'Genesis (1st)', chapters: 50, handler: 'api' },
+    { key: 'Exodus', label: 'Exodus (1st)', chapters: 40, handler: 'api' },
+    { key: 'Leviticus', label: 'Leviticus (1st)', chapters: 27, handler: 'api' },
+    { key: 'Numbers', label: 'Numbers (1st)', chapters: 36, handler: 'api' },
+    { key: 'Deuteronomy', label: 'Deuteronomy (1st)', chapters: 34, handler: 'api' },
+    { key: 'Joshua', label: 'Joshua (1st)', chapters: 24, handler: 'api' },
+    { key: 'Judges', label: 'Judges (1st)', chapters: 21, handler: 'api' },
+    { key: 'Ruth', label: 'Ruth (1st)', chapters: 4, handler: 'api' },
+    { key: '1 Samuel', label: '1 Samuel (1st)', chapters: 31, handler: 'api' },
+    { key: '2 Samuel', label: '2 Samuel (1st)', chapters: 24, handler: 'api' },
+    { key: '1 Kings', label: '1 Kings (1st)', chapters: 22, handler: 'api' },
+    { key: '2 Kings', label: '2 Kings (1st)', chapters: 25, handler: 'api' },
+    { key: '1 Chronicles', label: '1 Chronicles (1st)', chapters: 29, handler: 'api' },
+    { key: '2 Chronicles', label: '2 Chronicles (1st)', chapters: 36, handler: 'api' },
+    { key: 'Ezra', label: 'Ezra (1st)', chapters: 10, handler: 'api' },
+    { key: 'Nehemiah', label: 'Nehemiah (1st)', chapters: 13, handler: 'api' },
+    { key: 'Esther', label: 'Esther (1st)', chapters: 10, handler: 'api' },
+    { key: 'Job', label: 'Job (1st)', chapters: 42, handler: 'api' },
+    { key: 'Psalms', label: 'Psalms (1st)', chapters: 150, handler: 'api' },
+    { key: 'Proverbs', label: 'Proverbs (1st)', chapters: 31, handler: 'api' },
+    { key: 'Ecclesiastes', label: 'Ecclesiastes (1st)', chapters: 12, handler: 'api' },
+    { key: 'Song of Solomon', label: 'Song of Solomon (1st)', chapters: 8, handler: 'api' },
+    { key: 'Isaiah', label: 'Isaiah (1st)', chapters: 66, handler: 'api' },
+    { key: 'Jeremiah', label: 'Jeremiah (1st)', chapters: 52, handler: 'api' },
+    { key: 'Lamentations', label: 'Lamentations (1st)', chapters: 5, handler: 'api' },
+    { key: 'Ezekiel', label: 'Ezekiel (1st)', chapters: 48, handler: 'api' },
+    { key: 'Daniel', label: 'Daniel (1st)', chapters: 12, handler: 'api' },
+    { key: 'Hosea', label: 'Hosea (1st)', chapters: 14, handler: 'api' },
+    { key: 'Joel', label: 'Joel (1st)', chapters: 3, handler: 'api' },
+    { key: 'Amos', label: 'Amos (1st)', chapters: 9, handler: 'api' },
+    { key: 'Obadiah', label: 'Obadiah (1st)', chapters: 1, handler: 'api' },
+    { key: 'Jonah', label: 'Jonah (1st)', chapters: 4, handler: 'api' },
+    { key: 'Micah', label: 'Micah (1st)', chapters: 7, handler: 'api' },
+    { key: 'Nahum', label: 'Nahum (1st)', chapters: 3, handler: 'api' },
+    { key: 'Habakkuk', label: 'Habakkuk (1st)', chapters: 3, handler: 'api' },
+    { key: 'Zephaniah', label: 'Zephaniah (1st)', chapters: 3, handler: 'api' },
+    { key: 'Haggai', label: 'Haggai (1st)', chapters: 2, handler: 'api' },
+    { key: 'Zechariah', label: 'Zechariah (1st)', chapters: 14, handler: 'api' },
+    { key: 'Malachi', label: 'Malachi (1st)', chapters: 4, handler: 'api' },
+    { key: 'Matthew', label: 'Matthew (new)', chapters: 28, handler: 'api' },
+    { key: 'Mark', label: 'Mark (new)', chapters: 16, handler: 'api' },
+    { key: 'Luke', label: 'Luke (new)', chapters: 24, handler: 'api' },
+    { key: 'John', label: 'John (new)', chapters: 21, handler: 'api' },
+    { key: 'Acts', label: 'Acts (new)', chapters: 28, handler: 'api' },
+    { key: 'Romans', label: 'Romans (new)', chapters: 16, handler: 'api' },
+    { key: '1 Corinthians', label: '1 Corinthians (new)', chapters: 16, handler: 'api' },
+    { key: '2 Corinthians', label: '2 Corinthians (new)', chapters: 13, handler: 'api' },
+    { key: 'Galatians', label: 'Galatians (new)', chapters: 6, handler: 'api' },
+    { key: 'Ephesians', label: 'Ephesians (new)', chapters: 6, handler: 'api' },
+    { key: 'Philippians', label: 'Philippians (new)', chapters: 4, handler: 'api' },
+    { key: 'Colossians', label: 'Colossians (new)', chapters: 4, handler: 'api' },
+    { key: '1 Thessalonians', label: '1 Thessalonians (new)', chapters: 5, handler: 'api' },
+    { key: '2 Thessalonians', label: '2 Thessalonians (new)', chapters: 3, handler: 'api' },
+    { key: '1 Timothy', label: '1 Timothy (new)', chapters: 6, handler: 'api' },
+    { key: '2 Timothy', label: '2 Timothy (new)', chapters: 4, handler: 'api' },
+    { key: 'Titus', label: 'Titus (new)', chapters: 3, handler: 'api' },
+    { key: 'Philemon', label: 'Philemon (new)', chapters: 1, handler: 'api' },
+    { key: 'Hebrews', label: 'Hebrews (new)', chapters: 13, handler: 'api' },
+    { key: 'James', label: 'James (new)', chapters: 5, handler: 'api' },
+    { key: '1 Peter', label: '1 Peter (new)', chapters: 5, handler: 'api' },
+    { key: '2 Peter', label: '2 Peter (new)', chapters: 3, handler: 'api' },
+    { key: '1 John', label: '1 John (new)', chapters: 5, handler: 'api' },
+    { key: '2 John', label: '2 John (new)', chapters: 1, handler: 'api' },
+    { key: '3 John', label: '3 John (new)', chapters: 1, handler: 'api' },
+    { key: 'Jude', label: 'Jude (new)', chapters: 1, handler: 'api' },
+    { key: 'Revelation', label: 'Revelation (new)', chapters: 22, handler: 'api' },
     { key: '1 Enoch', label: '1 Enoch (1917 translation)', chapters: 108, handler: 'localJson', url: './1enoch.json', notes: 'R.H. Charles’s 1917 translation' }
 ];
+
+const bookMap = {
+    "Genesis": "GEN",
+    "Exodus": "EXO",
+    "Leviticus": "LEV",
+    "Numbers": "NUM",
+    "Deuteronomy": "DEU",
+    "Joshua": "JOS",
+    "Judges": "JDG",
+    "Ruth": "RUT",
+    "1 Samuel": "1SA",
+    "2 Samuel": "2SA",
+    "1 Kings": "1KI",
+    "2 Kings": "2KI",
+    "1 Chronicles": "1CH",
+    "2 Chronicles": "2CH",
+    "Ezra": "EZR",
+    "Nehemiah": "NEH",
+    "Esther": "EST",
+    "Job": "JOB",
+    "Psalms": "PSA",
+    "Proverbs": "PRO",
+    "Ecclesiastes": "ECC",
+    "Song of Solomon": "SNG",
+    "Isaiah": "ISA",
+    "Jeremiah": "JER",
+    "Lamentations": "LAM",
+    "Ezekiel": "EZK",
+    "Daniel": "DAN",
+    "Hosea": "HOS",
+    "Joel": "JOL",
+    "Amos": "AMO",
+    "Obadiah": "OBA",
+    "Jonah": "JON",
+    "Micah": "MIC",
+    "Nahum": "NAM",
+    "Habakkuk": "HAB",
+    "Zephaniah": "ZEP",
+    "Haggai": "HAG",
+    "Zechariah": "ZEC",
+    "Malachi": "MAL",
+    "Matthew": "MAT",
+    "Mark": "MRK",
+    "Luke": "LUK",
+    "John": "JHN",
+    "Acts": "ACT",
+    "Romans": "ROM",
+    "1 Corinthians": "1CO",
+    "2 Corinthians": "2CO",
+    "Galatians": "GAL",
+    "Ephesians": "EPH",
+    "Philippians": "PHP",
+    "Colossians": "COL",
+    "1 Thessalonians": "1TH",
+    "2 Thessalonians": "2TH",
+    "1 Timothy": "1TI",
+    "2 Timothy": "2TI",
+    "Titus": "TIT",
+    "Philemon": "PHM",
+    "Hebrews": "HEB",
+    "James": "JAS",
+    "1 Peter": "1PE",
+    "2 Peter": "2PE",
+    "1 John": "1JN",
+    "2 John": "2JN",
+    "3 John": "3JN",
+    "Jude": "JUD",
+    "Revelation": "REV"
+};
+
+// Function to sort the books array
+function sortBooks(booksArray, sortBy = 'key', ascending = true) {
+    // Helper function to extract base name without leading numbers
+    function getBaseName(value) {
+        return value.replace(/^\d+\s*/, '').toLowerCase();
+    }
+
+    // Return a new sorted array
+    return [...booksArray].sort((a, b) => {
+        const baseA = getBaseName(a[sortBy]);
+        const baseB = getBaseName(b[sortBy]);
+        const fullA = a[sortBy].toLowerCase();
+        const fullB = b[sortBy].toLowerCase();
+
+        // Primary sort by base name (without leading numbers)
+        if (baseA < baseB) return ascending ? -1 : 1;
+        if (baseA > baseB) return ascending ? 1 : -1;
+
+        // Secondary sort by full name (including numbers) for ties
+        if (fullA < fullB) return ascending ? -1 : 1;
+        if (fullA > fullB) return ascending ? 1 : -1;
+        return 0; // Equal values preserve original order
+    });
+}
 
 function loadAiHistory() {
     const saved = localStorage.getItem('aiHistory');
@@ -99,13 +203,113 @@ function loadAiHistory() {
     }
 }
 
+function getApiSource() {
+    switch (state.bibleVersion) {
+        case 'kjv':
+        case 'asv':
+        case 'web':
+        case 'bbe':
+        case 'dra':
+        case 'ylt':
+            state.apiSource = 'bible-api.com';
+            // state.apiSource = 'api.esv.org';
+            break;
+        case 'esv':
+            state.apiSource = 'api.esv.org';
+            break;
+        case 'NONE':
+            state.apiSource = 'api.bible';
+            break;
+        default:
+            state.apiSource = 'bible-api.com';
+            break;
+    }
+}
+
 function loadState() {
     const savedState = localStorage.getItem('bibleState');
+    let mergedState;
+
+    // If there's saved state, parse it; otherwise, start with an empty object
     if (savedState) {
         state = JSON.parse(savedState);
+    } else {
+        state = {};
     }
-    openaiSettings = state.openaiSettings;
+
+    // Merge defaults into state: defaults first, then overwrite with saved state
+    mergedState = { ...defaults, ...state };
+
+    // Update the global state with the merged result
+    state = mergedState;
+
+    // Assign openaiSettings from the merged state
+    openaiSettings = state.openaiSettings || defaults.openaiSettings || {};
+
+    // Sort the books
+    books = sortBooks(books);
+
+    getApiSource();
     loadAiHistory();
+    loadChapterCache();
+
+    // Save the merged state back to localStorage
+    localStorage.setItem('bibleState', JSON.stringify(state));
+}
+
+// Load chapter cache from localStorage directly into chapterCache
+function loadChapterCache() {
+    const cachedData = localStorage.getItem('chapterCache');
+    if (cachedData) {
+        chapterCache = JSON.parse(cachedData);
+    } else {
+        chapterCache = {};
+    }
+}
+
+// Save chapterCache to localStorage, pruning beyond 500 chapters
+function saveChapterCache() {
+    const keys = Object.keys(chapterCache);
+
+    if (keys.length > MAX_CHAPTERS) {
+        console.log(`Cache exceeds ${MAX_CHAPTERS} chapters (${keys.length}), pruning oldest...`);
+        const sortedKeys = keys.sort((a, b) => {
+            return (chapterCache[a].lastLoaded || 0) - (chapterCache[b].lastLoaded || 0);
+        });
+        const toRemove = sortedKeys.slice(0, keys.length - MAX_CHAPTERS);
+        toRemove.forEach(key => delete chapterCache[key]);
+        console.log(`Pruned ${toRemove.length} chapters, now at ${Object.keys(chapterCache).length}`);
+    }
+
+    localStorage.setItem('chapterCache', JSON.stringify(chapterCache));
+}
+
+// Load translation cache from localStorage
+function loadTranslationCache() {
+    const cachedData = localStorage.getItem('translationCache');
+    if (cachedData) {
+        translationCache = JSON.parse(cachedData);
+    } else {
+        translationCache = {};
+    }
+}
+
+// Save translation cache to localStorage with FIFO pruning
+function saveTranslationCache() {
+    const keys = Object.keys(translationCache);
+
+    if (keys.length > MAX_TRANSLATION_CACHE_SIZE) {
+        console.log(`Translation cache exceeds ${MAX_TRANSLATION_CACHE_SIZE} entries (${keys.length}), pruning oldest...`);
+        // Sort by timestamp (oldest first) and remove excess
+        const sortedKeys = keys.sort((a, b) => {
+            return (translationCache[a].timestamp || 0) - (translationCache[b].timestamp || 0);
+        });
+        const toRemove = sortedKeys.slice(0, keys.length - MAX_TRANSLATION_CACHE_SIZE);
+        toRemove.forEach(key => delete translationCache[key]);
+        console.log(`Pruned ${toRemove.length} entries, now at ${Object.keys(translationCache).length}`);
+    }
+
+    localStorage.setItem('translationCache', JSON.stringify(translationCache));
 }
 
 function saveState() {

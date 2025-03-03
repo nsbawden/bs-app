@@ -82,6 +82,7 @@ verseSelect.addEventListener('change', () => {
 
 versionSelect.addEventListener('change', () => {
     state.bibleVersion = versionSelect.value;
+    getApiSource();
     fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion).then(data => {
         if (state.currentVerse.verse > data.verses.length) {
             state.currentVerse.verse = 1;
@@ -113,12 +114,23 @@ function submitAIQuery() {
         chapter: state.currentVerse.chapter,
         verse: state.currentVerse.verse,
         version: state.bibleVersion.toUpperCase(),
-        system:  "Answer from Bible with multiple verses and explanations, formatted in Markdown."
+        system: "Answer from Bible with multiple verses and explanations, formatted in Markdown."
     };
     const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}): ${question}`;
-    aiOutput.textContent = `asking ... ${fullQuestion}`;
+
     if (question) {
-        queryAI(fullQuestion, context);
+        // Initialize the timer display
+        let secondsElapsed = 0;
+        aiOutput.textContent = `asking... (${secondsElapsed}) ${fullQuestion}`;
+
+        // Start a timer to update the display every second
+        const timer = setInterval(() => {
+            secondsElapsed++;
+            aiOutput.textContent = `asking... (${secondsElapsed}) ${fullQuestion}`;
+        }, 1000);
+
+        // Query the AI and clear the timer when done
+        queryAI(fullQuestion, context, timer);
         aiPrompt.value = '';
     }
 }
@@ -138,8 +150,30 @@ function submitAITranslate() {
     const verseReference = `${context.book} ${context.chapter}:${context.verse}`;
     const fullQuestion = constructTranslationPrompt(verseReference);
 
-    aiOutput.textContent = `translating ...`;
-    queryAI(fullQuestion, context);
+    // Create a unique cache key based on book, chapter, verse, and temperature
+    const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
+
+    // Check the cache first
+    loadTranslationCache(); // Ensure cache is loaded
+    if (translationCache[cacheKey]) {
+        console.log(`Cache hit for translation: ${cacheKey}`);
+        // Use displayResult to process cached response consistently
+        displayResult(fullQuestion, translationCache[cacheKey].response);
+        return; // Exit early after displaying cached result
+    }
+
+    // Initialize the timer display for uncached queries
+    let secondsElapsed = 0;
+    aiOutput.textContent = `translating... (${secondsElapsed} sec)`;
+
+    // Start a timer to update the display every second
+    const timer = setInterval(() => {
+        secondsElapsed++;
+        aiOutput.textContent = `translating... (${secondsElapsed} sec)`;
+    }, 1000);
+
+    // Query the AI with caching flag
+    queryAI(fullQuestion, context, timer, true); // true indicates translation caching
 }
 
 // function constructTranslationPrompt(verseReference) {

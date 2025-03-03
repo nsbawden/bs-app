@@ -1,21 +1,218 @@
 // bible.js
+
+// Main dispatcher function with caching
 async function fetchChapter(book, chapter, version) {
     const bookData = books.find(b => b.key === book);
     if (!bookData) throw new Error(`Book ${book} not found in books array`);
 
+    const cacheKey = `${version}-${book}-${chapter}`;
+
+    if (chapterCache[cacheKey]) {
+        console.log(`Cache hit for ${cacheKey}`);
+        chapterCache[cacheKey].lastLoaded = Date.now();
+        return chapterCache[cacheKey].data;
+    }
+
+    let result;
     switch (bookData.handler) {
         case 'localJson':
             const response = await fetch(bookData.url);
             const data = await response.json();
             const chapterData = data.chapters.find(ch => ch.chapter === parseInt(chapter));
-            return chapterData || { verses: [] };
+            result = chapterData || { verses: [] };
+            break;
         case 'api':
-            const apiResponse = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
-            const apiData = await apiResponse.json();
-            return apiData;
+            switch (state.apiSource) {
+                case 'bible-api.com':
+                    result = await fetchBibleApiCom(book, chapter, version);
+                    break;
+                case 'api.bible':
+                    result = await fetchApiBible(book, chapter, version, bookData);
+                    break;
+                case 'api.esv.org':
+                    result = await fetchApiEsv(book, chapter);
+                    break;
+                default:
+                    throw new Error(`Unknown apiSource: ${state.apiSource}`);
+            }
+            break;
         default:
             throw new Error(`Unknown handler type: ${bookData.handler} for book ${book}`);
     }
+
+    chapterCache[cacheKey] = {
+        data: result,
+        lastLoaded: Date.now()
+    };
+    console.log(`Cache miss - stored ${cacheKey}`);
+    saveChapterCache();
+    return result;
+}
+
+// Fetch function for bible-api.com
+async function fetchBibleApiCom(book, chapter, version) {
+    const apiResponse = await fetch(`${BIBLE_API_BASE}/${book}+${chapter}?translation=${version}`);
+    const apiData = await apiResponse.json();
+    return apiData;
+}
+
+// Fetch function for api.bible
+async function fetchApiBible(book, chapter, version, bookData) {
+    // Map version to api.bible Bible ID (e.g., KJV)
+    const bibleIdMap = {
+        'kjv': 'de4e12af7f28f599-01', // Adjust based on your available IDs
+        // Add other versions as needed
+    };
+    const bibleId = bibleIdMap[version] || version; // Fallback to passed version if unmapped
+    const apiKey = localStorage.getItem('bibleApiKey');
+    if (!apiKey) throw new Error('API key not found in localStorage');
+
+    // Convert full book name to abbreviation
+    const bookAbbr = bookMap[book];
+    if (!bookAbbr) throw new Error(`Book ${book} not found in bookMap`);
+    const chapterId = `${bookAbbr}.${chapter}`; // e.g., "MAT.7"
+    const url = `https://api.scripture.api.bible/v1/bibles/${bibleId}/chapters/${chapterId}?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false`;
+    const apiBibleResponse = await fetch(url, {
+        headers: {
+            'api-key': apiKey
+        }
+    });
+    if (!apiBibleResponse.ok) throw new Error(`API Bible request failed: ${apiBibleResponse.statusText}`);
+    const apiBibleData = await apiBibleResponse.json();
+    const rawData = apiBibleData.data;
+
+    // Convert api.bible data to bible-api.com format
+    const convertedData = {
+        reference: rawData.reference,
+        verses: [],
+        text: '',
+        translation_id: version,
+        translation_name: bibleId === 'de4e12af7f28f599-01' ? 'King James Version' : 'Unknown Translation',
+        translation_note: rawData.copyright || 'Public Domain'
+    };
+
+    // Helper function to extract text from nested items
+    function extractText(items, currentVerse = null, verseText = '', skipVerseNumber = false) {
+        items.forEach(item => {
+            if (item.type === 'tag' && item.name === 'verse' && item.attrs?.number) {
+                if (currentVerse && verseText) {
+                    convertedData.verses.push({
+                        book_id: rawData.bookId,
+                        book_name: bookData.name || book,
+                        chapter: parseInt(rawData.number),
+                        verse: parseInt(currentVerse),
+                        text: verseText.trim()
+                    });
+                }
+                currentVerse = item.attrs.number;
+                verseText = '';
+                if (item.items) {
+                    extractText(item.items, currentVerse, verseText, true);
+                }
+            } else if (item.type === 'text' && !skipVerseNumber) {
+                if (item.text !== '¶') {
+                    verseText += item.text;
+                }
+            } else if (item.type === 'tag' && item.items) {
+                const nestedResult = extractText(item.items, currentVerse, verseText, false);
+                verseText = nestedResult.verseText;
+            }
+        });
+        if (currentVerse && verseText) {
+            convertedData.verses.push({
+                book_id: rawData.bookId,
+                book_name: bookData.name || book,
+                chapter: parseInt(rawData.number),
+                verse: parseInt(currentVerse),
+                text: verseText.trim()
+            });
+        }
+        return { currentVerse, verseText };
+    }
+
+    // Process the content array
+    rawData.content.forEach(paragraph => {
+        if (paragraph.items) {
+            extractText(paragraph.items);
+        }
+    });
+
+    // Build the full chapter text
+    convertedData.text = convertedData.verses.map(v => `${v.verse} ${v.text}`).join(' ');
+    return convertedData;
+}
+
+// Fetch function for api.esv.org
+async function fetchApiEsv(book, chapter) {
+    const esvApiKey = localStorage.getItem('esvApiKey');
+    if (!esvApiKey) throw new Error('ESV API key not found in localStorage');
+    const esvUrl = `https://api.esv.org/v3/passage/text/?q=${book}+${chapter}&include-verse-numbers=true&include-chapter-numbers=false&include-footnotes=false&include-headings=false`;
+    const esvResponse = await fetch(esvUrl, {
+        headers: {
+            'Authorization': `Token ${esvApiKey}`
+        }
+    });
+    if (!esvResponse.ok) throw new Error(`ESV API request failed: ${esvResponse.statusText}`);
+    const esvData = await esvResponse.json();
+
+    // Convert ESV data to bible-api.com format
+    const convertedData = {
+        reference: `${book} ${chapter}`,
+        verses: [],
+        text: esvData.passages[0].replace(/^.*\n\n\s*/, '').replace(/\s*\(ESV\)$/, '').trim(),
+        translation_id: 'esv',
+        translation_name: 'English Standard Version',
+        translation_note: 'Copyright © 2001 by Crossway'
+    };
+
+    // Parse the passage text into individual verses
+    const passageText = esvData.passages[0].replace(/^.*\n\n\s*/, '').replace(/\s*\(ESV\)$/, '');
+    const verseMatches = passageText.match(/\[(\d+)\](.*?)(?=\[\d+\]|$)/gs) || [];
+
+    let quoteOpen = false; // Track if a quote is open going into the next verse
+    verseMatches.forEach((match, index) => {
+        const [, verseNum, verseText] = match.match(/\[(\d+)\]\s*(.+)/s);
+        if (verseNum && verseText) {
+            let cleanedText = verseText.trim();
+            let adjustedText = cleanedText;
+
+            // Count quotes in the current verse
+            const openingQuotes = (cleanedText.match(/“/g) || []).length;
+            const closingQuotes = (cleanedText.match(/”/g) || []).length;
+
+            // Apply opening quote if continuing from a previous verse
+            if (quoteOpen && openingQuotes === 0) {
+                adjustedText = `“${cleanedText}`;
+            }
+
+            // Determine quote state
+            if (openingQuotes > closingQuotes) {
+                // Quote opens and doesn’t close in this verse
+                adjustedText = `${adjustedText}”`;
+                quoteOpen = true;
+            } else if (closingQuotes > openingQuotes) {
+                // Quote closes in this verse
+                quoteOpen = false;
+            } else if (quoteOpen && openingQuotes === 0 && index < verseMatches.length - 1) {
+                // Continuation verse, close and signal next verse to open
+                adjustedText = `${adjustedText}”`;
+                quoteOpen = true;
+            } else {
+                // No change in quote state, or self-contained quote
+                quoteOpen = false;
+            }
+
+            convertedData.verses.push({
+                book_id: bookMap[book] || book.toUpperCase().slice(0, 3),
+                book_name: book,
+                chapter: parseInt(chapter),
+                verse: parseInt(verseNum),
+                text: adjustedText
+            });
+        }
+    });
+
+    return convertedData;
 }
 
 function populateSelectors() {

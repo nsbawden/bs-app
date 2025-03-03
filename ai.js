@@ -110,19 +110,43 @@ const aiModules = {
 
 const currentAIModule = aiModules.openAI;
 
-async function queryAI(question, context) {
-    const response = await currentAIModule.query(question, context);
-    displayResult(question, response);
-    
-    // push to the front of the history stack
-    const maxHistoryLength = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-    aiHistory.unshift({ question: question, answer: response, context: `${context.book} ${context.chapter}:${context.verse} (${context.version})` });
-    if (aiHistory.length > maxHistoryLength) {
-        aiHistory = aiHistory.slice(0, maxHistoryLength);
-    }
-    adjustTabCount(); // Show existing tabs and hide the rest
+async function queryAI(question, context, timer, shouldCacheTranslation = false) {
+    try {
+        let response;
+        if (shouldCacheTranslation) {
+            response = await currentAIModule.query(question, context);
+            // Cache the translation result
+            const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
+            translationCache[cacheKey] = {
+                response: response,
+                timestamp: Date.now() // For FIFO pruning
+            };
+            saveTranslationCache(); // Persist the updated cache
+        } else {
+            response = await currentAIModule.query(question, context);
+        }
 
-    saveState();
+        clearInterval(timer); // Stop the timer when response is received
+        displayResult(question, response);
+
+        // Push to the front of the history stack
+        const maxHistoryLength = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
+        aiHistory.unshift({
+            question: question,
+            answer: response,
+            context: `${context.book} ${context.chapter}:${context.verse} (${context.version})`
+        });
+        if (aiHistory.length > maxHistoryLength) {
+            aiHistory = aiHistory.slice(0, maxHistoryLength);
+        }
+        adjustTabCount(); // Show existing tabs and hide the rest
+
+        saveState();
+    } catch (error) {
+        clearInterval(timer); // Stop the timer on error too
+        aiOutput.textContent = `Error: ${error.message}`;
+        console.error('AI query failed:', error);
+    }
 }
 
 // load last history if available

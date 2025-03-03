@@ -128,7 +128,8 @@
             border: none;
         }
 
-        #ai-submit, #ai-translate {
+        #ai-submit,
+        #ai-translate {
             width: 30px;
             height: 30px;
             padding: 0;
@@ -160,9 +161,9 @@
         }
 
         #ai-toggle {
-            position: absolute;
-            top: 5px;
-            right: 5px;
+            position: fixed;
+            top: 10px;
+            right: 40px;
             padding: 2px 8px;
             background-color: #4A704A;
             color: #F0F0F0;
@@ -170,6 +171,7 @@
             cursor: pointer;
             font-size: 12px;
             opacity: 70%;
+            z-index: 1000;
         }
 
         .popup {

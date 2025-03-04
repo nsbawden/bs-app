@@ -194,119 +194,47 @@ aiPrompt.addEventListener('keydown', (e) => {
 });
 
 function aiExpand() {
-    aiOutput.classList.add('expanded');
-    aiToggle.textContent = '▼';
+    const footer = document.querySelector('footer');
+    footer.classList.add('expanded');
+    document.getElementById('ai-toggle').textContent = '▼';
+
+    // Calculate available height for #ai-output
+    const topBarHeight = 40; // Fixed top bar height
+    const mainVisibleHeight = 100; // Desired visible main content height
+    const footerPadding = 20; // 10px top + 10px bottom
+    const aiInputHeight = document.querySelector('.ai-input-container').offsetHeight;
+    const tabsHeight = document.querySelector('.tabs-container').offsetHeight;
+    const availableHeight = window.innerHeight - topBarHeight - mainVisibleHeight - footerPadding - aiInputHeight - tabsHeight;
+
+    const aiOutput = document.getElementById('ai-output');
+    aiOutput.style.setProperty('--ai-output-max-height', `${availableHeight}px`);
+    aiOutput.style.setProperty('--ai-output-overflow', 'auto');
 }
 
 function aiCollapse() {
-    aiOutput.classList.remove('expanded');
-    aiToggle.textContent = '▲';
+    const footer = document.querySelector('footer');
+    footer.classList.remove('expanded');
+    document.getElementById('ai-toggle').textContent = '▲';
+
+    const aiOutput = document.getElementById('ai-output');
+    aiOutput.style.setProperty('--ai-output-max-height', '3em');
+    aiOutput.style.setProperty('--ai-output-overflow', 'hidden');
 }
 
+// Event listener remains unchanged
 aiToggle.addEventListener('click', () => {
-    if (aiOutput.classList.contains('expanded')) {
+    if (document.querySelector('footer').classList.contains('expanded')) {
         aiCollapse();
     } else {
         aiExpand();
     }
 });
 
-// if (aiOutput.innerHTML) {
-//     aiOutput.classList.add('expanded');
-//     aiToggle.textContent = '▼';
-// } else {
-//     aiOutput.classList.remove('expanded');
-//     aiToggle.textContent = '▲';
-// }
-
-// function showNotePopup(reference, verseDiv, existingNote) {
-//     // Remove any existing popup
-//     const existingPopup = document.querySelector('.note-popup');
-//     if (existingPopup) existingPopup.remove();
-
-//     // Create popup
-//     const popup = document.createElement('div');
-//     popup.className = 'note-popup';
-//     popup.style.position = 'absolute';
-//     popup.style.top = `${verseDiv.offsetTop + verseDiv.offsetHeight}px`;
-//     popup.style.background = '#2A2A2A';
-//     popup.style.color = '#F0F0F0';
-//     popup.style.padding = '10px';
-//     popup.style.border = '1px solid #4A704A';
-//     popup.style.zIndex = '1000';
-//     popup.style.maxWidth = '400px';
-
-//     // Textarea for note
-//     const textarea = document.createElement('textarea');
-//     textarea.value = existingNote || '';
-//     textarea.style.width = '100%';
-//     textarea.style.height = '150px';
-//     textarea.style.background = '#1A1A1A';
-//     textarea.style.color = '#F0F0F0';
-//     textarea.style.border = '1px solid #4A704A';
-
-//     // Save button
-//     const saveButton = document.createElement('button');
-//     saveButton.textContent = 'Save';
-//     saveButton.style.background = '#4A704A';
-//     saveButton.style.color = '#F0F0F0';
-//     saveButton.style.border = 'none';
-//     saveButton.style.padding = '5px 10px';
-//     saveButton.style.marginRight = '5px';
-//     saveButton.onclick = () => {
-//         const note = textarea.value.trim();
-//         if (note) {
-//             saveNote(reference, note);
-//         } else {
-//             deleteNote(reference);
-//         }
-//         cleanupAndRemove();
-//         refreshDisplay();
-//     };
-
-//     // Cancel button
-//     const cancelButton = document.createElement('button');
-//     cancelButton.textContent = 'Cancel';
-//     cancelButton.style.background = '#4A704A';
-//     cancelButton.style.color = '#F0F0F0';
-//     cancelButton.style.border = 'none';
-//     cancelButton.style.padding = '5px 10px';
-//     cancelButton.onclick = cleanupAndRemove;
-
-//     // Assemble popup
-//     popup.appendChild(textarea);
-//     popup.appendChild(saveButton);
-//     popup.appendChild(cancelButton);
-//     document.body.appendChild(popup);
-
-//     // Position adjustment: Ensure popup stays within viewport
-//     const verseLeft = verseDiv.offsetLeft;
-//     const popupWidth = popup.offsetWidth;
-//     const viewportWidth = window.innerWidth;
-//     let newLeft = verseLeft;
-//     if (verseLeft + popupWidth > viewportWidth) {
-//         newLeft = viewportWidth - popupWidth;
-//         newLeft = Math.max(0, newLeft);
-//     }
-//     popup.style.left = `${newLeft}px`;
-
-//     // Escape key listener
-//     const handleEscape = (event) => {
-//         if (event.key === 'Escape') {
-//             cleanupAndRemove();
-//         }
-//     };
-//     document.addEventListener('keydown', handleEscape);
-
-//     // Cleanup function to remove popup and listener
-//     function cleanupAndRemove() {
-//         document.removeEventListener('keydown', handleEscape);
-//         popup.remove();
-//     }
-
-//     // Focus textarea
-//     textarea.focus();
-// }
+window.addEventListener('resize', () => {
+    if (document.querySelector('footer').classList.contains('expanded')) {
+        aiExpand(); // Recalculate and update max-height
+    }
+});
 
 function scrollToSelectedVerse() {
     const selectedVerse = document.querySelector('.verse.selected');

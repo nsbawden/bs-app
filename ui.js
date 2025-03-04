@@ -209,6 +209,8 @@ function aiExpand() {
     const aiOutput = document.getElementById('ai-output');
     aiOutput.style.setProperty('--ai-output-max-height', `${availableHeight}px`);
     aiOutput.style.setProperty('--ai-output-overflow', 'auto');
+    setTimeout(() => { scrollToSelectedVerse(false) }, 200);
+    // scrollToSelectedVerse(false); // false = no top buffer lines
 }
 
 function aiCollapse() {
@@ -221,7 +223,7 @@ function aiCollapse() {
     aiOutput.style.setProperty('--ai-output-overflow', 'hidden');
 }
 
-// Event listener remains unchanged
+// Event listener for output window expand/collapse
 aiToggle.addEventListener('click', () => {
     if (document.querySelector('footer').classList.contains('expanded')) {
         aiCollapse();
@@ -236,7 +238,8 @@ window.addEventListener('resize', () => {
     }
 });
 
-function scrollToSelectedVerse() {
+function scrollToSelectedVerse(topBuffer = true) {
+    // debugger;
     const selectedVerse = document.querySelector('.verse.selected');
     if (!selectedVerse) return;
 
@@ -244,7 +247,7 @@ function scrollToSelectedVerse() {
     if (!verseDisplay) return; // Exit if the container isn't found
 
     const lineHeight = parseInt(window.getComputedStyle(selectedVerse).lineHeight) || 20;
-    const bufferLines = 3;
+    const bufferLines = topBuffer ? 3 : 0;
     const offset = lineHeight * bufferLines;
 
     // Get position relative to the verse-display container
@@ -282,6 +285,7 @@ function setActiveTab(tabNum) {
     tabs.forEach(t => t.classList.remove('active'));
     // Add active class to clicked tab
     tabs[tabNum - 1].classList.add('active');
+    aiExpand();
 }
 
 // Add question Tab handlers
@@ -407,17 +411,34 @@ function constructTabs() {
                 editHandler: (oldName, newName) => renameTag(oldName, newName)
             })),
             editable: true
+        },
+        {
+            label: "writings",
+            items: writings.map(writing => ({
+                label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
+                handler: () => {
+                    // Fetch and display the markdown file content
+                    fetch(writing.filename)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Failed to load ${writing.filename}`);
+                            }
+                            return response.text();
+                        })
+                        .then(content => {
+                            // debugger; // This will now fire when the fetch succeeds
+                            showBook(writing.label, content);
+                        })
+                        .catch(error => {
+                            console.error('Error loading writing:', error);
+                            showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error.message}`);
+                        });
+                }
+            })),
+            editable: false
         }
     ];
 }
-
-// Example: Update a note and rebuild tabs
-// function updateNote(key, newText) {
-//     const notes = getNotes();
-//     notes[key] = newText;
-//     localStorage.setItem('notes', JSON.stringify(notes)); // Persist notes
-//     constructTabs(); // Rebuild tabs and tagStorage
-// }
 
 document.getElementById('show-list').addEventListener('click', async () => {
     const tabs = constructTabs();
@@ -436,6 +457,14 @@ document.getElementById('show-list').addEventListener('click', async () => {
                 let newLabel = tabs[2].items[result.itemIndex].label;
                 goToTag(result.itemIndex);
                 break;
+            case 3: // Writings
+                const writing = tabs[3].items[result.itemIndex];
+                if (writing.handler) {
+                    writing.handler(); // Execute the handler to fetch and display the writing
+                }
+                break;
+            default:
+                console.log("Unhandled tab index:", result.tabIndex);
         }
     } else {
         console.log("Popup canceled");

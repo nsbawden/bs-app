@@ -32,46 +32,60 @@ let chapterCache = {};
 const MAX_TRANSLATION_CACHE_SIZE = 50; // Limit to 50 translations
 let translationCache = {};
 
+// Hard-coded list of writings
+const writings = [
+    {
+        label: "Creation of the Bible Canon",
+        author: "d'Artagnan Ferrari",
+        filename: "Cannonization.md"
+    }
+    // Add more writings here as needed, e.g.:
+    // {
+    //     label: "Another Writing Title",
+    //     filename: "AnotherFile.md"
+    // }
+];
+
 let books = [
-    { key: 'Genesis', label: 'Genesis (1st)', chapters: 50, handler: 'api' },
-    { key: 'Exodus', label: 'Exodus (1st)', chapters: 40, handler: 'api' },
-    { key: 'Leviticus', label: 'Leviticus (1st)', chapters: 27, handler: 'api' },
-    { key: 'Numbers', label: 'Numbers (1st)', chapters: 36, handler: 'api' },
-    { key: 'Deuteronomy', label: 'Deuteronomy (1st)', chapters: 34, handler: 'api' },
-    { key: 'Joshua', label: 'Joshua (1st)', chapters: 24, handler: 'api' },
-    { key: 'Judges', label: 'Judges (1st)', chapters: 21, handler: 'api' },
-    { key: 'Ruth', label: 'Ruth (1st)', chapters: 4, handler: 'api' },
-    { key: '1 Samuel', label: '1 Samuel (1st)', chapters: 31, handler: 'api' },
-    { key: '2 Samuel', label: '2 Samuel (1st)', chapters: 24, handler: 'api' },
-    { key: '1 Kings', label: '1 Kings (1st)', chapters: 22, handler: 'api' },
-    { key: '2 Kings', label: '2 Kings (1st)', chapters: 25, handler: 'api' },
-    { key: '1 Chronicles', label: '1 Chronicles (1st)', chapters: 29, handler: 'api' },
-    { key: '2 Chronicles', label: '2 Chronicles (1st)', chapters: 36, handler: 'api' },
-    { key: 'Ezra', label: 'Ezra (1st)', chapters: 10, handler: 'api' },
-    { key: 'Nehemiah', label: 'Nehemiah (1st)', chapters: 13, handler: 'api' },
-    { key: 'Esther', label: 'Esther (1st)', chapters: 10, handler: 'api' },
-    { key: 'Job', label: 'Job (1st)', chapters: 42, handler: 'api' },
-    { key: 'Psalms', label: 'Psalms (1st)', chapters: 150, handler: 'api' },
-    { key: 'Proverbs', label: 'Proverbs (1st)', chapters: 31, handler: 'api' },
-    { key: 'Ecclesiastes', label: 'Ecclesiastes (1st)', chapters: 12, handler: 'api' },
-    { key: 'Song of Solomon', label: 'Song of Solomon (1st)', chapters: 8, handler: 'api' },
-    { key: 'Isaiah', label: 'Isaiah (1st)', chapters: 66, handler: 'api' },
-    { key: 'Jeremiah', label: 'Jeremiah (1st)', chapters: 52, handler: 'api' },
-    { key: 'Lamentations', label: 'Lamentations (1st)', chapters: 5, handler: 'api' },
-    { key: 'Ezekiel', label: 'Ezekiel (1st)', chapters: 48, handler: 'api' },
-    { key: 'Daniel', label: 'Daniel (1st)', chapters: 12, handler: 'api' },
-    { key: 'Hosea', label: 'Hosea (1st)', chapters: 14, handler: 'api' },
-    { key: 'Joel', label: 'Joel (1st)', chapters: 3, handler: 'api' },
-    { key: 'Amos', label: 'Amos (1st)', chapters: 9, handler: 'api' },
-    { key: 'Obadiah', label: 'Obadiah (1st)', chapters: 1, handler: 'api' },
-    { key: 'Jonah', label: 'Jonah (1st)', chapters: 4, handler: 'api' },
-    { key: 'Micah', label: 'Micah (1st)', chapters: 7, handler: 'api' },
-    { key: 'Nahum', label: 'Nahum (1st)', chapters: 3, handler: 'api' },
-    { key: 'Habakkuk', label: 'Habakkuk (1st)', chapters: 3, handler: 'api' },
-    { key: 'Zephaniah', label: 'Zephaniah (1st)', chapters: 3, handler: 'api' },
-    { key: 'Haggai', label: 'Haggai (1st)', chapters: 2, handler: 'api' },
-    { key: 'Zechariah', label: 'Zechariah (1st)', chapters: 14, handler: 'api' },
-    { key: 'Malachi', label: 'Malachi (1st)', chapters: 4, handler: 'api' },
+    { key: 'Genesis', label: 'Genesis (old)', chapters: 50, handler: 'api' },
+    { key: 'Exodus', label: 'Exodus (old)', chapters: 40, handler: 'api' },
+    { key: 'Leviticus', label: 'Leviticus (old)', chapters: 27, handler: 'api' },
+    { key: 'Numbers', label: 'Numbers (old)', chapters: 36, handler: 'api' },
+    { key: 'Deuteronomy', label: 'Deuteronomy (old)', chapters: 34, handler: 'api' },
+    { key: 'Joshua', label: 'Joshua (old)', chapters: 24, handler: 'api' },
+    { key: 'Judges', label: 'Judges (old)', chapters: 21, handler: 'api' },
+    { key: 'Ruth', label: 'Ruth (old)', chapters: 4, handler: 'api' },
+    { key: '1 Samuel', label: '1 Samuel (old)', chapters: 31, handler: 'api' },
+    { key: '2 Samuel', label: '2 Samuel (old)', chapters: 24, handler: 'api' },
+    { key: '1 Kings', label: '1 Kings (old)', chapters: 22, handler: 'api' },
+    { key: '2 Kings', label: '2 Kings (old)', chapters: 25, handler: 'api' },
+    { key: '1 Chronicles', label: '1 Chronicles (old)', chapters: 29, handler: 'api' },
+    { key: '2 Chronicles', label: '2 Chronicles (old)', chapters: 36, handler: 'api' },
+    { key: 'Ezra', label: 'Ezra (old)', chapters: 10, handler: 'api' },
+    { key: 'Nehemiah', label: 'Nehemiah (old)', chapters: 13, handler: 'api' },
+    { key: 'Esther', label: 'Esther (old)', chapters: 10, handler: 'api' },
+    { key: 'Job', label: 'Job (old)', chapters: 42, handler: 'api' },
+    { key: 'Psalms', label: 'Psalms (old)', chapters: 150, handler: 'api' },
+    { key: 'Proverbs', label: 'Proverbs (old)', chapters: 31, handler: 'api' },
+    { key: 'Ecclesiastes', label: 'Ecclesiastes (old)', chapters: 12, handler: 'api' },
+    { key: 'Song of Solomon', label: 'Song of Solomon (old)', chapters: 8, handler: 'api' },
+    { key: 'Isaiah', label: 'Isaiah (old)', chapters: 66, handler: 'api' },
+    { key: 'Jeremiah', label: 'Jeremiah (old)', chapters: 52, handler: 'api' },
+    { key: 'Lamentations', label: 'Lamentations (old)', chapters: 5, handler: 'api' },
+    { key: 'Ezekiel', label: 'Ezekiel (old)', chapters: 48, handler: 'api' },
+    { key: 'Daniel', label: 'Daniel (old)', chapters: 12, handler: 'api' },
+    { key: 'Hosea', label: 'Hosea (old)', chapters: 14, handler: 'api' },
+    { key: 'Joel', label: 'Joel (old)', chapters: 3, handler: 'api' },
+    { key: 'Amos', label: 'Amos (old)', chapters: 9, handler: 'api' },
+    { key: 'Obadiah', label: 'Obadiah (old)', chapters: 1, handler: 'api' },
+    { key: 'Jonah', label: 'Jonah (old)', chapters: 4, handler: 'api' },
+    { key: 'Micah', label: 'Micah (old)', chapters: 7, handler: 'api' },
+    { key: 'Nahum', label: 'Nahum (old)', chapters: 3, handler: 'api' },
+    { key: 'Habakkuk', label: 'Habakkuk (old)', chapters: 3, handler: 'api' },
+    { key: 'Zephaniah', label: 'Zephaniah (old)', chapters: 3, handler: 'api' },
+    { key: 'Haggai', label: 'Haggai (old)', chapters: 2, handler: 'api' },
+    { key: 'Zechariah', label: 'Zechariah (old)', chapters: 14, handler: 'api' },
+    { key: 'Malachi', label: 'Malachi (old)', chapters: 4, handler: 'api' },
     { key: 'Matthew', label: 'Matthew (new)', chapters: 28, handler: 'api' },
     { key: 'Mark', label: 'Mark (new)', chapters: 16, handler: 'api' },
     { key: 'Luke', label: 'Luke (new)', chapters: 24, handler: 'api' },
@@ -99,7 +113,7 @@ let books = [
     { key: '3 John', label: '3 John (new)', chapters: 1, handler: 'api' },
     { key: 'Jude', label: 'Jude (new)', chapters: 1, handler: 'api' },
     { key: 'Revelation', label: 'Revelation (new)', chapters: 22, handler: 'api' },
-    { key: '1 Enoch', label: '1 Enoch (1917 translation)', chapters: 108, handler: 'localJson', url: './1enoch.json', notes: 'R.H. Charles’s 1917 translation' }
+    { key: '1 Enoch', label: '1 Enoch (old)', chapters: 108, handler: 'localJson', url: './1enoch.json', notes: 'R.H. Charles’s 1917 translation' }
 ];
 
 const bookMap = {

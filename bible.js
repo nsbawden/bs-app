@@ -441,15 +441,21 @@ function convertMarkdown(text) {
 function displayResult(question, answer, expand = true) {
     let htmlText = convertMarkdown(answer);
     let linkedContent = linkVerses(htmlText);
-    aiOutput.innerHTML = `<span class="question">TO AI: ${question}</span>${linkedContent}`;
+    if (question) {
+        aiOutput.innerHTML = `<span class="question">TO AI: ${question}</span>${linkedContent}`;
+    } else {
+        aiOutput.innerHTML = linkedContent;
+    }
     if (expand) {
-        aiOutput.classList.add('expanded');
-        aiToggle.textContent = '▼';
+        aiExpand();
     }
     else {
-        aiOutput.classList.remove('expanded');
-        aiToggle.textContent = '▲';
+        aiCollapse();
     }
+}
+
+function showBook(label, content) {
+    displayResult("", content, true);
 }
 
 // Initialize

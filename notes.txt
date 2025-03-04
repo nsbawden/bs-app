@@ -34,3 +34,38 @@ This captures the cultural and linguistic nuance of Greek familial relationships
 
 This version provides slightly more historical context and a refined, culturally nuanced translation, rather than just a direct linguistic breakdown.
 */
+
+Here's a **list of non-canonical books** along with where to find them online:  
+
+### **Books & Where to Find Them**  
+
+- **1 Enoch** – [Sacred Texts](https://www.sacred-texts.com/bib/boe/index.htm)  
+- **2 Enoch (Slavonic Enoch)** – [Early Jewish Writings](https://www.earlyjewishwritings.com/2enoch.html)  
+- **3 Enoch (Hebrew Apocalypse of Enoch)** – [Early Jewish Writings](https://www.earlyjewishwritings.com/3enoch.html)  
+- **Jubilees** – [Sacred Texts](https://www.sacred-texts.com/bib/jub/index.htm)  
+- **Testament of the Twelve Patriarchs** – [Early Jewish Writings](https://www.earlyjewishwritings.com/)  
+- **Ascension of Isaiah** – [Early Christian Writings](https://www.earlychristianwritings.com/)  
+- **Apocalypse of Abraham** – [Sacred Texts](https://www.sacred-texts.com/jud/tao/index.htm)  
+- **Life of Adam and Eve** – [Early Jewish Writings](https://www.earlyjewishwritings.com/)  
+- **Gospel of Thomas** – [Gnostic Society Library](http://gnosis.org/naghamm/gthlamb.html)  
+- **Gospel of Mary (Magdalene)** – [Gnostic Society Library](http://gnosis.org/library/gospmary.htm)  
+- **Gospel of Philip** – [Gnostic Society Library](http://gnosis.org/naghamm/GPhilip-Meyer.html)  
+- **Gospel of Judas** – [National Geographic](https://www.nationalgeographic.com/history/article/060406-judas-transcript_2)  
+- **Apocryphon of John** – [Gnostic Society Library](http://gnosis.org/naghamm/apocjn.html)  
+- **Acts of Peter** – [Early Christian Writings](https://www.earlychristianwritings.com/actspeter.html)  
+- **Infancy Gospel of James (Protoevangelium of James)** – [Early Christian Writings](https://www.earlychristianwritings.com/infancyjames.html)  
+- **Book of Jasher** – [Sacred Texts](https://www.sacred-texts.com/chr/apo/jasher/index.htm)  
+- **Book of the Wars of the Lord** – **Lost** (Referenced in Numbers 21:14)  
+- **Book of the Acts of Solomon** – **Lost** (Referenced in 1 Kings 11:41)  
+- **Book of Nathan the Prophet** – **Lost** (Referenced in 1 Chronicles 29:29)  
+- **Book of Shemaiah the Prophet** – **Lost** (Referenced in 2 Chronicles 12:15)  
+- **Epistle to the Laodiceans** – [Early Christian Writings](https://www.earlychristianwritings.com/laodiceans.html)  
+
+For API access to these books, check:  
+- **[BibleGateway API](https://www.biblegateway.com/)** (For Apocrypha)  
+- **[Gnostic Society Library](http://gnosis.org/) (For Gnostic texts)**  
+- **[Early Christian Writings](https://www.earlychristianwritings.com/) (For various early Christian texts)**  
+
+Constantine and Eusebius of Caesarea had a close and mutually beneficial relationship, with Eusebius acting as an advisor, historian, and theological supporter of Constantine’s vision for a unified Christian empire.
+
+

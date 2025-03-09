@@ -12,56 +12,8 @@ const aiToggle = document.getElementById('ai-toggle');
 const aiPopup = document.getElementById('ai-popup');
 const aiResponseInput = document.getElementById('ai-response-input');
 const aiResponseSubmit = document.getElementById('ai-response-submit');
-const settingsBtn = document.getElementById('settings-btn');
-const settingsPopup = document.getElementById('settings-popup');
-const maxHistoryInput = document.getElementById('max-history-length');
-const temperatureInput = document.getElementById('temperature');
-const openaiModelSelect = document.getElementById('openai-model');
-const openaiApiKeyInput = document.getElementById('openai-api-key');
-const maxTokensInput = document.getElementById('max-tokens');
-const saveSettingsBtn = document.getElementById('save-settings');
-const closeSettingsBtn = document.getElementById('close-settings');
 
-settingsBtn.addEventListener('click', () => {
-    // Set initial values from config.js
-    maxHistoryInput.value = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-    temperatureInput.value = openaiSettings.temperature;
-    openaiModelSelect.value = openaiSettings.model;
-    maxTokensInput.value = openaiSettings.maxTokens;
-    openaiApiKeyInput.value = localStorage.getItem('openAI_apiKey');
-
-    settingsPopup.classList.toggle('hidden');
-});
-
-saveSettingsBtn.addEventListener('click', () => {
-    const newMaxHistoryLength = parseInt(maxHistoryInput.value) || defaults.maxHistoryLength;
-    openaiSettings.temperature = parseFloat(temperatureInput.value) || defaults.openaiSettings.temperature;
-    openaiSettings.model = openaiModelSelect.value;
-    openaiSettings.maxTokens = parseInt(maxTokensInput.value) || defaults.openaiSettings.maxTokens;
-
-    let apikey = openaiApiKeyInput.value.trim();
-    if (apikey) {
-        localStorage.setItem('openAI_apiKey', apikey);
-    }
-
-    // Clamp values to valid ranges
-    openaiSettings.temperature = Math.max(0, Math.min(2, openaiSettings.temperature));
-    openaiSettings.maxTokens = Math.max(50, Math.min(4096, openaiSettings.maxTokens));
-
-    // Trim history if needed
-    if (aiHistory.length > newMaxHistoryLength) {
-        aiHistory = aiHistory.slice(-newMaxHistoryLength);
-    }
-    localStorage.setItem('maxHistoryLength', newMaxHistoryLength);
-
-    saveState();
-    settingsPopup.classList.add('hidden');
-});
-
-closeSettingsBtn.addEventListener('click', () => {
-    settingsPopup.classList.add('hidden');
-});
-
+// Book/Chapter/Verse selection
 bookSelect.addEventListener('change', () => {
     state.currentVerse.book = bookSelect.value;
     state.currentVerse.chapter = 1;
@@ -103,10 +55,11 @@ verseDisplay.addEventListener('click', (e) => {
     }
 });
 
-aiOutput.addEventListener('click', (e) => {
+aiOutput.addEventListener('click', () => {
     aiExpand();
 });
 
+// AI Query Submission
 function submitAIQuery() {
     const question = aiPrompt.value.trim();
     const context = {
@@ -119,17 +72,12 @@ function submitAIQuery() {
     const fullQuestion = `In ${context.book} ${context.chapter}:${context.verse} (${context.version}): ${question}`;
 
     if (question) {
-        // Initialize the timer display
         let secondsElapsed = 0;
         aiOutput.textContent = `asking... (${secondsElapsed}) ${fullQuestion}`;
-
-        // Start a timer to update the display every second
         const timer = setInterval(() => {
             secondsElapsed++;
             aiOutput.textContent = `asking... (${secondsElapsed}) ${fullQuestion}`;
         }, 1000);
-
-        // Query the AI and clear the timer when done
         queryAI(fullQuestion, context, timer);
         aiPrompt.value = '';
     }
@@ -137,6 +85,7 @@ function submitAIQuery() {
 
 aiSubmit.addEventListener('click', submitAIQuery);
 
+// AI Translation
 function submitAITranslate() {
     const context = {
         book: state.currentVerse.book,
@@ -145,49 +94,30 @@ function submitAITranslate() {
         version: state.bibleVersion.toUpperCase(),
         system: "format answer in Markdown",
         temperature: 1
-        // questionSuffix,
-        // verseText
     };
-
     const verseReference = `${context.book} ${context.chapter}:${context.verse} (${context.version})`;
     const fullQuestion = constructTranslationPrompt(verseReference);
-
-    // Add the verse as the questionSuffix
-    // context.questionSuffix = `<br><br><b>Verse:</b> ${getSelectedVerseText()}`;
-    // context.verseText = `**Verse:**\n${getSelectedVerseText()}\n\n`;
-
-    // Create a unique cache key based on book, chapter, verse, and temperature
     const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
 
-    // Check the cache first
-    loadTranslationCache(); // Ensure cache is loaded
+    loadTranslationCache();
     if (translationCache[cacheKey]) {
         console.log(`Cache hit for translation: ${cacheKey}`);
-        let response = translationCache[cacheKey].response;
-        console.log(response);
-        // Use displayResult to process cached response consistently
-        displayResult(context.questionSuffix ? `${fullQuestion}${context.questionSuffix}` : fullQuestion, response);
-        return; // Exit early after displaying cached result
+        displayResult(fullQuestion, translationCache[cacheKey].response);
+        return;
     }
 
-    // Initialize the timer display for uncached queries
     let secondsElapsed = 0;
     aiOutput.textContent = `translating... (${secondsElapsed} sec)`;
-
-    // Start a timer to update the display every second
     const timer = setInterval(() => {
         secondsElapsed++;
         aiOutput.textContent = `translating... (${secondsElapsed} sec)`;
     }, 1000);
-
-    // Query the AI with caching flag
-    queryAI(fullQuestion, context, timer, true); // true indicates translation caching
+    queryAI(fullQuestion, context, timer, true);
 }
 
 function constructTranslationPrompt(verseReference) {
     return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal and modern bias; use neutral swaps (e.g., 'children' for 'things born') for readability. At end give original English verse and both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
 }
-
 
 aiTranslate.addEventListener('click', submitAITranslate);
 
@@ -197,107 +127,70 @@ aiPrompt.addEventListener('keydown', (e) => {
     }
 });
 
+// AI Output Expand/Collapse
 function aiExpand() {
     const footer = document.querySelector('footer');
     footer.classList.add('expanded');
     document.getElementById('ai-toggle').textContent = '▼';
-
-    // Calculate available height for #ai-output
-    const topBarHeight = 40; // Fixed top bar height
-    const mainVisibleHeight = 100; // Desired visible main content height
-    const footerPadding = 20; // 10px top + 10px bottom
+    const topBarHeight = 40;
+    const mainVisibleHeight = 100;
+    const footerPadding = 20;
     const aiInputHeight = document.querySelector('.ai-input-container').offsetHeight;
     const tabsHeight = document.querySelector('.tabs-container').offsetHeight;
     const availableHeight = window.innerHeight - topBarHeight - mainVisibleHeight - footerPadding - aiInputHeight - tabsHeight;
-
-    const aiOutput = document.getElementById('ai-output');
     aiOutput.style.setProperty('--ai-output-max-height', `${availableHeight}px`);
     aiOutput.style.setProperty('--ai-output-overflow', 'auto');
-    setTimeout(() => { scrollToSelectedVerse(false) }, 200);
-    // scrollToSelectedVerse(false); // false = no top buffer lines
+    setTimeout(() => scrollToSelectedVerse(false), 200);
 }
 
 function aiCollapse() {
     const footer = document.querySelector('footer');
     footer.classList.remove('expanded');
     document.getElementById('ai-toggle').textContent = '▲';
-
-    const aiOutput = document.getElementById('ai-output');
     aiOutput.style.setProperty('--ai-output-max-height', '3em');
     aiOutput.style.setProperty('--ai-output-overflow', 'hidden');
 }
 
-// Event listener for output window expand/collapse
 aiToggle.addEventListener('click', () => {
-    if (document.querySelector('footer').classList.contains('expanded')) {
-        aiCollapse();
-    } else {
-        aiExpand();
-    }
+    document.querySelector('footer').classList.contains('expanded') ? aiCollapse() : aiExpand();
 });
 
 window.addEventListener('resize', () => {
     if (document.querySelector('footer').classList.contains('expanded')) {
-        aiExpand(); // Recalculate and update max-height
+        aiExpand();
     }
 });
 
 function scrollToSelectedVerse(topBuffer = true) {
-    // debugger;
     const selectedVerse = document.querySelector('.verse.selected');
-    if (!selectedVerse) return;
-
-    const verseDisplay = document.getElementById('verse-display');
-    if (!verseDisplay) return; // Exit if the container isn't found
-
+    if (!selectedVerse || !verseDisplay) return;
     const lineHeight = parseInt(window.getComputedStyle(selectedVerse).lineHeight) || 20;
     const bufferLines = topBuffer ? 3 : 0;
     const offset = lineHeight * bufferLines;
-
-    // Get position relative to the verse-display container
     const rect = selectedVerse.getBoundingClientRect();
     const containerRect = verseDisplay.getBoundingClientRect();
     const topPosition = rect.top - containerRect.top + verseDisplay.scrollTop;
-
-    // Scroll the verse-display container
-    verseDisplay.scrollTo({
-        top: topPosition - offset,
-        behavior: 'smooth'
-    });
+    verseDisplay.scrollTo({ top: topPosition - offset, behavior: 'smooth' });
 }
 
+// Tab Management
 function adjustTabCount() {
-    let tabCount = aiHistory.length;
-    const tabs = document.querySelectorAll('.tab');
-
-    // Ensure tabCount doesn't exceed 10
-    tabCount = Math.min(tabCount, 10);
-
-    // Show tabs up to tabCount and hide the rest
-    tabs.forEach((tab, index) => {
-        if (index < tabCount) {
-            tab.style.display = 'block'; // Show tab
-        } else {
-            tab.style.display = 'none'; // Hide tab
-        }
+    const tabCount = Math.min(aiHistory.length, 10);
+    document.querySelectorAll('.tab').forEach((tab, index) => {
+        tab.style.display = index < tabCount ? 'block' : 'none';
     });
 }
 
 function setActiveTab(tabNum) {
-    let tabs = document.querySelectorAll('.tab');
-    // Remove active class from all tabs
-    tabs.forEach(t => t.classList.remove('active'));
-    // Add active class to clicked tab
-    tabs[tabNum - 1].classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabNum}"]`).classList.add('active');
     aiExpand();
 }
 
-// Add question Tab handlers
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
-        let tabNum = parseInt(tab.dataset.tab);
+        const tabNum = parseInt(tab.dataset.tab);
         setActiveTab(tabNum);
-        // When tab is clicked
         if (aiHistory[tabNum - 1]) {
             displayResult(aiHistory[tabNum - 1].question, aiHistory[tabNum - 1].answer);
         } else {
@@ -306,13 +199,13 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// Navigation Functions
 function goToNote(index) {
     const notes = getNotes();
     const noteKeys = Object.keys(notes);
     if (index >= 0 && index < noteKeys.length) {
-        const key = noteKeys[index];
-        const parts = key.split('/');
-        document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+        const [book, chapter, verse] = noteKeys[index].split('/');
+        document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
     } else {
         console.error("Invalid note index:", index);
     }
@@ -320,13 +213,12 @@ function goToNote(index) {
 
 function goToTag(index) {
     const tags = JSON.parse(localStorage.getItem('tagStorage') || '{}');
-    const tagKeys = Object.keys(tags); // Original case tags
-    const selectedTag = tagKeys[index]; // e.g., "#SermonOnTheMount"
+    const tagKeys = Object.keys(tags);
+    const selectedTag = tagKeys[index];
     const noteKeys = tags[selectedTag];
-
     if (noteKeys.length === 1) {
-        const parts = noteKeys[0].split('/');
-        document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+        const [book, chapter, verse] = noteKeys[0].split('/');
+        document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
     } else {
         const tagTab = [{
             label: `${selectedTag} Locations`,
@@ -336,41 +228,33 @@ function goToTag(index) {
             }),
             editable: false
         }];
-
         showListPopup(tagTab).then(result => {
             if (result.itemIndex >= 0) {
-                const selectedNoteKey = noteKeys[result.itemIndex];
-                const parts = selectedNoteKey.split('/');
-                document.location = `index.html?book=${encodeURIComponent(parts[0])}&chapter=${parts[1]}&verse=${parts[2]}`;
+                const [book, chapter, verse] = noteKeys[result.itemIndex].split('/');
+                document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
             }
         });
     }
 }
 
 function renameTag(oldTag, newTag) {
-    if (oldTag === newTag) {
+    if (oldTag === newTag || !newTag.startsWith('#')) {
+        console.log("Invalid rename:", oldTag, newTag);
         return false;
     }
-    if (!newTag.startsWith('#')) {
-        console.log("Invalid rename: new tag must start with '#'");
-        return false;
-    }
-    const notes = getNotes(); // { "1 Corinthians/4/2": "This note #judgment", ... }
+    const notes = getNotes();
     let tagFound = false;
     const tagRegex = new RegExp(`${oldTag}\\b`, 'gi');
-
     Object.entries(notes).forEach(([key, note]) => {
         if (tagRegex.test(note)) {
             tagFound = true;
             notes[key] = note.replaceAll(tagRegex, newTag);
         }
     });
-
     if (!tagFound) {
-        console.log(`Tag '${oldTag}' not found in any notes`);
+        console.log(`Tag '${oldTag}' not found`);
         return false;
     }
-
     localStorage.setItem('bibleNotes', JSON.stringify(notes));
     return true;
 }
@@ -378,15 +262,14 @@ function renameTag(oldTag, newTag) {
 function constructTabs() {
     const notes = getNotes();
     const tagStorage = {};
-    const tagCaseMap = {}; // Maps lowercase tag to preferred case
-
+    const tagCaseMap = {};
     Object.entries(notes).forEach(([key, note]) => {
         const tags = (note.match(/#\w+\b/g) || []);
         tags.forEach(tag => {
-            const lowerTag = tag.toLowerCase(); // For case-insensitive comparison
+            const lowerTag = tag.toLowerCase();
             if (!tagCaseMap[lowerTag]) {
-                tagCaseMap[lowerTag] = tag; // Store first-seen case
-                tagStorage[tag] = []; // Use original case as key
+                tagCaseMap[lowerTag] = tag;
+                tagStorage[tag] = [];
             }
             const preferredTag = tagCaseMap[lowerTag];
             if (!tagStorage[preferredTag].includes(key)) {
@@ -394,20 +277,10 @@ function constructTabs() {
             }
         });
     });
-
     localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
-
     return [
-        {
-            label: "questions",
-            items: savedQuestions,
-            editable: true
-        },
-        {
-            label: "notes",
-            items: getNotesList(),
-            editable: false
-        },
+        { label: "questions", items: savedQuestions, editable: true },
+        { label: "notes", items: getNotesList(), editable: false },
         {
             label: "tags",
             items: Object.keys(tagStorage).map(tag => ({
@@ -421,22 +294,10 @@ function constructTabs() {
             items: writings.map(writing => ({
                 label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
                 handler: () => {
-                    // Fetch and display the markdown file content
                     fetch(writing.filename)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Failed to load ${writing.filename}`);
-                            }
-                            return response.text();
-                        })
-                        .then(content => {
-                            // debugger; // This will now fire when the fetch succeeds
-                            showBook(writing.label, content);
-                        })
-                        .catch(error => {
-                            console.error('Error loading writing:', error);
-                            showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error.message}`);
-                        });
+                        .then(response => response.ok ? response.text() : Promise.reject(`Failed to load ${writing.filename}`))
+                        .then(content => showBook(writing.label, content))
+                        .catch(error => showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error}`));
                 }
             })),
             editable: false
@@ -450,27 +311,11 @@ document.getElementById('show-list').addEventListener('click', async () => {
     if (result.itemIndex >= 0) {
         console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
         switch (result.tabIndex) {
-            case 0: // Questions
-                const question = savedQuestions[result.itemIndex];
-                displayResult(question.label, question.data);
-                break;
-            case 1: // Notes
-                goToNote(result.itemIndex);
-                break;
-            case 2: // Tags
-                let newLabel = tabs[2].items[result.itemIndex].label;
-                goToTag(result.itemIndex);
-                break;
-            case 3: // Writings
-                const writing = tabs[3].items[result.itemIndex];
-                if (writing.handler) {
-                    writing.handler(); // Execute the handler to fetch and display the writing
-                }
-                break;
-            default:
-                console.log("Unhandled tab index:", result.tabIndex);
+            case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
+            case 1: goToNote(result.itemIndex); break;
+            case 2: goToTag(result.itemIndex); break;
+            case 3: tabs[3].items[result.itemIndex].handler(); break;
+            default: console.log("Unhandled tab index:", result.tabIndex);
         }
-    } else {
-        console.log("Popup canceled");
     }
 });

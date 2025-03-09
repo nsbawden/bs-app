@@ -26,7 +26,7 @@
             </select>
             <button id="show-list">≡</button>
         </div>
-            <span class="gear-btn" id="settings-btn">⚙️</span>
+        <span class="gear-btn" id="settings-btn">⚙️</span>
     </div>
     <div class="container">
         <main id="verse-display"></main>
@@ -59,33 +59,49 @@
         <button id="ai-response-submit">Submit</button>
     </div>
     <div id="settings-popup" class="popup hidden">
+        <button id="settings-close" class="settings-close-btn">X</button>
         <h3>Settings</h3>
-        <label>Max AI History Length: <input type="number" id="max-history-length" value="10" min="1"></label>
-        <label>Temperature: <input type="number" id="temperature" value="0.7" step="0.1" min="0" max="2"> (0-2,
-            lower =
-            more strict)</label>
-        <label>OpenAI Model:
-            <select id="openai-model">
-                <option value="gpt-3.5-turbo">GPT-3.5-Turbo (fast, cheap)</option>
-                <option value="gpt-4o-mini">GPT-4o-Mini (smarter, affordable)</option>
-                <option value="gpt-4o">GPT-4o (advanced, costly)</option>
-            </select>
-        </label>
-        <label>Max Tokens: <input type="number" id="max-tokens" value="1000" min="50" max="4096"> (50-4096, output
-            length limit)</label>
-        <label>OpenAI API Key: <input type="text" id="openai-api-key"> <a href="apikey.html" target="_blank">Get an
-                API
-                Key</a></label>
-        <br>
-        <button id="save-settings">Save</button>
-        <button id="close-settings">Close</button>
+        <div class="settings-content">
+            <div class="settings-list">
+                <div class="setting-item">
+                    <label for="max-history-length">Max AI History Length</label>
+                    <input type="number" id="max-history-length" min="1">
+                    <p class="setting-info">Number of AI responses to keep in history (minimum 1).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="temperature">Temperature</label>
+                    <input type="number" id="temperature" step="0.1" min="0" max="2">
+                    <p class="setting-info">Controls AI randomness (0-2, lower = more strict).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="openai-model">OpenAI Model</label>
+                    <select id="openai-model">
+                        <option value="gpt-3.5-turbo">GPT-3.5-Turbo (fast, cheap)</option>
+                        <option value="gpt-4o-mini">GPT-4o-Mini (smarter, affordable)</option>
+                        <option value="gpt-4o">GPT-4o (advanced, costly)</option>
+                    </select>
+                    <p class="setting-info">Choose the AI model for responses.</p>
+                </div>
+                <div class="setting-item">
+                    <label for="max-tokens">Max Tokens</label>
+                    <input type="number" id="max-tokens" min="50" max="4096">
+                    <p class="setting-info">Limits AI output length (50-4096 tokens).</p>
+                </div>
+                <div class="setting-item">
+                    <label for="openai-api-key">OpenAI API Key</label>
+                    <input type="text" id="openai-api-key">
+                    <p class="setting-info">Your API key for OpenAI. <a href="apikey.html" target="_blank">Get one</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="config.js" defer></script>
+    <script src="settings.js" defer></script>
     <script src="ui.js" defer></script>
     <script src="bible.js" defer></script>
     <script src="ai.js" defer></script>
     <script src="listPopup.js" defer></script>
-    </div>
 </body>
 
 </html>

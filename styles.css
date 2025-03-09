@@ -230,43 +230,111 @@ footer.expanded #ai-output-container {
     padding: 20px;
     border: 1px solid #4A704A;
     z-index: 1000;
+    width: 400px;
+    min-width: 350px;
+    max-height: 80vh;
 }
 
 .popup.hidden {
     display: none;
 }
 
-#settings-popup input[type=number] {
-    width: 4em;
+/* Updated Settings Popup Styles */
+#settings-popup {
+    /* Base styles only, no display here */
+    padding: 20px;
+    padding-right: 5px;
 }
 
-#ai-response-input,
-#max-history-length,
-#temperature,
-#max-tokens,
-#openai-model {
+#settings-popup:not(.hidden) {
+    display: flex;
+    /* Apply flex only when not hidden */
+    flex-direction: column;
+}
+
+#settings-popup h3 {
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+
+.settings-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 8px;
+    background-color: #4A704A;
+    color: #F0F0F0;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 1100;
+    /* Above scrollable content */
+}
+
+.settings-content {
+    flex: 1;
+    overflow-y: auto;
+    /* Scroll only this section */
+    max-height: calc(80vh - 60px);
+    /* Account for header height (h3 + padding) */
+}
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #4A704A;
+    /* Thin separator */
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+    /* No separator on last item */
+}
+
+.setting-item label {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.setting-item input,
+.setting-item select {
+    padding: 5px;
+    background-color: #F0F0F0;
+    color: #1A1A1A;
+    border: none;
+    width: 95%;
+    box-sizing: border-box;
+}
+
+.setting-item input[type="number"] {
+    width: 100px;
+    /* Slightly wider than before */
+}
+
+.setting-item .setting-info {
+    font-size: 0.9em;
+    color: #d0c8a0;
+    margin-top: 5px;
+    line-height: 1.2;
+}
+
+#ai-response-input {
+    height: 100px;
+    width: 100%;
     padding: 5px;
     background-color: #F0F0F0;
     color: #1A1A1A;
     border: none;
 }
 
-#ai-response-input {
-    height: 100px;
-}
-
-#settings-popup h3 {
-    margin: 0 0 10px 0;
-}
-
-#settings-popup label {
-    display: block;
-    margin-bottom: 10px;
-}
-
-#ai-response-submit,
-#save-settings,
-#close-settings {
+#ai-response-submit {
     margin-top: 10px;
     padding: 5px 10px;
     background-color: #4A704A;
@@ -457,7 +525,6 @@ footer.expanded #ai-output-container {
         width: 90%;
         max-width: 400px;
         max-height: 80vh;
-        overflow-y: auto;
         padding: 15px;
     }
 
@@ -472,5 +539,13 @@ footer.expanded #ai-output-container {
     .tab-btn {
         padding: 5px 10px;
         font-size: 14px;
+    }
+
+    #settings-popup {
+        width: 90%;
+    }
+
+    .setting-item input[type="number"] {
+        width: 80px;
     }
 }

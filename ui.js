@@ -12,6 +12,10 @@ const aiToggle = document.getElementById('ai-toggle');
 const aiPopup = document.getElementById('ai-popup');
 const aiResponseInput = document.getElementById('ai-response-input');
 const aiResponseSubmit = document.getElementById('ai-response-submit');
+const topBarToggle = document.getElementById('top-bar-toggle');
+const topBarControls = document.querySelector('.top-bar-controls');
+const topBarSummary = document.getElementById('top-bar-summary');
+const topBar = document.querySelector('.top-bar');
 
 // Book/Chapter/Verse selection
 bookSelect.addEventListener('change', () => {
@@ -19,17 +23,20 @@ bookSelect.addEventListener('change', () => {
     state.currentVerse.chapter = 1;
     state.currentVerse.verse = 1;
     updateChapters();
+    updateTopBarSummary();
 });
 
 chapterSelect.addEventListener('change', () => {
     state.currentVerse.chapter = parseInt(chapterSelect.value);
     state.currentVerse.verse = 1;
     updateChapters();
+    updateTopBarSummary();
 });
 
 verseSelect.addEventListener('change', () => {
     state.currentVerse.verse = parseInt(verseSelect.value);
     refreshDisplay();
+    updateTopBarSummary();
 });
 
 versionSelect.addEventListener('change', () => {
@@ -40,6 +47,7 @@ versionSelect.addEventListener('change', () => {
             state.currentVerse.verse = 1;
         }
         refreshDisplay();
+        updateTopBarSummary();
     });
 });
 
@@ -134,8 +142,8 @@ function aiExpand() {
     document.getElementById('ai-toggle').textContent = '▼';
 
     const topBar = document.querySelector('.top-bar');
-    const topBarHeight = topBar.offsetHeight; // Dynamic height
-    const mainVisibleHeight = 100; // Desired visible main height when footer expands
+    const topBarHeight = topBar.offsetHeight;
+    const mainVisibleHeight = 100;
     const footerPadding = 20;
     const aiInputHeight = document.querySelector('.ai-input-container').offsetHeight;
     const tabsHeight = document.querySelector('.tabs-container').offsetHeight;
@@ -161,10 +169,44 @@ aiToggle.addEventListener('click', () => {
 
 window.addEventListener('resize', () => {
     if (document.querySelector('footer').classList.contains('expanded')) {
-        aiExpand(); // Recalculate heights on resize
+        aiExpand();
     }
-    adjustContainerMargin(); // Sync container position
+    adjustContainerMargin();
 });
+
+// Top Bar Toggle for Mobile
+function updateTopBarSummary() {
+    topBarSummary.textContent = `${state.currentVerse.book} ${state.currentVerse.chapter}:${state.currentVerse.verse} (${state.bibleVersion.toUpperCase()})`;
+}
+
+function toggleTopBar(e) {
+    // Prevent toggle if clicking the list button or within expanded controls
+    if (e.target.id === 'show-list' || topBarControls.contains(e.target)) return;
+    topBarControls.classList.toggle('expanded');
+    topBarControls.classList.toggle('hidden');
+    topBarToggle.textContent = topBarControls.classList.contains('expanded') ? '▶' : '▼';
+    adjustContainerMargin();
+}
+
+topBar.addEventListener('click', toggleTopBar);
+
+document.getElementById('show-list').addEventListener('click', async () => {
+    const tabs = constructTabs();
+    const result = await showListPopup(tabs);
+    if (result.itemIndex >= 0) {
+        console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
+        switch (result.tabIndex) {
+            case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
+            case 1: goToNote(result.itemIndex); break;
+            case 2: goToTag(result.itemIndex); break;
+            case 3: tabs[3].items[result.itemIndex].handler(); break;
+            default: console.log("Unhandled tab index:", result.tabIndex);
+        }
+    }
+});
+
+// Initial summary
+updateTopBarSummary();
 
 function scrollToSelectedVerse(topBuffer = true) {
     const selectedVerse = document.querySelector('.verse.selected');
@@ -310,21 +352,6 @@ function constructTabs() {
     ];
 }
 
-document.getElementById('show-list').addEventListener('click', async () => {
-    const tabs = constructTabs();
-    const result = await showListPopup(tabs);
-    if (result.itemIndex >= 0) {
-        console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
-        switch (result.tabIndex) {
-            case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
-            case 1: goToNote(result.itemIndex); break;
-            case 2: goToTag(result.itemIndex); break;
-            case 3: tabs[3].items[result.itemIndex].handler(); break;
-            default: console.log("Unhandled tab index:", result.tabIndex);
-        }
-    }
-});
-
 // Adjust container margin and height based on top bar
 function adjustContainerMargin() {
     const topBar = document.querySelector('.top-bar');
@@ -335,5 +362,8 @@ function adjustContainerMargin() {
 }
 
 // Run on load and resize
-window.addEventListener('DOMContentLoaded', adjustContainerMargin);
+window.addEventListener('DOMContentLoaded', () => {
+    adjustContainerMargin();
+    updateTopBarSummary();
+});
 window.addEventListener('resize', adjustContainerMargin);

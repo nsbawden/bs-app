@@ -11,22 +11,26 @@
 
 <body class="sans-serif-1">
     <div class="top-bar">
-        <div class="select-group">
-            <select id="book-select"></select>
-            <select id="chapter-select"></select>
-            <select id="verse-select"></select>
-            <select id="version-select">
-                <option value="esv">ESV</option>
-                <option value="asv">ASV</option>
-                <option value="kjv">KJV</option>
-                <option value="web">WEB</option>
-                <option value="bbe">BBE</option>
-                <option value="dra">DRA</option>
-                <option value="ylt">YLT</option>
-            </select>
-            <button id="show-list">≡</button>
+        <span id="top-bar-summary"></span>
+        <button id="top-bar-toggle">▼</button>
+        <button id="show-list">≡</button>
+        <div class="top-bar-controls hidden">
+            <div class="select-group">
+                <select id="book-select"></select>
+                <select id="chapter-select"></select>
+                <select id="verse-select"></select>
+                <select id="version-select">
+                    <option value="esv">ESV</option>
+                    <option value="asv">ASV</option>
+                    <option value="kjv">KJV</option>
+                    <option value="web">WEB</option>
+                    <option value="bbe">BBE</option>
+                    <option value="dra">DRA</option>
+                    <option value="ylt">YLT</option>
+                </select>
+            </div>
+            <span class="gear-btn" id="settings-btn">⚙️</span>
         </div>
-        <span class="gear-btn" id="settings-btn">⚙️</span>
     </div>
     <div class="container">
         <main id="verse-display"></main>

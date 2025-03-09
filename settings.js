@@ -8,6 +8,20 @@ const openaiModelSelect = document.getElementById('openai-model');
 const maxTokensInput = document.getElementById('max-tokens');
 const openaiApiKeyInput = document.getElementById('openai-api-key');
 
+function addSettingsListener(id) {
+    const elem = document.getElemmentById(id);
+    elem.addEventListener('change', saveSettings);
+    elem.addEventListener('blur', saveSettings);
+}
+
+function getSettingsLocalValue(id) {
+    document.getElementById(id).value = localStorage.getItem(id) || '';
+}
+
+function setSettingsLocalValue(id) {
+    localStorage.setItem(id, document.getElementById(id).value || '');
+}
+
 // Open settings popup and load current values
 settingsBtn.addEventListener('click', () => {
     loadSettings();
@@ -26,6 +40,8 @@ function loadSettings() {
     openaiModelSelect.value = openaiSettings.model;
     maxTokensInput.value = openaiSettings.maxTokens;
     openaiApiKeyInput.value = localStorage.getItem('openAI_apiKey') || '';
+    getSettingsLocalValue('bibleApiKey');
+    getSettingsLocalValue('esvApiKey');
 }
 
 // Save settings and clamp values
@@ -49,6 +65,9 @@ function saveSettings() {
     }
     localStorage.setItem('maxHistoryLength', newMaxHistoryLength);
 
+    setSettingsLocalValue('bibleApiKey');
+    setSettingsLocalValue('esvApiKey');
+
     saveState(); // Assuming this persists state elsewhere
 }
 
@@ -67,3 +86,7 @@ maxTokensInput.addEventListener('blur', saveSettings);
 
 openaiApiKeyInput.addEventListener('change', saveSettings);
 openaiApiKeyInput.addEventListener('blur', saveSettings);
+
+addSettingsListener('bibleApiKey');
+addSettingsListener('esvApiKey');
+

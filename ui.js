@@ -132,12 +132,15 @@ function aiExpand() {
     const footer = document.querySelector('footer');
     footer.classList.add('expanded');
     document.getElementById('ai-toggle').textContent = '▼';
-    const topBarHeight = 40;
-    const mainVisibleHeight = 100;
+
+    const topBar = document.querySelector('.top-bar');
+    const topBarHeight = topBar.offsetHeight; // Dynamic height
+    const mainVisibleHeight = 100; // Desired visible main height when footer expands
     const footerPadding = 20;
     const aiInputHeight = document.querySelector('.ai-input-container').offsetHeight;
     const tabsHeight = document.querySelector('.tabs-container').offsetHeight;
     const availableHeight = window.innerHeight - topBarHeight - mainVisibleHeight - footerPadding - aiInputHeight - tabsHeight;
+
     aiOutput.style.setProperty('--ai-output-max-height', `${availableHeight}px`);
     aiOutput.style.setProperty('--ai-output-overflow', 'auto');
     setTimeout(() => scrollToSelectedVerse(false), 200);
@@ -147,6 +150,7 @@ function aiCollapse() {
     const footer = document.querySelector('footer');
     footer.classList.remove('expanded');
     document.getElementById('ai-toggle').textContent = '▲';
+
     aiOutput.style.setProperty('--ai-output-max-height', '3em');
     aiOutput.style.setProperty('--ai-output-overflow', 'hidden');
 }
@@ -157,8 +161,9 @@ aiToggle.addEventListener('click', () => {
 
 window.addEventListener('resize', () => {
     if (document.querySelector('footer').classList.contains('expanded')) {
-        aiExpand();
+        aiExpand(); // Recalculate heights on resize
     }
+    adjustContainerMargin(); // Sync container position
 });
 
 function scrollToSelectedVerse(topBuffer = true) {
@@ -319,3 +324,16 @@ document.getElementById('show-list').addEventListener('click', async () => {
         }
     }
 });
+
+// Adjust container margin and height based on top bar
+function adjustContainerMargin() {
+    const topBar = document.querySelector('.top-bar');
+    const container = document.querySelector('.container');
+    const topBarHeight = topBar.offsetHeight;
+    container.style.marginTop = `${topBarHeight}px`;
+    container.style.height = `calc(100vh - ${topBarHeight}px)`;
+}
+
+// Run on load and resize
+window.addEventListener('DOMContentLoaded', adjustContainerMargin);
+window.addEventListener('resize', adjustContainerMargin);

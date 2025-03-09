@@ -34,7 +34,8 @@ body {
     align-items: center;
     justify-content: space-between;
     z-index: 1000;
-    height: 40px;
+    min-height: 40px;
+    /* Changed from height to min-height to allow growth */
     box-sizing: border-box;
 }
 
@@ -53,7 +54,9 @@ body {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 40px);
+    /* Default, adjusted by JS */
     margin-top: 40px;
+    /* Default, adjusted by JS */
     box-sizing: border-box;
 }
 
@@ -70,6 +73,7 @@ select {
 
 main {
     flex: 1 1 auto;
+    /* Grows when footer minimized */
     padding: 20px;
     overflow-y: auto;
     box-sizing: border-box;
@@ -119,12 +123,14 @@ footer {
     flex-direction: column;
     gap: 5px;
     flex: 0 0 auto;
+    /* Minimized by default */
     box-sizing: border-box;
     transition: flex 0.3s ease;
 }
 
 footer.expanded {
     flex: 1 1 auto;
+    /* Expands when toggled */
 }
 
 .ai-input-container {
@@ -241,14 +247,12 @@ footer.expanded #ai-output-container {
 
 /* Updated Settings Popup Styles */
 #settings-popup {
-    /* Base styles only, no display here */
     padding: 20px;
     padding-right: 5px;
 }
 
 #settings-popup:not(.hidden) {
     display: flex;
-    /* Apply flex only when not hidden */
     flex-direction: column;
 }
 
@@ -268,15 +272,12 @@ footer.expanded #ai-output-container {
     cursor: pointer;
     font-size: 14px;
     z-index: 1100;
-    /* Above scrollable content */
 }
 
 .settings-content {
     flex: 1;
     overflow-y: auto;
-    /* Scroll only this section */
     max-height: calc(80vh - 60px);
-    /* Account for header height (h3 + padding) */
 }
 
 .settings-list {
@@ -290,12 +291,10 @@ footer.expanded #ai-output-container {
     flex-direction: column;
     padding-bottom: 10px;
     border-bottom: 1px solid #4A704A;
-    /* Thin separator */
 }
 
 .setting-item:last-child {
     border-bottom: none;
-    /* No separator on last item */
 }
 
 .setting-item label {
@@ -315,7 +314,6 @@ footer.expanded #ai-output-container {
 
 .setting-item input[type="number"] {
     width: 100px;
-    /* Slightly wider than before */
 }
 
 .setting-item .setting-info {
@@ -479,7 +477,9 @@ footer.expanded #ai-output-container {
 
     .container {
         margin-top: 60px;
+        /* Adjusted by JS */
         height: calc(100vh - 60px);
+        /* Adjusted by JS */
     }
 
     main {

@@ -158,6 +158,7 @@ footer.expanded {
 
 .tabs-container {
     display: flex;
+    display: none;
     justify-content: space-between;
     width: 97%;
     margin: 1px 0;

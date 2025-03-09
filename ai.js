@@ -110,11 +110,33 @@ const aiModules = {
 
 const currentAIModule = aiModules.openAI;
 
+function insertBefore(marker, originalText, textToInsert) {
+    const lmarker = marker.toLowerCase();
+    const ltx = originalText.toLowerCase();
+    const index = ltx.indexOf(lmarker);
+
+    // If the marker isn't found, return the original text unchanged
+    if (index === -1) {
+        return originalText;
+    }
+
+    // Split the text into before and after the marker
+    const before = originalText.substring(0, index);
+    const after = originalText.substring(index);
+
+    // Insert the new text with proper Markdown formatting (e.g., a new line)
+    return `${before}${textToInsert}${after}`;
+}
+
 async function queryAI(question, context, timer, shouldCacheTranslation = false) {
     try {
-        let response;
+        let response = await currentAIModule.query(question, context);
+
+        if (context.verseText) {
+            response = insertBefore('**Literal', response, context.verseText);
+        }
+
         if (shouldCacheTranslation) {
-            response = await currentAIModule.query(question, context);
             // Cache the translation result
             const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
             translationCache[cacheKey] = {
@@ -122,12 +144,10 @@ async function queryAI(question, context, timer, shouldCacheTranslation = false)
                 timestamp: Date.now() // For FIFO pruning
             };
             saveTranslationCache(); // Persist the updated cache
-        } else {
-            response = await currentAIModule.query(question, context);
         }
 
         clearInterval(timer); // Stop the timer when response is received
-        displayResult(question, response);
+        displayResult(context.questionSuffix ? `${question}${context.questionSuffix}`: question, response);
 
         // Push to the front of the history stack
         const maxHistoryLength = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;

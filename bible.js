@@ -309,6 +309,18 @@ window.goToPrevious = function () {
     populateSelectors();
 };
 
+function getSelectedVerseText() {
+    const selectedVerse = document.querySelector('.verse.selected');
+    if (!selectedVerse) {
+        return "";
+    }
+    const verseTextElement = selectedVerse.querySelector('.verse-text');
+    if (!verseTextElement) {
+        return "";
+    }
+    return verseTextElement.textContent.trim();
+}
+
 function showNotePopup(reference, verseDiv) {
     const existingNote = getNotes()[reference];
     const existingPopup = document.querySelector('.note-popup');

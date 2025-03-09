@@ -145,10 +145,16 @@ function submitAITranslate() {
         version: state.bibleVersion.toUpperCase(),
         system: "format answer in Markdown",
         temperature: 1
+        // questionSuffix,
+        // verseText
     };
 
-    const verseReference = `${context.book} ${context.chapter}:${context.verse}`;
+    const verseReference = `${context.book} ${context.chapter}:${context.verse} (${context.version})`;
     const fullQuestion = constructTranslationPrompt(verseReference);
+
+    // Add the verse as the questionSuffix
+    // context.questionSuffix = `<br><br><b>Verse:</b> ${getSelectedVerseText()}`;
+    // context.verseText = `**Verse:**\n${getSelectedVerseText()}\n\n`;
 
     // Create a unique cache key based on book, chapter, verse, and temperature
     const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
@@ -157,8 +163,10 @@ function submitAITranslate() {
     loadTranslationCache(); // Ensure cache is loaded
     if (translationCache[cacheKey]) {
         console.log(`Cache hit for translation: ${cacheKey}`);
+        let response = translationCache[cacheKey].response;
+        console.log(response);
         // Use displayResult to process cached response consistently
-        displayResult(fullQuestion, translationCache[cacheKey].response);
+        displayResult(context.questionSuffix ? `${fullQuestion}${context.questionSuffix}` : fullQuestion, response);
         return; // Exit early after displaying cached result
     }
 
@@ -176,12 +184,8 @@ function submitAITranslate() {
     queryAI(fullQuestion, context, timer, true); // true indicates translation caching
 }
 
-// function constructTranslationPrompt(verseReference) {
-//     return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots but adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal bias; use neutral swaps (e.g., 'children' for 'things born') for readability. Give both literal and easily readable final translations ensuring the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
-// }
-
 function constructTranslationPrompt(verseReference) {
-    return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal bias; use neutral swaps (e.g., 'children' for 'things born') for readability. Give both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
+    return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal and modern bias; use neutral swaps (e.g., 'children' for 'things born') for readability. At end give original English verse and both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
 }
 
 

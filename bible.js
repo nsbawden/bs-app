@@ -387,10 +387,21 @@ function showNotePopup(reference, verseSpan = null, event = null) {
     cancelButton.style.color = '#F0F0F0';
     cancelButton.style.border = 'none';
     cancelButton.style.padding = '5px 10px';
+    cancelButton.style.marginRight = '5px';
+
+    const bookmarks = getBookmarks();
+    const isBookmarked = bookmarks.includes(reference);
+    const bookmarkButton = document.createElement('button');
+    bookmarkButton.textContent = isBookmarked ? 'Remove Bookmark' : 'Bookmark';
+    bookmarkButton.style.background = '#4A704A';
+    bookmarkButton.style.color = '#F0F0F0';
+    bookmarkButton.style.border = 'none';
+    bookmarkButton.style.padding = '5px 10px';
 
     popup.appendChild(textarea);
     popup.appendChild(saveButton);
     popup.appendChild(cancelButton);
+    popup.appendChild(bookmarkButton);
     document.body.appendChild(popup);
 
     // Positioning logic using the verse-num element
@@ -438,6 +449,15 @@ function showNotePopup(reference, verseSpan = null, event = null) {
         refreshDisplay();
     };
 
+    const bookmarkAndClose = () => {
+        if (isBookmarked) {
+            removeBookmark(reference); // Remove the bookmark
+        } else {
+            addBookmark(reference); // Add the bookmark
+        }
+        cleanupAndRemove(); // Close the popup
+    };
+
     const cleanupAndRemove = () => {
         document.removeEventListener('keydown', handleKeyPress);
         popup.remove();
@@ -454,6 +474,7 @@ function showNotePopup(reference, verseSpan = null, event = null) {
 
     saveButton.addEventListener('click', saveAndClose);
     cancelButton.addEventListener('click', cleanupAndRemove);
+    bookmarkButton.addEventListener('click', bookmarkAndClose);
     document.addEventListener('keydown', handleKeyPress);
 
     // Close when clicking outside

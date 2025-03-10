@@ -384,7 +384,7 @@ function showVerseMenu(verseSpan, event) {
     const menuItems = [
         {
             text: isBookmarked ? 'Remove Bookmark' : 'Bookmark',
-            action: isBookmarked ? () => removeBookmark(reference) : () => bookmarkVerse(verseNumber)
+            action: isBookmarked ? () => removeBookmark(reference) : () => addBookmark(reference)
         },
         { text: 'Add/Edit note', action: () => showNotePopup(reference, verseSpan) },
         { text: 'Copy to clipboard', action: () => copyVerseToClipboard(verseSpan) },
@@ -436,8 +436,7 @@ function saveBookmarks(bookmarks) {
     localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
 }
 
-function bookmarkVerse(verseNumber) {
-    const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNumber}`;
+function addBookmark(reference) {
     const bookmarks = getBookmarks();
     if (!bookmarks.includes(reference)) {
         bookmarks.push(reference);

@@ -98,8 +98,9 @@ p {
 }
 
 .has-note .verse-num::after {
-    content: '📝';
-    font-size: 0.8em;
+    content: '🗎';
+    color: #FFE5E5;
+    font-size: 1em;
     margin-left: 2px;
     vertical-align: top;
 }

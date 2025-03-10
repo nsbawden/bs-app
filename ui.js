@@ -51,6 +51,7 @@ versionSelect.addEventListener('change', () => {
     });
 });
 
+// Single click on a verse or the verse view
 verseDisplay.addEventListener('click', (e) => {
     aiCollapse();
     const verseSpan = e.target.closest('.verse');
@@ -60,6 +61,23 @@ verseDisplay.addEventListener('click', (e) => {
         state.currentVerse.verse = parseInt(verseSpan.dataset.verse);
         verseSelect.value = state.currentVerse.verse;
         saveState();
+    }
+});
+
+verseDisplay.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey) {
+        // Clear any selection caused by Shift + right-click
+        window.getSelection().removeAllRanges();
+        // Allow default browser context menu without selection
+        return;
+    }
+    e.preventDefault(); // Prevent the default context menu otherwise
+    const verseSpan = e.target.closest('.verse');
+    if (verseSpan) {
+        showVerseMenu(verseSpan, e);
+        setTimeout(() => {
+            window.getSelection().removeAllRanges();
+        }, 0);
     }
 });
 
@@ -180,8 +198,8 @@ function updateTopBarSummary() {
 }
 
 function toggleTopBar(e) {
-    // Prevent toggle if clicking the list button or within expanded controls
-    if (e.target.id === 'show-list' || topBarControls.contains(e.target)) return;
+    // Prevent toggle if clicking the list button or settings btn or within expanded controls
+    if (e.target.id === 'show-list' || e.target.id === 'settings-btn' || topBarControls.contains(e.target)) return;
     topBarControls.classList.toggle('expanded');
     topBarControls.classList.toggle('hidden');
     topBarToggle.textContent = topBarControls.classList.contains('expanded') ? '▶' : '▼';
@@ -350,6 +368,109 @@ function constructTabs() {
             editable: false
         }
     ];
+}
+
+function showVerseMenu(verseSpan, event) {
+    const existingPopup = document.querySelector('.verse-popup');
+    if (existingPopup) existingPopup.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'verse-popup';
+    const verseNumber = verseSpan.dataset.verse;
+    const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNumber}`;
+    const bookmarks = getBookmarks();
+    const isBookmarked = bookmarks.includes(reference);
+
+    const menuItems = [
+        {
+            text: isBookmarked ? 'Remove Bookmark' : 'Bookmark',
+            action: isBookmarked ? () => removeBookmark(reference) : () => bookmarkVerse(verseNumber)
+        },
+        { text: 'Add/Edit note', action: () => showNotePopup(reference, verseSpan) },
+        { text: 'Copy to clipboard', action: () => copyVerseToClipboard(verseSpan) },
+        { text: 'Clear All Bookmarks', action: () => clearBookmarks() }
+    ];
+
+    menuItems.forEach(item => {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'popup-item';
+        menuItem.textContent = item.text;
+        menuItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            item.action();
+            popup.remove();
+        });
+        popup.appendChild(menuItem);
+    });
+
+    popup.style.position = 'absolute';
+    popup.style.left = `${event.pageX}px`;
+    popup.style.top = `${event.pageY}px`;
+
+    document.body.appendChild(popup);
+    const popupRect = popup.getBoundingClientRect();
+    if (popupRect.right > window.innerWidth) {
+        popup.style.left = `${window.innerWidth - popupRect.width}px`;
+    }
+    if (popupRect.bottom > window.innerHeight) {
+        popup.style.top = `${event.pageY - popupRect.height}px`;
+    }
+
+    const closePopup = (e) => {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('click', closePopup);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closePopup);
+    }, 0);
+}
+
+function getBookmarks() {
+    const bookmarks = localStorage.getItem('bookmarks');
+    return bookmarks ? JSON.parse(bookmarks) : [];
+}
+
+function saveBookmarks(bookmarks) {
+    localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+}
+
+function bookmarkVerse(verseNumber) {
+    const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNumber}`;
+    const bookmarks = getBookmarks();
+    if (!bookmarks.includes(reference)) {
+        bookmarks.push(reference);
+        saveBookmarks(bookmarks);
+        console.log(`Bookmarked ${reference}`);
+        rebuildBookmarksList(); // Update the list immediately
+    } else {
+        console.log(`${reference} is already bookmarked`);
+    }
+}
+
+// Function to remove a bookmark
+function removeBookmark(reference) {
+    const bookmarks = getBookmarks();
+    const updatedBookmarks = bookmarks.filter(b => b !== reference);
+    saveBookmarks(updatedBookmarks);
+    console.log(`Removed bookmark ${reference}`);
+    rebuildBookmarksList(); // Update the list immediately
+}
+
+// Function to clear all bookmarks
+function clearBookmarks() {
+    saveBookmarks([]);
+    console.log('Cleared all bookmarks');
+    rebuildBookmarksList(); // Update the list immediately
+}
+
+function copyVerseToClipboard(verseSpan) {
+    const verseTextSpan = verseSpan.querySelector('.verse-text');
+    const text = verseTextSpan ? verseTextSpan.textContent : verseSpan.textContent;
+    navigator.clipboard.writeText(text)
+        .then(() => console.log(`Copied verse ${verseSpan.dataset.verse} to clipboard`))
+        .catch(err => console.error('Failed to copy: ', err));
 }
 
 // Adjust container margin and height based on top bar

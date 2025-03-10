@@ -1,92 +1,160 @@
 // settings.js
-const settingsBtn = document.getElementById('settings-btn');
-const settingsPopup = document.getElementById('settings-popup');
-const settingsCloseBtn = document.getElementById('settings-close');
-const maxHistoryInput = document.getElementById('max-history-length');
-const temperatureInput = document.getElementById('temperature');
-const openaiModelSelect = document.getElementById('openai-model');
-const maxTokensInput = document.getElementById('max-tokens');
-const openaiApiKeyInput = document.getElementById('openai-api-key');
+class SettingsManager {
+    constructor(defaults, state) {
+        this.defaults = defaults;
+        this.state = state; // Reference to the state from config.js
+        this.elements = new Map();
+        this.settingsConfig = {
+            'settings-btn': { events: { 'click': this.openPopup.bind(this) } },
+            'settings-close': { events: { 'click': this.closePopup.bind(this) } },
+            'max-history-length': {
+                type: 'number',
+                min: 1,
+                max: 1000,
+                defaultKey: 'maxHistoryLength',
+                setter: (val) => parseInt(val) || this.defaults.maxHistoryLength,
+                storage: 'state'
+            },
+            'temperature': {
+                type: 'number',
+                min: 0,
+                max: 2,
+                defaultKey: 'openaiSettings.temperature',
+                setter: (val) => Math.max(0, Math.min(2, parseFloat(val) || this.defaults.openaiSettings.temperature)),
+                storage: 'state'
+            },
+            'openai-model': {
+                type: 'select',
+                defaultKey: 'openaiSettings.model',
+                storage: 'state'
+            },
+            'max-tokens': {
+                type: 'number',
+                min: 50,
+                max: 4096,
+                defaultKey: 'openaiSettings.maxTokens',
+                setter: (val) => Math.max(50, Math.min(4096, parseInt(val) || this.defaults.openaiSettings.maxTokens)),
+                storage: 'state'
+            },
+            'openAIApiKey': {
+                type: 'text',
+                setter: (val) => val.trim(),
+                storage: 'local'
+            },
+            'bibleApiKey': {
+                type: 'text',
+                storage: 'local'
+            },
+            'esvApiKey': {
+                type: 'text',
+                storage: 'local'
+            }
+        };
 
-function addSettingsListener(id) {
-    const elem = document.getElemmentById(id);
-    elem.addEventListener('change', saveSettings);
-    elem.addEventListener('blur', saveSettings);
-}
-
-function getSettingsLocalValue(id) {
-    document.getElementById(id).value = localStorage.getItem(id) || '';
-}
-
-function setSettingsLocalValue(id) {
-    localStorage.setItem(id, document.getElementById(id).value || '');
-}
-
-// Open settings popup and load current values
-settingsBtn.addEventListener('click', () => {
-    loadSettings();
-    settingsPopup.classList.remove('hidden');
-});
-
-// Close settings popup
-settingsCloseBtn.addEventListener('click', () => {
-    settingsPopup.classList.add('hidden');
-});
-
-// Load initial settings from storage/config
-function loadSettings() {
-    maxHistoryInput.value = parseInt(localStorage.getItem('maxHistoryLength')) || defaults.maxHistoryLength;
-    temperatureInput.value = openaiSettings.temperature;
-    openaiModelSelect.value = openaiSettings.model;
-    maxTokensInput.value = openaiSettings.maxTokens;
-    openaiApiKeyInput.value = localStorage.getItem('openAI_apiKey') || '';
-    getSettingsLocalValue('bibleApiKey');
-    getSettingsLocalValue('esvApiKey');
-}
-
-// Save settings and clamp values
-function saveSettings() {
-    const newMaxHistoryLength = parseInt(maxHistoryInput.value) || defaults.maxHistoryLength;
-    openaiSettings.temperature = parseFloat(temperatureInput.value) || defaults.openaiSettings.temperature;
-    openaiSettings.model = openaiModelSelect.value;
-    openaiSettings.maxTokens = parseInt(maxTokensInput.value) || defaults.openaiSettings.maxTokens;
-    const apiKey = openaiApiKeyInput.value.trim();
-
-    // Clamp values
-    openaiSettings.temperature = Math.max(0, Math.min(2, openaiSettings.temperature));
-    openaiSettings.maxTokens = Math.max(50, Math.min(4096, openaiSettings.maxTokens));
-
-    // Update storage and history
-    if (apiKey) {
-        localStorage.setItem('openAI_apiKey', apiKey);
+        this.init();
     }
-    if (aiHistory.length > newMaxHistoryLength) {
-        aiHistory = aiHistory.slice(-newMaxHistoryLength);
+
+    init() {
+        Object.entries(this.settingsConfig).forEach(([id, config]) => {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`Element with ID '${id}' not found`);
+                return;
+            }
+
+            this.elements.set(id, element);
+
+            if (config.events) {
+                Object.entries(config.events).forEach(([event, handler]) => {
+                    element.addEventListener(event, handler);
+                });
+            } else if (config.type) {
+                ['change', 'blur'].forEach(event => {
+                    element.addEventListener(event, this.saveSettings.bind(this));
+                });
+            }
+        });
     }
-    localStorage.setItem('maxHistoryLength', newMaxHistoryLength);
 
-    setSettingsLocalValue('bibleApiKey');
-    setSettingsLocalValue('esvApiKey');
+    getElement(id) {
+        return this.elements.get(id);
+    }
 
-    saveState(); // Assuming this persists state elsewhere
+    getNestedValue(obj, path) {
+        return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    }
+
+    setNestedValue(obj, path, value) {
+        const parts = path.split('.');
+        let current = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+            current = current[parts[i]];
+        }
+        current[parts[parts.length - 1]] = value;
+    }
+
+    loadSettings() {
+        Object.entries(this.settingsConfig).forEach(([id, config]) => {
+            if (!config.type) return;
+
+            const element = this.getElement(id);
+            if (!element) return;
+
+            let value;
+            if (config.storage === 'local') {
+                value = localStorage.getItem(id) || '';
+            } else if (config.storage === 'state') {
+                value = this.getNestedValue(this.state, config.defaultKey);
+            }
+            element.value = value !== undefined ? value : this.getNestedValue(this.defaults, config.defaultKey);
+        });
+    }
+
+    saveSettings() {
+        Object.entries(this.settingsConfig).forEach(([id, config]) => {
+            if (!config.type) return;
+
+            const element = this.getElement(id);
+            if (!element) return;
+
+            let value = config.setter ? config.setter(element.value) : element.value;
+
+            if (config.storage === 'local') {
+                if (value) localStorage.setItem(id, value);
+            } else if (config.storage === 'state') {
+                this.setNestedValue(this.state, config.defaultKey, value);
+            }
+        });
+
+        // Trim aiHistory if necessary
+        const newMaxHistory = parseInt(this.getElement('max-history-length')?.value) || this.defaults.maxHistoryLength;
+        if (aiHistory.length > newMaxHistory) {
+            aiHistory = aiHistory.slice(-newMaxHistory);
+        }
+
+        saveState(); // Persist all changes to state and aiHistory
+    }
+
+    openPopup() {
+        this.loadSettings();
+        const popup = document.getElementById('settings-popup');
+        if (popup) {
+            popup.classList.remove('hidden');
+        } else {
+            console.error('Cannot open popup: settings-popup element not found');
+        }
+    }
+
+    closePopup() {
+        const popup = document.getElementById('settings-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+        } else {
+            console.error('Cannot close popup: settings-popup element not found');
+        }
+    }
 }
 
-// Event listeners for auto-saving on change/blur
-maxHistoryInput.addEventListener('change', saveSettings);
-maxHistoryInput.addEventListener('blur', saveSettings);
-
-temperatureInput.addEventListener('change', saveSettings);
-temperatureInput.addEventListener('blur', saveSettings);
-
-openaiModelSelect.addEventListener('change', saveSettings);
-openaiModelSelect.addEventListener('blur', saveSettings);
-
-maxTokensInput.addEventListener('change', saveSettings);
-maxTokensInput.addEventListener('blur', saveSettings);
-
-openaiApiKeyInput.addEventListener('change', saveSettings);
-openaiApiKeyInput.addEventListener('blur', saveSettings);
-
-addSettingsListener('bibleApiKey');
-addSettingsListener('esvApiKey');
-
+// Usage (assuming config.js is loaded first)
+loadState(); // Initialize state and openaiSettings
+const settingsManager = new SettingsManager(defaults, state);

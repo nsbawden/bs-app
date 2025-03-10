@@ -13,7 +13,6 @@
     <div class="top-bar">
         <span id="top-bar-summary"></span>
         <button id="top-bar-toggle">▼</button>
-        <button id="show-list">≡</button>
         <div class="top-bar-controls hidden">
             <div class="select-group">
                 <select id="book-select"></select>
@@ -29,8 +28,9 @@
                     <option value="ylt">YLT</option>
                 </select>
             </div>
-            <span class="gear-btn" id="settings-btn">⚙️</span>
         </div>
+        <button id="show-list">≡</button>
+        <span class="gear-btn" id="settings-btn">⚙️</span>
     </div>
     <div class="container">
         <main id="verse-display"></main>
@@ -91,9 +91,10 @@
                     <p class="setting-info">Limits AI output length (50-4096 tokens).</p>
                 </div>
                 <div class="setting-item">
-                    <label for="openai-api-key">OpenAI API Key</label>
-                    <input type="text" id="openai-api-key">
-                    <p class="setting-info">Your API key for OpenAI. <a href="apikey.html" target="_blank">Get one here</a>.
+                    <label for="openAIApiKey">OpenAI API Key</label>
+                    <input type="text" id="openAIApiKey">
+                    <p class="setting-info">Your API key for OpenAI. <a href="apikey.html" target="_blank">Get one
+                            here</a>.
                     </p>
                 </div>
                 <div class="setting-item">

@@ -317,6 +317,85 @@ footer.expanded #ai-output-container {
     line-height: 1.2;
 }
 
+.verse-popup {
+    background-color: #2A2A2A;
+    border: 1px solid #4A704A;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 5px 0;
+    z-index: 1000;
+    min-width: 150px;
+    color: #F0F0F0;
+}
+
+.popup-item {
+    padding: 5px 10px;
+    cursor: pointer;
+    color: #F0F0F0;
+}
+
+.popup-item:hover {
+    background-color: #4A704A;
+}
+
+.bookmark-list {
+    display: inline-block;
+    margin-left: 10px;
+    /* Space after the previous button */
+    vertical-align: middle;
+}
+
+.bookmark-item {
+    display: inline-block;
+    position: relative;
+    padding: 2px 14px 2px 10px;
+    margin: 0 5px;
+    background-color: #4A70A4;
+    color: #F0F0F0;
+    text-decoration: none;
+    font-family: 'Merriweather', serif;
+    font-size: 10pt;
+    line-height: 17px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Darker blue bar on the left */
+.bookmark-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    /* Thin vertical bar */
+    height: 100%;
+    background-color: #3A5080;
+    /* Darker blue shade */
+}
+
+/* Optional: Indented triangle on the right (commented out alternative) */
+
+.bookmark-item::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid #2A2A2A;
+    /* Matches background to look indented */
+}
+
+.bookmark-item:hover {
+    background-color: #5A80B4;
+    /* Lighter blue on hover */
+    text-decoration: none;
+}
+
 #ai-response-input {
     height: 100px;
     width: 100%;
@@ -491,7 +570,6 @@ footer.expanded #ai-output-container {
 
     .top-bar-controls {
         display: none;
-        /* Hidden by default */
     }
 
     .top-bar-controls.expanded {
@@ -585,13 +663,14 @@ footer.expanded #ai-output-container {
 
     #top-bar-summary,
     #top-bar-toggle {
-        display: none;
         /* Full controls on desktop */
+        display: none;
     }
 
     .top-bar-controls {
         display: flex !important;
         width: auto;
+        padding-right: 9px;
     }
 
     .top-bar {

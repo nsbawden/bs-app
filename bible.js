@@ -248,6 +248,8 @@ async function refreshDisplay() {
     let nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
 
     let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
+    // Always include the bookmark-list span, even if empty
+    content += `<span class="bookmark-list"></span>`;
 
     let notes = getNotes();
     let paragraphs = [];
@@ -259,7 +261,7 @@ async function refreshDisplay() {
         const hasNote = notes[reference];
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
-        const verseText = `<span class="verse-num" onclick="showNotePopup('${reference}', this.parentElement)" title="${addOrEdit} note">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
+        const verseText = `<span class="verse-num" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
 
         currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
@@ -274,6 +276,33 @@ async function refreshDisplay() {
     verseDisplay.innerHTML = content;
     saveState();
     scrollToSelectedVerse();
+
+    // Populate the bookmark list after rendering
+    rebuildBookmarksList();
+
+    document.querySelectorAll('.verse-num').forEach(verseNum => {
+        verseNum.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const reference = verseNum.dataset.reference;
+            const verseSpan = verseNum.parentElement;
+            showNotePopup(reference, verseSpan);
+        });
+    });
+}
+
+function rebuildBookmarksList() {
+    const bookmarkList = document.querySelector('.bookmark-list');
+    if (!bookmarkList) return; // Exit if not found (shouldn’t happen after refreshDisplay)
+
+    const bookmarks = getBookmarks();
+    const bookmarkLinks = bookmarks.map(ref => {
+        const [book, chapter, verse] = ref.split('/');
+        const displayText = `${book} ${chapter}:${verse}`;
+        const url = `/index.html?book=${book}&chapter=${chapter}&verse=${verse}`;
+        return `<a href="${url}" class="bookmark-item">${displayText}</a>`;
+    }).join(' ');
+
+    bookmarkList.innerHTML = bookmarkLinks || ''; // Empty string if no bookmarks
 }
 
 window.goToNext = function () {
@@ -321,8 +350,8 @@ function getSelectedVerseText() {
     return verseTextElement.textContent.trim();
 }
 
-function showNotePopup(reference, verseDiv) {
-    const existingNote = getNotes()[reference];
+function showNotePopup(reference, verseSpan = null, event = null) {
+    const existingNote = getNotes()[reference] || '';
     const existingPopup = document.querySelector('.note-popup');
     if (existingPopup) existingPopup.remove();
 
@@ -337,7 +366,7 @@ function showNotePopup(reference, verseDiv) {
     popup.style.maxWidth = '400px';
 
     const textarea = document.createElement('textarea');
-    textarea.value = existingNote || '';
+    textarea.value = existingNote;
     textarea.style.width = '100%';
     textarea.style.height = '150px';
     textarea.style.background = '#1A1A1A';
@@ -351,7 +380,6 @@ function showNotePopup(reference, verseDiv) {
     saveButton.style.border = 'none';
     saveButton.style.padding = '5px 10px';
     saveButton.style.marginRight = '5px';
-    saveButton.onclick = saveAndClose;
 
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'Cancel';
@@ -359,7 +387,6 @@ function showNotePopup(reference, verseDiv) {
     cancelButton.style.color = '#F0F0F0';
     cancelButton.style.border = 'none';
     cancelButton.style.padding = '5px 10px';
-    cancelButton.onclick = cleanupAndRemove;
 
     popup.appendChild(textarea);
     popup.appendChild(saveButton);
@@ -367,29 +394,54 @@ function showNotePopup(reference, verseDiv) {
     document.body.appendChild(popup);
 
     // Positioning logic using the verse-num element
-    const verseNum = verseDiv.querySelector('.verse-num'); // Get the verse number element
+    const verseNum = verseSpan ? verseSpan.querySelector('.verse-num') : null;
     const popupHeight = popup.offsetHeight;
     const popupWidth = popup.offsetWidth;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const numRect = verseNum.getBoundingClientRect();
-    const desiredTop = numRect.bottom; // Position below the verse number
-    const desiredLeft = numRect.left;  // Align with verse number's left edge
 
-    // Check if popup fits at desired position
-    const fitsBelow = (desiredTop + popupHeight) <= viewportHeight;
-    const fitsHorizontally = (desiredLeft >= 0) && ((desiredLeft + popupWidth) <= viewportWidth);
+    if (verseNum) {
+        const numRect = verseNum.getBoundingClientRect();
+        const desiredTop = numRect.bottom; // Position below the verse number
+        const desiredLeft = numRect.left;  // Align with verse number's left edge
 
-    if (fitsBelow && fitsHorizontally) {
-        // Position below verse number and aligned with its left edge
-        popup.style.top = `${desiredTop}px`;
-        popup.style.left = `${desiredLeft}px`;
+        // Check if popup fits at desired position
+        const fitsBelow = (desiredTop + popupHeight) <= viewportHeight;
+        const fitsHorizontally = (desiredLeft >= 0) && ((desiredLeft + popupWidth) <= viewportWidth);
+
+        if (fitsBelow && fitsHorizontally) {
+            // Position below verse number and aligned with its left edge
+            popup.style.top = `${desiredTop}px`;
+            popup.style.left = `${desiredLeft}px`;
+        } else {
+            // Center on screen as fallback
+            popup.style.position = 'fixed';
+            popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
+            popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
+        }
     } else {
-        // Center on screen
+        // Fallback to center if no verseSpan (shouldn't happen in current use cases)
         popup.style.position = 'fixed';
         popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
         popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
     }
+
+    // Event handlers
+    const saveAndClose = () => {
+        const note = textarea.value.trim();
+        if (note) {
+            saveNote(reference, note);
+        } else {
+            deleteNote(reference);
+        }
+        cleanupAndRemove();
+        refreshDisplay();
+    };
+
+    const cleanupAndRemove = () => {
+        document.removeEventListener('keydown', handleKeyPress);
+        popup.remove();
+    };
 
     const handleKeyPress = (event) => {
         if (event.key === 'Escape') {
@@ -400,25 +452,22 @@ function showNotePopup(reference, verseDiv) {
         }
     };
 
+    saveButton.addEventListener('click', saveAndClose);
+    cancelButton.addEventListener('click', cleanupAndRemove);
     document.addEventListener('keydown', handleKeyPress);
 
-    function saveAndClose() {
-        const note = textarea.value.trim();
-        if (note) {
-            saveNote(reference, note);
-        } else {
-            deleteNote(reference);
+    // Close when clicking outside
+    const closePopup = (e) => {
+        if (!popup.contains(e.target)) {
+            cleanupAndRemove();
+            document.removeEventListener('click', closePopup);
         }
-        cleanupAndRemove();
-        refreshDisplay();
-    }
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closePopup);
+    }, 0);
 
-    function cleanupAndRemove() {
-        document.removeEventListener('keydown', handleKeyPress);
-        popup.remove();
-    }
-
-    // Set cursor to beginning and scroll to top
+    // Set cursor and focus
     textarea.focus();
     if (textarea.value) {
         textarea.setSelectionRange(0, 0);

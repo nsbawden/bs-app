@@ -345,52 +345,6 @@ function renameTag(oldTag, newTag) {
     return true;
 }
 
-function constructTabs() {
-    const notes = getNotes();
-    const tagStorage = {};
-    const tagCaseMap = {};
-    Object.entries(notes).forEach(([key, note]) => {
-        const tags = (note.match(/#\w+\b/g) || []);
-        tags.forEach(tag => {
-            const lowerTag = tag.toLowerCase();
-            if (!tagCaseMap[lowerTag]) {
-                tagCaseMap[lowerTag] = tag;
-                tagStorage[tag] = [];
-            }
-            const preferredTag = tagCaseMap[lowerTag];
-            if (!tagStorage[preferredTag].includes(key)) {
-                tagStorage[preferredTag].push(key);
-            }
-        });
-    });
-    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
-    return [
-        { label: "questions", items: savedQuestions, editable: true },
-        { label: "notes", items: getNotesList(), editable: false },
-        {
-            label: "tags",
-            items: Object.keys(tagStorage).map(tag => ({
-                label: tag,
-                editHandler: (oldName, newName) => renameTag(oldName, newName)
-            })),
-            editable: true
-        },
-        {
-            label: "writings",
-            items: writings.map(writing => ({
-                label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
-                handler: () => {
-                    fetch(writing.filename)
-                        .then(response => response.ok ? response.text() : Promise.reject(`Failed to load ${writing.filename}`))
-                        .then(content => showBook(writing.label, content))
-                        .catch(error => showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error}`));
-                }
-            })),
-            editable: false
-        }
-    ];
-}
-
 function showVerseMenu(verseSpan, event) {
     const existingPopup = document.querySelector('.verse-popup');
     if (existingPopup) existingPopup.remove();
@@ -476,6 +430,16 @@ function removeBookmark(reference) {
     saveBookmarks(updatedBookmarks);
     console.log(`Removed bookmark ${reference}`);
     rebuildBookmarksList(); // Update the list immediately
+}
+
+function hasBookmark(reference) {
+    return getBookmarks().includes(reference);
+}
+
+// Function to test a verse if bookmarked
+function isBookmarked(book, chapter, verse) {
+    const reference = `${book}/${chapter}/${verse}`;
+    return hasBookmark(reference);
 }
 
 // Function to clear all bookmarks

@@ -263,9 +263,10 @@ async function refreshDisplay() {
         const selected = verseNum === state.currentVerse.verse ? 'selected' : '';
         const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNum}`;
         const hasNote = notes[reference];
+        const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
-        const verseText = `<span class="verse-num" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
+        const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
 
         currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
@@ -545,7 +546,6 @@ function showBook(label, content) {
 }
 
 // Initialize
-loadState();
 loadQueryString();
 populateSelectors();
 adjustTabCount();

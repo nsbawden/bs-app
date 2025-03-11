@@ -1,4 +1,102 @@
 // listPopup.js
+
+function constructTabs() {
+    const notes = getNotes();
+    const tagStorage = {};
+    const tagCaseMap = {};
+    Object.entries(notes).forEach(([key, note]) => {
+        const tags = (note.match(/#\w+\b/g) || []);
+        tags.forEach(tag => {
+            const lowerTag = tag.toLowerCase();
+            if (!tagCaseMap[lowerTag]) {
+                tagCaseMap[lowerTag] = tag;
+                tagStorage[tag] = [];
+            }
+            const preferredTag = tagCaseMap[lowerTag];
+            if (!tagStorage[preferredTag].includes(key)) {
+                tagStorage[preferredTag].push(key);
+            }
+        });
+    });
+    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
+    return [
+        { label: "questions", items: savedQuestions, editable: true },
+        { label: "notes", items: getNotesList(), editable: false },
+        {
+            label: "tags",
+            items: Object.keys(tagStorage).map(tag => ({
+                label: tag,
+                editHandler: (oldName, newName) => renameTag(oldName, newName)
+            })),
+            editable: true,
+            sorted: true
+        },
+        {
+            label: "writings",
+            items: writings.map(writing => ({
+                label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
+                handler: () => {
+                    fetch(writing.filename)
+                        .then(response => response.ok ? response.text() : Promise.reject(`Failed to load ${writing.filename}`))
+                        .then(content => showBook(writing.label, content))
+                        .catch(error => showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error}`));
+                }
+            })),
+            editable: false
+        }
+    ];
+}
+
+
+// listPopup.js
+
+function constructTabs() {
+    const notes = getNotes();
+    const tagStorage = {};
+    const tagCaseMap = {};
+    Object.entries(notes).forEach(([key, note]) => {
+        const tags = (note.match(/#\w+\b/g) || []);
+        tags.forEach(tag => {
+            const lowerTag = tag.toLowerCase();
+            if (!tagCaseMap[lowerTag]) {
+                tagCaseMap[lowerTag] = tag;
+                tagStorage[tag] = [];
+            }
+            const preferredTag = tagCaseMap[lowerTag];
+            if (!tagStorage[preferredTag].includes(key)) {
+                tagStorage[preferredTag].push(key);
+            }
+        });
+    });
+    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
+    return [
+        { label: "questions", items: savedQuestions, editable: true },
+        { label: "notes", items: getNotesList(), editable: false },
+        {
+            label: "tags",
+            items: Object.keys(tagStorage).map(tag => ({
+                label: tag,
+                editHandler: (oldName, newName) => renameTag(oldName, newName)
+            })),
+            editable: true,
+            sorted: true
+        },
+        {
+            label: "writings",
+            items: writings.map(writing => ({
+                label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
+                handler: () => {
+                    fetch(writing.filename)
+                        .then(response => response.ok ? response.text() : Promise.reject(`Failed to load ${writing.filename}`))
+                        .then(content => showBook(writing.label, content))
+                        .catch(error => showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error}`));
+                }
+            })),
+            editable: false
+        }
+    ];
+}
+
 function showListPopup(tabData) {
     return new Promise((resolve) => {
         const existingPopup = document.querySelector('.list-popup');
@@ -35,7 +133,12 @@ function showListPopup(tabData) {
             tabContainer.appendChild(tabButton);
         });
 
-        renderList(listContainer, tabData[activeTabIndex], activeTabIndex, resolve, cleanupAndRemove);
+        // Sort items if the tab has the sorted property
+        const activeTab = tabData[activeTabIndex];
+        if (activeTab.sorted && activeTab.items) {
+            activeTab.items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+        }
+        renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove);
 
         popup.appendChild(closeButton);
         popup.appendChild(tabContainer);
@@ -44,7 +147,6 @@ function showListPopup(tabData) {
 
         function switchTab(index) {
             activeTabIndex = index;
-            // Only save if there’s more than one tab
             if (tabData.length > 1) {
                 sessionStorage.setItem('lastActiveTab', index);
             }
@@ -53,7 +155,12 @@ function showListPopup(tabData) {
                 btn.className = 'tab-btn' + (i === index ? ' active' : '');
             });
             listContainer.innerHTML = '';
-            renderList(listContainer, tabData[index], index, resolve, cleanupAndRemove);
+            // Sort items if the tab has the sorted property
+            const tab = tabData[index];
+            if (tab.sorted && tab.items) {
+                tab.items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+            }
+            renderList(listContainer, tab, index, resolve, cleanupAndRemove);
         }
 
         const handleEscape = (event) => {
@@ -70,6 +177,8 @@ function showListPopup(tabData) {
         }
     });
 }
+
+// The rest of the functions (renderList, createListItem, toggleEditMode, makeSortable) remain unchanged
 
 function renderList(container, tab, tabIndex, resolve, cleanup) {
     const list = document.createElement('div');

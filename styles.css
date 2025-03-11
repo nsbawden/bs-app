@@ -1,10 +1,193 @@
+/* Importing fonts (unchanged) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Source+Sans+3:wght@400;500&family=Merriweather:wght@400;500&family=Crimson+Text:wght@400;500&display=swap');
 
+/* Define color variables with current dark theme as default */
+body.dark-theme {
+    /* Body */
+    --body-bg: #1F1F1F;
+    --body-text: #f4e7ca;
+
+    /* Links */
+    --link-color: gold;
+
+    /* Top Bar */
+    --top-bar-bg: #4A704A;
+
+    /* Select Inputs */
+    --select-bg: #F0F0F0;
+    --select-text: #1A1A1A;
+
+    /* Verse */
+    --verse-num-color: #FFD700;
+    --verse-selected-bg: #4A704A;
+    --has-note-color: #FFE5E5;
+
+    /* Footer */
+    --footer-bg: #2A2A2A;
+
+    /* AI Elements */
+    --ai-prompt-bg: #F0F0F0;
+    --ai-button-bg: #4A704A;
+    --ai-button-text: #F0F0F0;
+    --ai-output-bg: #2b2b2b;
+
+    /* Tabs */
+    --tab-bg: #517420;
+    --tab-text: black;
+    --tab-hover-bg: #e0e0e0;
+    --tab-active-bg: #4d8acd;
+    --tab-active-text: white;
+    --tab-border: #ddd;
+
+    /* Popup */
+    --popup-bg: #2A2A2A;
+    --popup-border: #4A704A;
+    --popup-text: #F0F0F0;
+    --popup-item-hover-bg: #4A704A;
+
+    /* Settings Popup */
+    --settings-input-bg: #F0F0F0;
+    --settings-input-text: #1A1A1A;
+    --settings-info-text: #d0c8a0;
+
+    /* Bookmark */
+    --bookmark-bg: #4A70A4;
+    --bookmark-text: #F0F0F0;
+    --bookmark-bar-bg: #3A5080;
+    --bookmark-triangle-bg: #2A2A2A;
+    --bookmark-hover-bg: #5A80B4;
+
+    /* Buttons */
+    --button-bg: #4A704A;
+    --button-text: #F0F0F0;
+    --button-hover-bg: #5A805A;
+
+    /* List Popup */
+    --list-item-bg: #3A3A3A;
+    --tab-btn-bg: #3A3A3A;
+    --tab-btn-active-bg: #4A704A;
+    --tab-btn-hover-bg: #5A905A;
+    --edit-input-bg: #1A1A1A;
+    --edit-input-text: #F0F0F0;
+    --edit-input-border: #4A704A;
+}
+
+/* Light Theme Overrides */
+body.light-theme {
+    /* Body */
+    --body-bg: #FFFFFF;
+    --body-text: #000000;
+
+    /* Links */
+    --link-color: #0000FF;
+    /* Blue instead of gold for better contrast */
+
+    /* Top Bar */
+    --top-bar-bg: #257425;
+
+    /* Select Inputs */
+    --select-bg: #F0F0F0;
+    /* Unchanged */
+    --select-text: #1A1A1A;
+    /* Unchanged */
+
+    /* Verse */
+    --verse-num-color: #005FFF;
+    /* Unchanged gold */
+    --verse-selected-bg: #8ABF8A;
+    /* Match top-bar */
+    --has-note-color: #FF9999;
+    /* Softer red for light theme */
+
+    /* Footer */
+    --footer-bg: #E0E0E0;
+    /* Light gray */
+
+    /* AI Elements */
+    --ai-prompt-bg: #F0F0F0;
+    /* Unchanged */
+    --ai-button-bg: #8ABF8A;
+    /* Lighter green */
+    --ai-button-text: #000000;
+    /* Black */
+    --ai-output-bg: #F0F0F0;
+    /* Very light gray */
+
+    /* Tabs */
+    --tab-bg: #D0D0D0;
+    /* Light gray */
+    --tab-text: #000000;
+    /* Black */
+    --tab-hover-bg: #C0C0C0;
+    /* Slightly darker gray */
+    --tab-active-bg: #8ABF8A;
+    /* Match top-bar */
+    --tab-active-text: #000000;
+    /* Black */
+    --tab-border: #ccc;
+    /* Softer border */
+
+    /* Popup */
+    --popup-bg: #FFFFFF;
+    /* White */
+    --popup-border: #8ABF8A;
+    /* Match top-bar */
+    --popup-text: #000000;
+    /* Black */
+    --popup-item-hover-bg: #A0D0A0;
+    /* Slightly darker green */
+
+    /* Settings Popup */
+    --settings-input-bg: #F0F0F0;
+    /* Unchanged */
+    --settings-input-text: #1A1A1A;
+    /* Unchanged */
+    --settings-info-text: #666633;
+    /* Darker muted tone */
+
+    /* Bookmark */
+    --bookmark-bg: #8AA0D4;
+    /* Lighter blue */
+    --bookmark-text: #000000;
+    /* Black */
+    --bookmark-bar-bg: #6A80B0;
+    /* Lighter dark blue */
+    --bookmark-triangle-bg: #E0E0E0;
+    /* Match footer */
+    --bookmark-hover-bg: #A0B0E0;
+    /* Lighter blue hover */
+
+    /* Buttons */
+    --button-bg: #8ABF8A;
+    /* Lighter green */
+    --button-text: #000000;
+    /* Black */
+    --button-hover-bg: #A0D0A0;
+    /* Slightly darker green */
+
+    /* List Popup */
+    --list-item-bg: #E0E0E0;
+    /* Light gray */
+    --tab-btn-bg: #D0D0D0;
+    /* Light gray */
+    --tab-btn-active-bg: #8ABF8A;
+    /* Match top-bar */
+    --tab-btn-hover-bg: #A0D0A0;
+    /* Slightly darker green */
+    --edit-input-bg: #FFFFFF;
+    /* White */
+    --edit-input-text: #000000;
+    /* Black */
+    --edit-input-border: #8ABF8A;
+    /* Match top-bar */
+}
+
+/* Structural Styles with Variables Applied */
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #1F1F1F;
-    color: #f4e7ca;
+    background-color: var(--body-bg);
+    color: var(--body-text);
     height: 100vh;
     overflow: hidden;
 }
@@ -28,7 +211,7 @@ body {
     position: fixed;
     top: 0;
     width: 100%;
-    background-color: #4A704A;
+    background-color: var(--top-bar-bg);
     padding: 5px;
     display: flex;
     z-index: 1000;
@@ -52,21 +235,19 @@ body {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 40px);
-    /* Adjusted by JS */
     margin-top: 40px;
-    /* Adjusted by JS */
     box-sizing: border-box;
 }
 
 a {
-    color: gold;
+    color: var(--link-color);
     text-decoration: none;
 }
 
 select {
     padding: 5px;
-    background-color: #F0F0F0;
-    color: #1A1A1A;
+    background-color: var(--select-bg);
+    color: var(--select-text);
 }
 
 main {
@@ -85,12 +266,12 @@ p {
 }
 
 .verse-num {
-    color: #FFD700;
+    color: var(--verse-num-color);
     margin-right: 5px;
 }
 
 .verse.selected .verse-text {
-    background-color: #4A704A;
+    background-color: var(--verse-selected-bg);
 }
 
 .verse-num {
@@ -99,7 +280,7 @@ p {
 
 .has-note .verse-num::after {
     content: '🗎';
-    color: #FFE5E5;
+    color: var(--has-note-color);
     font-size: 1em;
     margin-left: 2px;
     vertical-align: top;
@@ -116,7 +297,7 @@ p {
 
 footer {
     padding: 5px 0 0 0;
-    background-color: #2A2A2A;
+    background-color: var(--footer-bg);
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -140,7 +321,7 @@ footer.expanded {
 #ai-prompt {
     flex-grow: 1;
     padding: 5px;
-    background-color: #F0F0F0;
+    background-color: var(--ai-prompt-bg);
     border: none;
 }
 
@@ -149,8 +330,8 @@ footer.expanded {
     width: 30px;
     height: 30px;
     padding: 0;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--ai-button-bg);
+    color: var(--ai-button-text);
     border: none;
     cursor: pointer;
     font-size: 16px;
@@ -170,10 +351,10 @@ footer.expanded {
 .tab {
     flex: 1;
     text-align: center;
-    color: black;
+    color: var(--tab-text);
     padding: 2px 0;
-    background-color: #517420;
-    border: 1px solid #ddd;
+    background-color: var(--tab-bg);
+    border: 1px solid var(--tab-border);
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -181,12 +362,12 @@ footer.expanded {
 }
 
 .tab:hover {
-    background-color: #e0e0e0;
+    background-color: var(--tab-hover-bg);
 }
 
 .tab.active {
-    background-color: #4d8acd;
-    color: white;
+    background-color: var(--tab-active-bg);
+    color: var(--tab-active-text);
     border-bottom: none;
 }
 
@@ -201,7 +382,7 @@ footer.expanded #ai-output-container {
 }
 
 #ai-output {
-    background-color: #2b2b2b;
+    background-color: var(--ai-output-bg);
     padding: 10px;
     max-height: var(--ai-output-max-height, 3em);
     overflow: var(--ai-output-overflow, hidden);
@@ -214,8 +395,8 @@ footer.expanded #ai-output-container {
     top: 10px;
     right: 40px;
     padding: 2px 8px;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--button-bg);
+    color: var(--button-text);
     border: none;
     cursor: pointer;
     font-size: 12px;
@@ -228,9 +409,9 @@ footer.expanded #ai-output-container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #2A2A2A;
+    background-color: var(--popup-bg);
     padding: 20px;
-    border: 1px solid #4A704A;
+    border: 1px solid var(--popup-border);
     z-index: 1000;
     width: 400px;
     min-width: 350px;
@@ -261,12 +442,22 @@ footer.expanded #ai-output-container {
     top: 5px;
     right: 5px;
     padding: 2px 8px;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--button-bg);
+    color: var(--button-text);
     border: none;
     cursor: pointer;
     font-size: 14px;
     z-index: 1100;
+}
+
+.settings-button {
+    margin: 10px 0;
+    width: fit-content;
+    padding: 5px 10px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    cursor: pointer;
 }
 
 .settings-content {
@@ -285,7 +476,7 @@ footer.expanded #ai-output-container {
     display: flex;
     flex-direction: column;
     padding-bottom: 10px;
-    border-bottom: 1px solid #4A704A;
+    border-bottom: 1px solid var(--popup-border);
 }
 
 .setting-item:last-child {
@@ -300,8 +491,8 @@ footer.expanded #ai-output-container {
 .setting-item input,
 .setting-item select {
     padding: 5px;
-    background-color: #F0F0F0;
-    color: #1A1A1A;
+    background-color: var(--settings-input-bg);
+    color: var(--settings-input-text);
     border: none;
     width: 95%;
     box-sizing: border-box;
@@ -313,36 +504,35 @@ footer.expanded #ai-output-container {
 
 .setting-item .setting-info {
     font-size: 0.9em;
-    color: #d0c8a0;
+    color: var(--settings-info-text);
     margin-top: 5px;
     line-height: 1.2;
 }
 
 .verse-popup {
-    background-color: #2A2A2A;
-    border: 1px solid #4A704A;
+    background-color: var(--popup-bg);
+    border: 1px solid var(--popup-border);
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     padding: 5px 0;
     z-index: 1000;
     min-width: 150px;
-    color: #F0F0F0;
+    color: var(--popup-text);
 }
 
 .popup-item {
     padding: 5px 10px;
     cursor: pointer;
-    color: #F0F0F0;
+    color: var(--popup-text);
 }
 
 .popup-item:hover {
-    background-color: #4A704A;
+    background-color: var(--popup-item-hover-bg);
 }
 
 .bookmark-list {
     display: inline-block;
     margin-left: 10px;
-    /* Space after the previous button */
     vertical-align: middle;
 }
 
@@ -351,8 +541,8 @@ footer.expanded #ai-output-container {
     position: relative;
     padding: 2px 14px 2px 10px;
     margin: 0 5px;
-    background-color: #4A70A4;
-    color: #F0F0F0;
+    background-color: var(--bookmark-bg);
+    color: var(--bookmark-text);
     text-decoration: none;
     font-size: 11pt;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -360,7 +550,6 @@ footer.expanded #ai-output-container {
     transition: background-color 0.2s ease;
 }
 
-/* Darker blue bar on the left */
 .bookmark-item::before {
     content: '';
     position: absolute;
@@ -368,10 +557,9 @@ footer.expanded #ai-output-container {
     top: 0;
     width: 5px;
     height: 100%;
-    background-color: #3A5080;
+    background-color: var(--bookmark-bar-bg);
 }
 
-/* Indented triangle on the right */
 .bookmark-item::after {
     content: '';
     position: absolute;
@@ -382,12 +570,11 @@ footer.expanded #ai-output-container {
     height: 0;
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
-    border-right: 10px solid #2A2A2A;
+    border-right: 10px solid var(--bookmark-triangle-bg);
 }
 
 .bookmark-item:hover {
-    background-color: #5A80B4;
-    /* Lighter blue on hover */
+    background-color: var(--bookmark-hover-bg);
     text-decoration: none;
 }
 
@@ -395,16 +582,16 @@ footer.expanded #ai-output-container {
     height: 100px;
     width: 100%;
     padding: 5px;
-    background-color: #F0F0F0;
-    color: #1A1A1A;
+    background-color: var(--settings-input-bg);
+    color: var(--settings-input-text);
     border: none;
 }
 
 #ai-response-submit {
     margin-top: 10px;
     padding: 5px 10px;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--button-bg);
+    color: var(--button-text);
     border: none;
     cursor: pointer;
 }
@@ -412,24 +599,63 @@ footer.expanded #ai-output-container {
 .nav-button {
     margin: 10px 0;
     padding: 5px 10px;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--button-bg);
+    color: var(--button-text);
     border: none;
     cursor: pointer;
 }
 
+/* Existing .note-popup (updated to use variables if not already) */
 .note-popup {
+    position: absolute;
+    /* Default, overridden by JS if needed */
+    background-color: var(--popup-bg);
+    color: var(--popup-text);
+    padding: 10px;
+    border: 1px solid var(--popup-border);
+    z-index: 1000;
+    max-width: 400px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     border-radius: 5px;
 }
 
-.note-popup textarea {
+/* New classes for note popup elements */
+.note-popup-textarea {
+    width: 100%;
+    height: 150px;
+    background-color: var(--edit-input-bg);
+    color: var(--edit-input-text);
+    border: 1px solid var(--edit-input-border);
     resize: vertical;
     margin-bottom: 10px;
+    padding: 5px;
+    box-sizing: border-box;
 }
 
-.note-popup button:hover {
-    background: #5A805A;
+.note-popup-button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.note-popup-button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+/* Specific button styles (optional, if you want distinct appearances) */
+.note-popup-save {
+    /* Inherits from .note-popup-button, add specific styles if needed */
+}
+
+.note-popup-cancel {
+    /* Inherits from .note-popup-button, add specific styles if needed */
+}
+
+.note-popup-bookmark {
+    /* Inherits from .note-popup-button, add specific styles if needed */
 }
 
 .list-popup {
@@ -437,9 +663,9 @@ footer.expanded #ai-output-container {
     top: 10%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #2A2A2A;
+    background-color: var(--popup-bg);
     padding: 20px;
-    border: 1px solid #4A704A;
+    border: 1px solid var(--popup-border);
     z-index: 1000;
     width: 500px;
     max-height: 80vh;
@@ -454,8 +680,8 @@ footer.expanded #ai-output-container {
 
 .tab-btn {
     padding: 5px 15px;
-    background-color: #3A3A3A;
-    color: #F0F0F0;
+    background-color: var(--tab-btn-bg);
+    color: var(--popup-text);
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -463,11 +689,11 @@ footer.expanded #ai-output-container {
 }
 
 .tab-btn.active {
-    background-color: #4A704A;
+    background-color: var(--tab-btn-active-bg);
 }
 
 .tab-btn:hover {
-    background-color: #5A905A;
+    background-color: var(--tab-btn-hover-bg);
 }
 
 .list-container {
@@ -483,7 +709,7 @@ footer.expanded #ai-output-container {
     justify-content: space-between;
     align-items: center;
     padding: 5px;
-    background-color: #3A3A3A;
+    background-color: var(--list-item-bg);
     margin-bottom: 5px;
     cursor: pointer;
     user-select: none;
@@ -503,9 +729,9 @@ footer.expanded #ai-output-container {
 .edit-input {
     width: 100%;
     padding: 5px;
-    background-color: #1A1A1A;
-    color: #F0F0F0;
-    border: 1px solid #4A704A;
+    background-color: var(--edit-input-bg);
+    color: var(--edit-input-text);
+    border: 1px solid var(--edit-input-border);
 }
 
 .close-btn {
@@ -513,20 +739,19 @@ footer.expanded #ai-output-container {
     top: 5px;
     right: 5px;
     padding: 2px 8px;
-    background-color: #4A704A;
-    color: #F0F0F0;
+    background-color: var(--button-bg);
+    color: var(--button-text);
     border: none;
     cursor: pointer;
     font-size: 14px;
 }
 
-/* Mobile Optimizations */
+/* Mobile Optimizations (unchanged structurally, only colors updated) */
 @media (max-width: 480px) {
     .top-bar {
         padding: 8px;
         flex-wrap: wrap;
         cursor: pointer;
-        /* Entire bar clickable */
     }
 
     .select-group {
@@ -545,7 +770,7 @@ footer.expanded #ai-output-container {
         font-size: 24px;
         background: none;
         border: none;
-        color: #F0F0F0;
+        color: var(--button-text);
         cursor: pointer;
     }
 
@@ -554,7 +779,7 @@ footer.expanded #ai-output-container {
         font-size: 16px;
         background: none;
         border: none;
-        color: #F0F0F0;
+        color: var(--button-text);
         cursor: pointer;
     }
 
@@ -581,14 +806,11 @@ footer.expanded #ai-output-container {
 
     #ai-toggle {
         display: none;
-        /* Hidden on mobile */
     }
 
     .container {
         margin-top: 60px;
-        /* Adjusted by JS */
         height: calc(100vh - 60px);
-        /* Adjusted by JS */
     }
 
     main {
@@ -658,7 +880,6 @@ footer.expanded #ai-output-container {
 
     #top-bar-summary,
     #top-bar-toggle {
-        /* Full controls on desktop */
         display: none;
     }
 
@@ -670,6 +891,5 @@ footer.expanded #ai-output-container {
 
     .top-bar {
         cursor: default;
-        /* No toggle on desktop */
     }
 }

@@ -8,6 +8,13 @@ class SettingsManager {
         this.settingsConfig = {
             'settings-btn': { events: { 'click': this.openPopup.bind(this) } },
             'settings-close': { events: { 'click': this.closePopup.bind(this) } },
+            'theme-select': {
+                type: 'select',
+                defaultKey: 'theme',
+                setter: (val) => val || 'dark', // Default to 'dark' if invalid
+                storage: 'local',
+                apply: (val) => this.applyTheme(val) // Apply theme immediately
+            },
             'max-history-length': {
                 type: 'number',
                 min: 1,
@@ -53,6 +60,7 @@ class SettingsManager {
         };
 
         this.init();
+        this.applyInitialTheme(); // Apply theme on page load
     }
 
     init() {
@@ -108,6 +116,11 @@ class SettingsManager {
                 value = this.getNestedValue(this.state, config.defaultKey);
             }
             element.value = value !== undefined ? value : this.getNestedValue(this.defaults, config.defaultKey);
+
+            // Apply settings that need immediate effect
+            if (config.apply) {
+                config.apply(element.value);
+            }
         });
     }
 
@@ -121,10 +134,12 @@ class SettingsManager {
             let value = config.setter ? config.setter(element.value) : element.value;
 
             if (config.storage === 'local') {
-                if (value) localStorage.setItem(id, value);
+                if (value) {
+                    localStorage.setItem(id, value);
+                    if (config.apply) config.apply(value); // Apply immediately if needed
+                }
             } else if (config.storage === 'state') {
                 this.setNestedValue(this.state, config.defaultKey, value);
-                // Sync openaiSettings for immediate use
                 if (config.defaultKey.startsWith('openaiSettings')) {
                     this.setNestedValue(this.openaiSettings, config.defaultKey.split('.')[1], value);
                 }
@@ -145,6 +160,14 @@ class SettingsManager {
         const popup = document.getElementById('settings-popup');
         if (popup) {
             popup.classList.remove('hidden');
+
+            // Add Escape key listener when popup is opened
+            this.handleEscape = (event) => {
+                if (event.key === 'Escape' && !popup.classList.contains('hidden')) {
+                    this.closePopup();
+                }
+            };
+            document.addEventListener('keydown', this.handleEscape);
         } else {
             console.error('Cannot open popup: settings-popup element not found');
         }
@@ -154,12 +177,29 @@ class SettingsManager {
         const popup = document.getElementById('settings-popup');
         if (popup) {
             popup.classList.add('hidden');
+
+            // Remove Escape key listener when popup is closed
+            if (this.handleEscape) {
+                document.removeEventListener('keydown', this.handleEscape);
+                this.handleEscape = null; // Clear reference
+            }
         } else {
             console.error('Cannot close popup: settings-popup element not found');
         }
+    }
+
+    applyTheme(theme) {
+        document.body.className = `sans-serif-1 ${theme}-theme`; // Preserve sans-serif-1, set theme
+    }
+
+    applyInitialTheme() {
+        const savedTheme = localStorage.getItem('theme-select') || 'dark'; // Default to dark
+        this.applyTheme(savedTheme);
+        const themeSelect = this.getElement('theme-select');
+        if (themeSelect) themeSelect.value = savedTheme;
     }
 }
 
 // Usage (assuming config.js is loaded first)
 loadState(); // Initialize state and openaiSettings
-const settingsManager = new SettingsManager(defaults, state, openaiSettings);
+const settingsManager = new SettingsManager(defaults, state, openaiSettings); // Ensure defaults includes theme if needed

@@ -362,46 +362,24 @@ function showNotePopup(reference, verseSpan = null, event = null) {
 
     const popup = document.createElement('div');
     popup.className = 'note-popup';
-    popup.style.position = 'absolute';
-    popup.style.background = '#2A2A2A';
-    popup.style.color = '#F0F0F0';
-    popup.style.padding = '10px';
-    popup.style.border = '1px solid #4A704A';
-    popup.style.zIndex = '1000';
-    popup.style.maxWidth = '400px';
 
     const textarea = document.createElement('textarea');
     textarea.value = existingNote;
-    textarea.style.width = '100%';
-    textarea.style.height = '150px';
-    textarea.style.background = '#1A1A1A';
-    textarea.style.color = '#F0F0F0';
-    textarea.style.border = '1px solid #4A704A';
+    textarea.className = 'note-popup-textarea';
 
     const saveButton = document.createElement('button');
     saveButton.textContent = 'Save';
-    saveButton.style.background = '#4A704A';
-    saveButton.style.color = '#F0F0F0';
-    saveButton.style.border = 'none';
-    saveButton.style.padding = '5px 10px';
-    saveButton.style.marginRight = '5px';
+    saveButton.className = 'note-popup-button note-popup-save';
 
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'Cancel';
-    cancelButton.style.background = '#4A704A';
-    cancelButton.style.color = '#F0F0F0';
-    cancelButton.style.border = 'none';
-    cancelButton.style.padding = '5px 10px';
-    cancelButton.style.marginRight = '5px';
+    cancelButton.className = 'note-popup-button note-popup-cancel';
 
     const bookmarks = getBookmarks();
     const isBookmarked = bookmarks.includes(reference);
     const bookmarkButton = document.createElement('button');
     bookmarkButton.textContent = isBookmarked ? 'Remove Bookmark' : 'Bookmark';
-    bookmarkButton.style.background = '#4A704A';
-    bookmarkButton.style.color = '#F0F0F0';
-    bookmarkButton.style.border = 'none';
-    bookmarkButton.style.padding = '5px 10px';
+    bookmarkButton.className = 'note-popup-button note-popup-bookmark';
 
     popup.appendChild(textarea);
     popup.appendChild(saveButton);
@@ -418,25 +396,22 @@ function showNotePopup(reference, verseSpan = null, event = null) {
 
     if (verseNum) {
         const numRect = verseNum.getBoundingClientRect();
-        const desiredTop = numRect.bottom; // Position below the verse number
-        const desiredLeft = numRect.left;  // Align with verse number's left edge
+        const desiredTop = numRect.bottom;
+        const desiredLeft = numRect.left;
 
-        // Check if popup fits at desired position
         const fitsBelow = (desiredTop + popupHeight) <= viewportHeight;
         const fitsHorizontally = (desiredLeft >= 0) && ((desiredLeft + popupWidth) <= viewportWidth);
 
         if (fitsBelow && fitsHorizontally) {
-            // Position below verse number and aligned with its left edge
+            popup.style.position = 'absolute';
             popup.style.top = `${desiredTop}px`;
             popup.style.left = `${desiredLeft}px`;
         } else {
-            // Center on screen as fallback
             popup.style.position = 'fixed';
             popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
             popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
         }
     } else {
-        // Fallback to center if no verseSpan (shouldn't happen in current use cases)
         popup.style.position = 'fixed';
         popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
         popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
@@ -456,11 +431,11 @@ function showNotePopup(reference, verseSpan = null, event = null) {
 
     const bookmarkAndClose = () => {
         if (isBookmarked) {
-            removeBookmark(reference); // Remove the bookmark
+            removeBookmark(reference);
         } else {
-            addBookmark(reference); // Add the bookmark
+            addBookmark(reference);
         }
-        cleanupAndRemove(); // Close the popup
+        cleanupAndRemove();
     };
 
     const cleanupAndRemove = () => {

@@ -223,17 +223,7 @@ function importLocalUser(jsonString) {
     }
 }
 
-function userStorage() {
-    let totalBytes = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const value = localStorage.getItem(key);
-        // Calculate bytes: key length + value length (UTF-16: 2 bytes per character)
-        totalBytes += ((key.length + value.length) * 2);
-    }
-    return totalBytes;
-}
-
 // Usage (assuming config.js is loaded first)
 loadState(); // Initialize state and openaiSettings
 const settingsManager = new SettingsManager(defaults, state, openaiSettings); // Ensure defaults includes theme if needed
+startStorageMonitoring(); // Periodically monitor and prune caches

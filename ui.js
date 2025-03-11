@@ -397,8 +397,19 @@ function showVerseMenu(verseSpan, event) {
             document.removeEventListener('click', closePopup);
         }
     };
+
+    // Add Escape key handler
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            popup.remove();
+            document.removeEventListener('click', closePopup);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+
     setTimeout(() => {
         document.addEventListener('click', closePopup);
+        document.addEventListener('keydown', handleEscape);
     }, 0);
 }
 

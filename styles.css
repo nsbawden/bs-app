@@ -1,7 +1,12 @@
 /* Importing fonts (unchanged) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Source+Sans+3:wght@400;500&family=Merriweather:wght@400;500&family=Crimson+Text:wght@400;500&display=swap');
 
-/* Define color variables with current dark theme as default */
+:root {
+    /* prevents white flash on load */
+    --body-bg: #000;
+}
+
+/* Dark Theme (default) */
 body.dark-theme {
     /* Body */
     --body-bg: #1F1F1F;
@@ -143,7 +148,6 @@ body.light-theme {
     --edit-input-border: #8ABF8A;
 }
 
-/* Structural Styles with Variables Applied */
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -557,7 +561,6 @@ footer.expanded #ai-output-container {
     cursor: pointer;
 }
 
-/* Existing .note-popup (updated to use variables if not already) */
 .note-popup {
     position: absolute;
     /* Default, overridden by JS if needed */
@@ -571,7 +574,6 @@ footer.expanded #ai-output-container {
     border-radius: 5px;
 }
 
-/* New classes for note popup elements */
 .note-popup-textarea {
     width: 100%;
     height: 150px;
@@ -595,19 +597,6 @@ footer.expanded #ai-output-container {
 
 .note-popup-button:hover {
     background-color: var(--button-hover-bg);
-}
-
-/* Specific button styles (optional, if you want distinct appearances) */
-.note-popup-save {
-    /* Inherits from .note-popup-button, add specific styles if needed */
-}
-
-.note-popup-cancel {
-    /* Inherits from .note-popup-button, add specific styles if needed */
-}
-
-.note-popup-bookmark {
-    /* Inherits from .note-popup-button, add specific styles if needed */
 }
 
 .list-popup {
@@ -698,7 +687,7 @@ footer.expanded #ai-output-container {
     font-size: 14px;
 }
 
-/* Mobile Optimizations (unchanged structurally, only colors updated) */
+/* Mobile Optimizations */
 @media (max-width: 480px) {
     .top-bar {
         padding: 8px;

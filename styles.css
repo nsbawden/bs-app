@@ -354,9 +354,7 @@ footer.expanded #ai-output-container {
     background-color: #4A70A4;
     color: #F0F0F0;
     text-decoration: none;
-    font-family: 'Merriweather', serif;
-    font-size: 10pt;
-    line-height: 17px;
+    font-size: 11pt;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -369,14 +367,11 @@ footer.expanded #ai-output-container {
     left: 0;
     top: 0;
     width: 5px;
-    /* Thin vertical bar */
     height: 100%;
     background-color: #3A5080;
-    /* Darker blue shade */
 }
 
-/* Optional: Indented triangle on the right (commented out alternative) */
-
+/* Indented triangle on the right */
 .bookmark-item::after {
     content: '';
     position: absolute;
@@ -388,7 +383,6 @@ footer.expanded #ai-output-container {
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
     border-right: 10px solid #2A2A2A;
-    /* Matches background to look indented */
 }
 
 .bookmark-item:hover {

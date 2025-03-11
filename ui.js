@@ -229,13 +229,34 @@ updateTopBarSummary();
 function scrollToSelectedVerse(topBuffer = true) {
     const selectedVerse = document.querySelector('.verse.selected');
     if (!selectedVerse || !verseDisplay) return;
+
     const lineHeight = parseInt(window.getComputedStyle(selectedVerse).lineHeight) || 20;
     const bufferLines = topBuffer ? 3 : 0;
-    const offset = lineHeight * bufferLines;
+    const bufferOffset = lineHeight * bufferLines;
+
     const rect = selectedVerse.getBoundingClientRect();
     const containerRect = verseDisplay.getBoundingClientRect();
-    const topPosition = rect.top - containerRect.top + verseDisplay.scrollTop;
-    verseDisplay.scrollTo({ top: topPosition - offset, behavior: 'smooth' });
+    const currentScrollTop = verseDisplay.scrollTop;
+
+    // Calculate visibility boundaries
+    const verseTop = rect.top - containerRect.top + currentScrollTop;
+    const verseBottom = verseTop + rect.height;
+    const viewTop = currentScrollTop + bufferOffset;
+    const viewBottom = currentScrollTop + containerRect.height;
+
+    // Check if verse is fully visible (with buffer at top)
+    const isFullyVisible =
+        verseTop >= viewTop &&
+        verseBottom <= viewBottom;
+
+    // Only scroll if verse is not fully visible
+    if (!isFullyVisible) {
+        const targetPosition = verseTop - bufferOffset;
+        verseDisplay.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+        });
+    }
 }
 
 // Tab Management

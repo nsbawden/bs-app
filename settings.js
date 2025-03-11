@@ -1,8 +1,9 @@
 // settings.js
 class SettingsManager {
-    constructor(defaults, state) {
+    constructor(defaults, state, openaiSettingsRef) {
         this.defaults = defaults;
         this.state = state; // Reference to the state from config.js
+        this.openaiSettings = openaiSettingsRef; // Reference to global openaiSettings from config.js
         this.elements = new Map();
         this.settingsConfig = {
             'settings-btn': { events: { 'click': this.openPopup.bind(this) } },
@@ -88,7 +89,7 @@ class SettingsManager {
         const parts = path.split('.');
         let current = obj;
         for (let i = 0; i < parts.length - 1; i++) {
-            current = current[parts[i]];
+            current = current[parts[i]] = current[parts[i]] || {};
         }
         current[parts[parts.length - 1]] = value;
     }
@@ -123,6 +124,10 @@ class SettingsManager {
                 if (value) localStorage.setItem(id, value);
             } else if (config.storage === 'state') {
                 this.setNestedValue(this.state, config.defaultKey, value);
+                // Sync openaiSettings for immediate use
+                if (config.defaultKey.startsWith('openaiSettings')) {
+                    this.setNestedValue(this.openaiSettings, config.defaultKey.split('.')[1], value);
+                }
             }
         });
 
@@ -157,4 +162,4 @@ class SettingsManager {
 
 // Usage (assuming config.js is loaded first)
 loadState(); // Initialize state and openaiSettings
-const settingsManager = new SettingsManager(defaults, state);
+const settingsManager = new SettingsManager(defaults, state, openaiSettings);

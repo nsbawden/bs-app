@@ -7,9 +7,11 @@ async function fetchChapter(book, chapter, version) {
 
     const cacheKey = `${version}-${book}-${chapter}`;
 
+    // Check cache first
     if (chapterCache[cacheKey]) {
         console.log(`Cache hit for ${cacheKey}`);
         chapterCache[cacheKey].lastLoaded = Date.now();
+        saveChapterCache(); // Update cache timestamp in storage
         return chapterCache[cacheKey].data;
     }
 
@@ -40,12 +42,14 @@ async function fetchChapter(book, chapter, version) {
             throw new Error(`Unknown handler type: ${bookData.handler} for book ${book}`);
     }
 
+    // Store in cache
     chapterCache[cacheKey] = {
         data: result,
         lastLoaded: Date.now()
     };
     console.log(`Cache miss - stored ${cacheKey}`);
     saveChapterCache();
+
     return result;
 }
 

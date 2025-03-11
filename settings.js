@@ -200,6 +200,40 @@ class SettingsManager {
     }
 }
 
+function exportLocalUser() {
+    const storageData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        storageData[key] = localStorage.getItem(key);
+    }
+    return JSON.stringify(storageData, null, 2); // Pretty-printed with 2-space indentation
+}
+
+function importLocalUser(jsonString) {
+    try {
+        const storageData = JSON.parse(jsonString);
+        if (typeof storageData !== 'object' || storageData === null) {
+            throw new Error('Invalid JSON: Must be an object');
+        }
+        Object.entries(storageData).forEach(([key, value]) => {
+            localStorage.setItem(key, value);
+        });
+    } catch (error) {
+        console.error('Failed to import JSON to localStorage:', error.message);
+    }
+}
+
+function userStorage() {
+    let totalBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        // Calculate bytes: key length + value length (UTF-16: 2 bytes per character)
+        totalBytes += ((key.length + value.length) * 2);
+    }
+    return totalBytes;
+}
+
 // Usage (assuming config.js is loaded first)
 loadState(); // Initialize state and openaiSettings
 const settingsManager = new SettingsManager(defaults, state, openaiSettings); // Ensure defaults includes theme if needed

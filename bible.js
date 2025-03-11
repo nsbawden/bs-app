@@ -237,6 +237,7 @@ async function updateChapters() {
 }
 
 async function refreshDisplay() {
+    verseDisplay.innerHTML = '';
     const data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
     const verseCount = data.verses.length;
 

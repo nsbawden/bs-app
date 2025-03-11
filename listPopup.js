@@ -26,56 +26,7 @@ function constructTabs() {
             label: "tags",
             items: Object.keys(tagStorage).map(tag => ({
                 label: tag,
-                editHandler: (oldName, newName) => renameTag(oldName, newName)
-            })),
-            editable: true,
-            sorted: true
-        },
-        {
-            label: "writings",
-            items: writings.map(writing => ({
-                label: writing.author ? `${writing.label} - ${writing.author}` : writing.label,
-                handler: () => {
-                    fetch(writing.filename)
-                        .then(response => response.ok ? response.text() : Promise.reject(`Failed to load ${writing.filename}`))
-                        .then(content => showBook(writing.label, content))
-                        .catch(error => showBook(writing.label, `# Error\nCould not load ${writing.filename}: ${error}`));
-                }
-            })),
-            editable: false
-        }
-    ];
-}
-
-
-// listPopup.js
-
-function constructTabs() {
-    const notes = getNotes();
-    const tagStorage = {};
-    const tagCaseMap = {};
-    Object.entries(notes).forEach(([key, note]) => {
-        const tags = (note.match(/#\w+\b/g) || []);
-        tags.forEach(tag => {
-            const lowerTag = tag.toLowerCase();
-            if (!tagCaseMap[lowerTag]) {
-                tagCaseMap[lowerTag] = tag;
-                tagStorage[tag] = [];
-            }
-            const preferredTag = tagCaseMap[lowerTag];
-            if (!tagStorage[preferredTag].includes(key)) {
-                tagStorage[preferredTag].push(key);
-            }
-        });
-    });
-    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
-    return [
-        { label: "questions", items: savedQuestions, editable: true },
-        { label: "notes", items: getNotesList(), editable: false },
-        {
-            label: "tags",
-            items: Object.keys(tagStorage).map(tag => ({
-                label: tag,
+                locations: tagStorage[tag], // Optional for tags
                 editHandler: (oldName, newName) => renameTag(oldName, newName)
             })),
             editable: true,
@@ -133,12 +84,10 @@ function showListPopup(tabData) {
             tabContainer.appendChild(tabButton);
         });
 
-        // Sort items if the tab has the sorted property
+        // Prepare items with original indices and sort if needed
         const activeTab = tabData[activeTabIndex];
-        if (activeTab.sorted && activeTab.items) {
-            activeTab.items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
-        }
-        renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove);
+        const displayItems = prepareDisplayItems(activeTab);
+        renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove, displayItems);
 
         popup.appendChild(closeButton);
         popup.appendChild(tabContainer);
@@ -155,12 +104,9 @@ function showListPopup(tabData) {
                 btn.className = 'tab-btn' + (i === index ? ' active' : '');
             });
             listContainer.innerHTML = '';
-            // Sort items if the tab has the sorted property
             const tab = tabData[index];
-            if (tab.sorted && tab.items) {
-                tab.items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
-            }
-            renderList(listContainer, tab, index, resolve, cleanupAndRemove);
+            const displayItems = prepareDisplayItems(tab);
+            renderList(listContainer, tab, index, resolve, cleanupAndRemove, displayItems);
         }
 
         const handleEscape = (event) => {
@@ -175,18 +121,31 @@ function showListPopup(tabData) {
             document.removeEventListener('keydown', handleEscape);
             popup.remove();
         }
+
+        // Helper to prepare display items with original indices
+        function prepareDisplayItems(tab) {
+            if (!tab.items) return [];
+            const itemsWithIndex = tab.items.map((item, index) => ({
+                ...item, // Copy all properties
+                originalIndex: index // Store original position
+            }));
+            if (tab.sorted) {
+                itemsWithIndex.sort((a, b) =>
+                    (a.label || a.toString()).localeCompare(b.label || b.toString(), undefined, { sensitivity: 'base' })
+                );
+            }
+            return itemsWithIndex;
+        }
     });
 }
 
-// The rest of the functions (renderList, createListItem, toggleEditMode, makeSortable) remain unchanged
-
-function renderList(container, tab, tabIndex, resolve, cleanup) {
+function renderList(container, tab, tabIndex, resolve, cleanup, displayItems) {
     const list = document.createElement('div');
     list.className = 'list-items';
 
-    if (tab.items && tab.items.length > 0) {
-        tab.items.forEach((item, index) => {
-            const itemDiv = createListItem(item, index, tab, tabIndex, resolve, cleanup);
+    if (displayItems && displayItems.length > 0) {
+        displayItems.forEach((item, displayIndex) => {
+            const itemDiv = createListItem(item, displayIndex, tab, tabIndex, resolve, cleanup);
             list.appendChild(itemDiv);
         });
     } else {
@@ -197,20 +156,20 @@ function renderList(container, tab, tabIndex, resolve, cleanup) {
     }
 
     container.appendChild(list);
-    makeSortable(list, tab.items || []);
+    makeSortable(list, displayItems || []);
 }
 
-function createListItem(item, index, tab, tabIndex, resolve, cleanup) {
+function createListItem(item, displayIndex, tab, tabIndex, resolve, cleanup) {
     const div = document.createElement('div');
     div.className = 'list-item';
-    div.dataset.index = index;
+    div.dataset.index = displayIndex; // Display index for sorting/dragging
     div.draggable = true;
 
     const textSpan = document.createElement('span');
-    textSpan.textContent = item.label;
+    textSpan.textContent = item.label || item.toString(); // Handle strings or objects
     textSpan.className = 'list-text';
     textSpan.onclick = () => {
-        resolve({ tabIndex: tabIndex, itemIndex: index });
+        resolve({ tabIndex: tabIndex, itemIndex: item.originalIndex }); // Use original index
         cleanup();
     };
 
@@ -234,7 +193,7 @@ function toggleEditMode(div, item, items, tabIndex, resolve, cleanup) {
     if (div.className.includes('editing')) {
         const input = div.querySelector('.edit-input');
         if (!input) return;
-        const oldLabel = item.label; // Capture old label before overwriting
+        const oldLabel = item.label;
         item.label = input.value.trim();
         if (item.editHandler) {
             item.editHandler(oldLabel, item.label);
@@ -243,7 +202,7 @@ function toggleEditMode(div, item, items, tabIndex, resolve, cleanup) {
         newTextSpan.textContent = item.label;
         newTextSpan.className = 'list-text';
         newTextSpan.onclick = () => {
-            resolve({ tabIndex: tabIndex, itemIndex: parseInt(div.dataset.index) });
+            resolve({ tabIndex: tabIndex, itemIndex: item.originalIndex });
             cleanup();
         };
         div.insertBefore(newTextSpan, input);
@@ -253,7 +212,7 @@ function toggleEditMode(div, item, items, tabIndex, resolve, cleanup) {
         const textSpan = div.querySelector('.list-text');
         const input = document.createElement('input');
         input.type = 'text';
-        input.value = item.label;
+        input.value = item.label || item.toString();
         input.className = 'edit-input';
         div.insertBefore(input, textSpan);
         div.removeChild(textSpan);

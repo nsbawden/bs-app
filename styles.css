@@ -14,7 +14,7 @@ body.dark-theme {
     --top-bar-bg: #4A704A;
 
     /* Select Inputs */
-    --select-bg: #F0F0F0;
+    --select-bg: #D5D5D5;
     --select-text: #1A1A1A;
 
     /* Verse */
@@ -26,7 +26,7 @@ body.dark-theme {
     --footer-bg: #2A2A2A;
 
     /* AI Elements */
-    --ai-prompt-bg: #F0F0F0;
+    --ai-prompt-bg: #D5C8C0;
     --ai-button-bg: #4A704A;
     --ai-button-text: #F0F0F0;
     --ai-output-bg: #2b2b2b;
@@ -80,106 +80,67 @@ body.light-theme {
 
     /* Links */
     --link-color: #0000FF;
-    /* Blue instead of gold for better contrast */
 
     /* Top Bar */
     --top-bar-bg: #257425;
 
     /* Select Inputs */
     --select-bg: #F0F0F0;
-    /* Unchanged */
     --select-text: #1A1A1A;
-    /* Unchanged */
 
     /* Verse */
     --verse-num-color: #005FFF;
-    /* Unchanged gold */
     --verse-selected-bg: #8ABF8A;
-    /* Match top-bar */
     --has-note-color: #FF9999;
-    /* Softer red for light theme */
 
     /* Footer */
     --footer-bg: #E0E0E0;
-    /* Light gray */
 
     /* AI Elements */
     --ai-prompt-bg: #F0F0F0;
-    /* Unchanged */
     --ai-button-bg: #8ABF8A;
-    /* Lighter green */
     --ai-button-text: #000000;
-    /* Black */
     --ai-output-bg: #F0F0F0;
-    /* Very light gray */
 
     /* Tabs */
     --tab-bg: #D0D0D0;
-    /* Light gray */
     --tab-text: #000000;
-    /* Black */
     --tab-hover-bg: #C0C0C0;
-    /* Slightly darker gray */
     --tab-active-bg: #8ABF8A;
-    /* Match top-bar */
     --tab-active-text: #000000;
-    /* Black */
     --tab-border: #ccc;
-    /* Softer border */
 
     /* Popup */
     --popup-bg: #FFFFFF;
-    /* White */
     --popup-border: #8ABF8A;
-    /* Match top-bar */
     --popup-text: #000000;
-    /* Black */
     --popup-item-hover-bg: #A0D0A0;
-    /* Slightly darker green */
 
     /* Settings Popup */
     --settings-input-bg: #F0F0F0;
-    /* Unchanged */
     --settings-input-text: #1A1A1A;
-    /* Unchanged */
     --settings-info-text: #666633;
-    /* Darker muted tone */
 
     /* Bookmark */
     --bookmark-bg: #8AA0D4;
-    /* Lighter blue */
     --bookmark-text: #000000;
-    /* Black */
     --bookmark-bar-bg: #6A80B0;
-    /* Lighter dark blue */
     --bookmark-triangle-bg: #E0E0E0;
-    /* Match footer */
     --bookmark-hover-bg: #A0B0E0;
-    /* Lighter blue hover */
 
     /* Buttons */
     --button-bg: #8ABF8A;
-    /* Lighter green */
     --button-text: #000000;
-    /* Black */
     --button-hover-bg: #A0D0A0;
-    /* Slightly darker green */
 
     /* List Popup */
     --list-item-bg: #E0E0E0;
-    /* Light gray */
     --tab-btn-bg: #D0D0D0;
-    /* Light gray */
     --tab-btn-active-bg: #8ABF8A;
-    /* Match top-bar */
     --tab-btn-hover-bg: #A0D0A0;
-    /* Slightly darker green */
     --edit-input-bg: #FFFFFF;
-    /* White */
     --edit-input-text: #000000;
-    /* Black */
     --edit-input-border: #8ABF8A;
-    /* Match top-bar */
 }
 
 /* Structural Styles with Variables Applied */
@@ -326,7 +287,8 @@ footer.expanded {
 }
 
 #ai-submit,
-#ai-translate {
+#ai-translate,
+#ai-toggle {
     width: 30px;
     height: 30px;
     padding: 0;
@@ -337,6 +299,10 @@ footer.expanded {
     font-size: 16px;
     line-height: 30px;
     text-align: center;
+}
+
+#ai-toggle {
+    font-size: 12px;
 }
 
 .tabs-container {
@@ -388,20 +354,6 @@ footer.expanded #ai-output-container {
     overflow: var(--ai-output-overflow, hidden);
     transition: max-height 0.3s ease;
     box-sizing: border-box;
-}
-
-#ai-toggle {
-    position: fixed;
-    top: 10px;
-    right: 40px;
-    padding: 2px 8px;
-    background-color: var(--button-bg);
-    color: var(--button-text);
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    opacity: 70%;
-    z-index: 1000;
 }
 
 .popup {

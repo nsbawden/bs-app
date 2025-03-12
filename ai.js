@@ -30,11 +30,11 @@ const aiModules = {
             return rates[model] || rates[defaults.openaiSettings.model];
         },
         getApiKey() {
-            let apiKey = localStorage.getItem('openAI_apiKey');
+            let apiKey = localStorage.getItem('openAIApiKey');
             if (!apiKey) {
                 apiKey = prompt('Please enter your OpenAI API Key:');
                 if (apiKey) {
-                    localStorage.setItem('openAI_apiKey', apiKey);
+                    localStorage.setItem('openAIApiKey', apiKey);
                 } else {
                     throw new Error('No API key provided. Cannot proceed with OpenAI request.');
                 }
@@ -132,13 +132,17 @@ async function queryAI(question, context, timer, shouldCacheTranslation = false)
     try {
         let response = await currentAIModule.query(question, context);
 
+        if (response.indexOf('Sorry,') === 0) {
+            shouldCacheTranslation = false;
+        }
+
         if (context.verseText) {
             response = insertBefore('**Literal', response, context.verseText);
         }
 
         if (shouldCacheTranslation) {
             // Cache the translation result
-            const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
+            const cacheKey = translationCacheKey(context, question);
             translationCache[cacheKey] = {
                 response: response,
                 timestamp: Date.now() // For FIFO pruning

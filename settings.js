@@ -201,7 +201,7 @@ class SettingsManager {
 }
 
 function exportLocalUser() {
-    const excludeKeys = ['chapterCache']; // Keys to exclude from export
+    const excludeKeys = ['chapterCache','translationCache']; // Keys to exclude from export
     const storageData = {};
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);

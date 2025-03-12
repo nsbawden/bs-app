@@ -345,6 +345,10 @@ footer.expanded {
     flex: 0 0 auto;
 }
 
+#ai-output-container ul, #ai-output-container ol {
+    margin-bottom: 1em;
+}
+
 footer.expanded #ai-output-container {
     flex: 1 1 auto;
     display: flex;

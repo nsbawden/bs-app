@@ -111,6 +111,20 @@ function submitAIQuery() {
 
 aiSubmit.addEventListener('click', submitAIQuery);
 
+// djb2 hash
+function hash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) + hash) + char; // hash * 33 + char
+    }
+    return hash >>> 0; // Ensure positive number
+}
+
+function translationCacheKey(context, question) {
+    return `${context.model}-${context.book}-${context.chapter}-${context.verse}-${context.temperature}-${hash(question)}`;
+}
+
 // AI Translation
 function submitAITranslate() {
     const context = {
@@ -119,11 +133,12 @@ function submitAITranslate() {
         verse: state.currentVerse.verse,
         version: state.bibleVersion.toUpperCase(),
         system: "format answer in Markdown",
+        model: openaiSettings.model,
         temperature: 1
     };
     const verseReference = `${context.book} ${context.chapter}:${context.verse} (${context.version})`;
     const fullQuestion = constructTranslationPrompt(verseReference);
-    const cacheKey = `${context.book}-${context.chapter}-${context.verse}-${context.temperature}`;
+    const cacheKey = translationCacheKey(context, fullQuestion);
 
     loadTranslationCache();
     if (translationCache[cacheKey]) {
@@ -143,9 +158,34 @@ function submitAITranslate() {
     queryAI(fullQuestion, context, timer, true);
 }
 
+// Original
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal and modern bias; use neutral swaps (e.g., 'children' for 'things born') for readability. At end give original English verse and both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
+// }
+
+// Good with heed emphasis
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', 'listen under' for 'hypakouete', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, provide two versions: 1. A literal translation that strictly uses root meanings, ensuring grammatical coherence. 2. A readable translation that adapts the literal meanings into natural English, using neutral swaps for clarity (e.g., 'children' for 'things born'), while staying close to the literal roots. If idiomatic, note literal roots in the literal version and adapt the readable version for natural sense. Avoid doctrinal and modern bias. At end, give the original English verse, the literal translation, and the readable translation.`;
+//     // return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', 'listen under' or 'heed' for 'hypakouete', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, provide two versions: 1. A literal translation that strictly uses root meanings, ensuring grammatical coherence. 2. A readable translation that adapts the literal meanings into natural English, using neutral swaps for clarity (e.g., 'children' for 'things born'), while staying close to the literal roots. If idiomatic, note literal roots in the literal version and adapt the readable version for natural sense. Avoid doctrinal and modern bias. At end, give the original English verse, the literal translation, and the readable translation.`;
+// }
+
+// Ask for multiple translations (Good but poor English)
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in clear English, using neutral swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations for each root sense. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
+// }
+
+// Very good multiple translate
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in modern, conversational English, using neutral swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations for each root sense. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
+// }
+
 function constructTranslationPrompt(verseReference) {
-    return `Translate the Bible verse ${verseReference} from its original language to English using literal root meanings (e.g., 'to listen' for 'ἀκούω', not 'obey'). Break down each word: prefix, stem, suffix (treat compound words as single units if historically recognized as such). List root meaning (include primary options if ambiguous) and grammatical role. For the final translation, use root meanings and consider the verse’s broader context within the original passage or book, based solely on the literal terms of the original language and content; if idiomatic, note the literal roots explicitly in the literal translation and adapt the readable version to reflect the phrase’s natural sense in context. Avoid doctrinal and modern bias; use neutral swaps (e.g., 'children' for 'things born') for readability. At end give original English verse and both literal and easily readable final translations; ensure the literal version is grammatically coherent using root meanings, and the readable version is clear, grammatically complete, and flows naturally in English while remaining as close as possible to the literal root meanings.`;
+    return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not biblical 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in regular, modern English (e.g., 'listen under' as 'listen attentivly'), using natural swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
 }
+
+// function constructTranslationPrompt(verseReference) {
+//     return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List root meaning (with options if ambiguous) and grammatical role. Provide: 1. Literal translation using root meanings, grammatically coherent. 2. Readable translation that strictly preserves pre-biblical root meanings in clear English (e.g., 'hypakouete' from 'listen under' stays 'listen attentively'), using neutral swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with original English verse, literal translation, and readable translation.`;
+// }
 
 aiTranslate.addEventListener('click', submitAITranslate);
 

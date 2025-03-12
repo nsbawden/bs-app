@@ -42,13 +42,36 @@ async function fetchChapter(book, chapter, version) {
             throw new Error(`Unknown handler type: ${bookData.handler} for book ${book}`);
     }
 
-    // Store in cache
-    chapterCache[cacheKey] = {
-        data: result,
-        lastLoaded: Date.now()
-    };
-    console.log(`Cache miss - stored ${cacheKey}`);
-    saveChapterCache();
+    // Store in cache with retry logic on failure
+    const maxRetries = 5; // Limit retries to prevent infinite loops
+    let retries = 0;
+    while (retries < maxRetries) {
+        try {
+            chapterCache[cacheKey] = {
+                data: result,
+                lastLoaded: Date.now()
+            };
+            saveChapterCache(); // This might throw QuotaExceededError
+            console.log(`Cache miss - stored ${cacheKey}`);
+            break; // Success, exit loop
+        } catch (error) {
+            if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                retries++;
+                console.log(`Cache write failed (attempt ${retries}/${maxRetries}): ${error.message}`);
+                if (retries < maxRetries) {
+                    console.log('Pruning 5 chapters to free space...');
+                    pruneOldChapters(5); // Prune 5 chapters
+                    saveChapterCache(); // Update storage after pruning
+                } else {
+                    console.error('Max retries reached, unable to cache chapter');
+                    throw new Error(`Failed to cache ${cacheKey} after ${maxRetries} attempts: ${error.message}`);
+                }
+            } else {
+                // Non-quota error (e.g., JSON.stringify failure), rethrow immediately
+                throw error;
+            }
+        }
+    }
 
     return result;
 }
@@ -219,7 +242,32 @@ async function fetchApiEsv(book, chapter) {
     return convertedData;
 }
 
-function populateSelectors() {
+function hasBook(key) {
+    return books.some(book => book.key === key);
+}
+
+function bookProperty(bookName, property) {
+    const book = books.find(book => book.key === bookName);
+    return book ? book[property] : undefined;
+}
+
+function goToVerse(verse, chapter, book) {
+    chapter = chapter ? parseInt(chapter) : null;
+    verse = verse ? parseInt(verse) : null;
+    if (book && hasBook(book)) {
+        state.currentVerse.book = book;
+    }
+    if (chapter && chapter > 0 && bookProperty(state.currentVerse.book, 'chapters') >= chapter) {
+        state.currentVerse.chapter = chapter;
+    }
+    if (verse && verse > 0) {
+        state.currentVerse.verse = verse;
+    }
+    loadVerse();
+}
+
+function loadVerse() {
+    // Populate the books selector
     bookSelect.innerHTML = books.map(b => `<option value="${b.key}">${b.label}</option>`).join('');
     bookSelect.value = state.currentVerse.book;
     versionSelect.value = state.bibleVersion;
@@ -227,6 +275,7 @@ function populateSelectors() {
 }
 
 async function updateChapters() {
+    // Populate the chapters selector
     const book = books.find(b => b.key === state.currentVerse.book);
     const chapterCount = book.chapters;
     chapterSelect.innerHTML = Array.from({ length: chapterCount }, (_, i) =>
@@ -241,6 +290,7 @@ async function refreshDisplay() {
     const data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
     const verseCount = data.verses.length;
 
+    // Populate verse selector
     verseSelect.innerHTML = Array.from({ length: verseCount }, (_, i) =>
         `<option value="${i + 1}">${i + 1}</option>`
     ).join('');
@@ -304,8 +354,7 @@ function rebuildBookmarksList() {
     const bookmarkLinks = bookmarks.map(ref => {
         const [book, chapter, verse] = ref.split('/');
         const displayText = `${book} ${chapter}:${verse}`;
-        const url = `/index.html?book=${book}&chapter=${chapter}&verse=${verse}`;
-        return `<a href="${url}" class="bookmark-item">${displayText}</a>`;
+        return `<a href="#" onclick="goToVerse('${verse}', '${chapter}', '${book}'); return false;" class="bookmark-item">${displayText}</a>`;
     }).join(' ');
 
     bookmarkList.innerHTML = bookmarkLinks || ''; // Empty string if no bookmarks
@@ -325,7 +374,7 @@ window.goToNext = function () {
         return;
     }
     state.currentVerse.verse = 1;
-    populateSelectors();
+    loadVerse();
 };
 
 window.goToPrevious = function () {
@@ -341,7 +390,7 @@ window.goToPrevious = function () {
         return;
     }
     state.currentVerse.verse = 1;
-    populateSelectors();
+    loadVerse();
 };
 
 function getSelectedVerseText() {
@@ -561,12 +610,8 @@ function linkVerses(text) {
     // Create the regex pattern
     const bookPattern = bookNames.join('|');
     const regex = new RegExp(`(${bookPattern})\\s+(\\d+):(\\d+)(?:-(\\d+))?`, 'g');
-
-    // Replace references with links in the provided text
     const linkedText = text.replace(regex, (match, book, chapter, startVerse, endVerse) => {
-        const encodedBook = encodeURIComponent(book);
-        const url = `/index.html?book=${encodedBook}&chapter=${chapter}&verse=${startVerse}`;
-        return `<a href="${url}">${match}</a>`;
+        return `<a href="#" onclick="goToVerse('${startVerse}', '${chapter}', '${book}'); return false;">${match}</a>`;
     });
     return linkedText;
 }
@@ -600,6 +645,6 @@ function showBook(label, content) {
 
 // Initialize
 loadQueryString();
-populateSelectors();
+loadVerse();
 adjustTabCount();
 setActiveTab(1);

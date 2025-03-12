@@ -26,9 +26,11 @@ const savedQuestions = [
 // In-memory cache object to store retrieved chapters
 // For production, set MAX_CHAPTERS to 15 and use sessionStorage in functions to conformm to esv.org policy
 const MAX_CHAPTERS = 500; // Chapter cache size (max 500 avoids filling memory)
-const MAX_STORAGE_PERCENTAGE = 0.9; // 90% threshold
+const MAX_STORAGE_PERCENTAGE = 0.8; // 80% threshold leaves room for bookmarks and notes
 const STORAGE_CHECK_INTERVAL = 60000; // Check every minute (in milliseconds)
 const DEFAULT_MAX_STORAGE = 10485760; // 10MB in bytes, common localStorage limit
+const RESTRICTED_MAX_STORAGE = 5242880; // 5MB, for Opera and older browsers
+
 
 let chapterCache = {};
 

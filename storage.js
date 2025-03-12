@@ -158,12 +158,12 @@ function saveChapterCache() {
     localStorage.setItem('chapterCache', JSON.stringify(chapterCache));
 }
 
-// Estimate localStorage usage by summing key/value sizes
+// Estimate localStorage usage in bytes
 function estimateLocalStorageUsage() {
     let totalSize = 0;
     for (let key in localStorage) {
         if (localStorage.hasOwnProperty(key)) {
-            const keySize = ((key || '').length * 2);
+            const keySize = ((key || '').length * 2); // UTF-16, 2 bytes per char
             const valueSize = ((localStorage[key] || '').length * 2);
             totalSize += keySize + valueSize;
         }
@@ -171,44 +171,33 @@ function estimateLocalStorageUsage() {
     return totalSize;
 }
 
-// Get storage parameters using best available method
-async function getStorageParameters() {
-    try {
-        if (navigator.storage && navigator.storage.estimate) {
-            const { usage, quota } = await navigator.storage.estimate();
-            return {
-                usage,
-                quota,
-                source: 'Storage API'
-            };
-        }
-    } catch (error) {
-        console.log('Storage API unavailable or failed:', error);
+// Determine localStorage quota based on browser detection
+function getStorageQuota() {
+    const ua = navigator.userAgent.toLowerCase();
+
+    // Check for Opera (5MB default)
+    if (ua.includes('opr') || ua.includes('opera')) {
+        return RESTRICTED_MAX_STORAGE; // 5MB
     }
 
-    // Fallback to manual estimation
-    const usage = estimateLocalStorageUsage();
-    const quota = DEFAULT_MAX_STORAGE;
-    return {
-        usage,
-        quota,
-        source: 'Manual Estimate'
-    };
+    // Default to 10MB for Chrome, Firefox, Edge, Safari, etc.
+    return DEFAULT_MAX_STORAGE;
 }
 
 // Check storage and prune if near limit
 async function checkAndPruneStorage() {
     try {
-        const { usage, quota, source } = await getStorageParameters();
-        const usagePercentage = usage / quota;
+        const localQuota = getStorageQuota(); // Detect quota based on browser
+        const localUsage = estimateLocalStorageUsage();
+        const usagePercentage = localUsage / localQuota;
 
-        console.log(`${source}: ${(usagePercentage * 100).toFixed(2)}% (${(usage / 1000000).toFixed(2)} of ${(quota / 1000000).toFixed(2)} Mb)`);
+        console.log(`localStorage: ${(usagePercentage * 100).toFixed(2)}% (${(localUsage / (1024 * 1024)).toFixed(2)} of ${(localQuota / (1024 * 1024)).toFixed(2)} MB)`);
 
         if (usagePercentage > MAX_STORAGE_PERCENTAGE) {
             const keys = Object.keys(chapterCache);
             if (keys.length > 0) {
                 const chaptersToPrune = Math.max(5, Math.floor(keys.length * 0.1));
-                console.log(`Storage usage above ${MAX_STORAGE_PERCENTAGE * 100}%, pruning ${chaptersToPrune} chapters...`);
+                console.log(`localStorage usage above ${MAX_STORAGE_PERCENTAGE * 100}%, pruning ${chaptersToPrune} chapters...`);
                 pruneOldChapters(chaptersToPrune);
                 saveChapterCache();
             }
@@ -234,22 +223,63 @@ function loadTranslationCache() {
     }
 }
 
-// Save translation cache to localStorage with FIFO pruning
+// Save translation cache to localStorage with multiple pruning strategies
 function saveTranslationCache() {
     const keys = Object.keys(translationCache);
+    const maxRetries = 5; // Limit retries
+    const localQuota = getStorageQuota();
+    const localUsage = estimateLocalStorageUsage();
+    const usagePercentage = localUsage / localQuota;
 
-    if (keys.length > MAX_TRANSLATION_CACHE_SIZE) {
-        console.log(`Translation cache exceeds ${MAX_TRANSLATION_CACHE_SIZE} entries (${keys.length}), pruning oldest...`);
-        // Sort by timestamp (oldest first) and remove excess
+    // 1. Prune if over 90% of localStorage capacity
+    if (usagePercentage > MAX_STORAGE_PERCENTAGE) {
+        console.log(`localStorage usage at ${(usagePercentage * 100).toFixed(2)}% (${(localUsage / (1024 * 1024)).toFixed(2)} of ${(localQuota / (1024 * 1024)).toFixed(2)} MB), pruning translation cache...`);
         const sortedKeys = keys.sort((a, b) => {
             return (translationCache[a].timestamp || 0) - (translationCache[b].timestamp || 0);
         });
-        const toRemove = sortedKeys.slice(0, keys.length - MAX_TRANSLATION_CACHE_SIZE);
+        const toRemove = sortedKeys.slice(0, 5); // Prune 5 entries
+        toRemove.forEach(key => delete translationCache[key]);
+        console.log(`Pruned 5 translation entries, now at ${Object.keys(translationCache).length}`);
+    }
+
+    // 2. Prune if over MAX_TRANSLATION_CACHE_SIZE
+    const updatedKeys = Object.keys(translationCache); // Refresh after potential pruning
+    if (updatedKeys.length > MAX_TRANSLATION_CACHE_SIZE) {
+        console.log(`Translation cache exceeds ${MAX_TRANSLATION_CACHE_SIZE} entries (${updatedKeys.length}), pruning oldest...`);
+        const sortedKeys = updatedKeys.sort((a, b) => {
+            return (translationCache[a].timestamp || 0) - (translationCache[b].timestamp || 0);
+        });
+        const toRemove = sortedKeys.slice(0, updatedKeys.length - MAX_TRANSLATION_CACHE_SIZE);
         toRemove.forEach(key => delete translationCache[key]);
         console.log(`Pruned ${toRemove.length} entries, now at ${Object.keys(translationCache).length}`);
     }
 
-    localStorage.setItem('translationCache', JSON.stringify(translationCache));
+    // 3. Retry loop for quota errors
+    let retries = 0;
+    while (retries < maxRetries) {
+        try {
+            localStorage.setItem('translationCache', JSON.stringify(translationCache));
+            break; // Success, exit loop
+        } catch (error) {
+            if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                retries++;
+                console.log(`Translation cache save failed (attempt ${retries}/${maxRetries}): ${error.message}`);
+                if (retries < maxRetries) {
+                    const sortedKeys = Object.keys(translationCache).sort((a, b) => {
+                        return (translationCache[a].timestamp || 0) - (translationCache[b].timestamp || 0);
+                    });
+                    const toRemove = sortedKeys.slice(0, 5);
+                    toRemove.forEach(key => delete translationCache[key]);
+                    console.log(`Pruned 5 entries to free space, now at ${Object.keys(translationCache).length}`);
+                } else {
+                    console.error('Max retries reached, unable to save translation cache');
+                    throw new Error(`Failed to save translation cache after ${maxRetries} attempts: ${error.message}`);
+                }
+            } else {
+                throw error; // Non-quota error
+            }
+        }
+    }
 }
 
 function getNotes() {

@@ -128,6 +128,8 @@ function submitAITranslate() {
     loadTranslationCache();
     if (translationCache[cacheKey]) {
         console.log(`Cache hit for translation: ${cacheKey}`);
+        translationCache[cacheKey].timestamp = Date.now(); // Update timestamp
+        saveTranslationCache(); // Persist the updated cache
         displayResult(fullQuestion, translationCache[cacheKey].response);
         return;
     }

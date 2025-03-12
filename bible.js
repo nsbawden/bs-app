@@ -477,6 +477,83 @@ function showNotePopup(reference, verseSpan = null, event = null) {
     }
 }
 
+function showUserDataPopup(isExportMode = true) {
+    // Remove any existing popup
+    const existingPopup = document.querySelector('.note-popup'); // Reuse note-popup class
+    if (existingPopup) existingPopup.remove();
+
+    // Create popup elements
+    const popup = document.createElement('div');
+    popup.className = 'note-popup'; // Use same class as original for consistency
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'note-popup-textarea'; // Reuse existing textarea styling
+
+    const actionButton = document.createElement('button');
+    actionButton.className = 'note-popup-button'; // Reuse existing button styling
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '×';
+    closeButton.className = 'note-popup-close'; // New class, styled below
+    closeButton.title = 'Close';
+
+    // Configure based on mode
+    if (isExportMode) {
+        textarea.value = exportLocalUser(); // Assumes this returns a string
+        actionButton.textContent = 'Copy';
+        actionButton.addEventListener('click', () => {
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value)
+                .then(() => console.log('User data copied to clipboard'))
+                .catch(err => console.error('Copy failed:', err));
+            cleanupAndRemove();
+        });
+    } else {
+        textarea.placeholder = 'Paste user data here...';
+        actionButton.textContent = 'Apply';
+        actionButton.addEventListener('click', () => {
+            importLocalUser(textarea.value); // Assumes this handles the string
+            cleanupAndRemove();
+        });
+    }
+
+    // Append elements
+    popup.appendChild(closeButton);
+    popup.appendChild(textarea);
+    popup.appendChild(actionButton);
+    document.body.appendChild(popup);
+
+    // Center the popup (fixed positioning)
+    const popupHeight = popup.offsetHeight;
+    const popupWidth = popup.offsetWidth;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    popup.style.position = 'fixed';
+    popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
+    popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
+
+    // Cleanup function
+    const cleanupAndRemove = () => {
+        document.removeEventListener('keydown', handleKeyPress);
+        popup.remove();
+    };
+
+    // Escape key handler
+    const handleKeyPress = (e) => {
+        if (e.key === 'Escape') {
+            cleanupAndRemove();
+        }
+    };
+
+    // Event listeners
+    closeButton.addEventListener('click', cleanupAndRemove);
+    document.addEventListener('keydown', handleKeyPress);
+
+    // Focus textarea
+    textarea.focus();
+}
+
 function linkVerses(text) {
     // Extract book names from the books array
     const bookNames = books.map(book => book.key);

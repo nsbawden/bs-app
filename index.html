@@ -7,9 +7,11 @@
     <title>Quantum Bible</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js" defer></script>
 </head>
 
 <body class="sans-serif-1">
+    <!-- Rest of your HTML remains unchanged -->
     <div class="top-bar">
         <span id="top-bar-summary"></span>
         <button id="top-bar-toggle">▼</button>
@@ -103,20 +105,17 @@
                     <label for="openAIApiKey">OpenAI API Key</label>
                     <input type="text" id="openAIApiKey">
                     <p class="setting-info">Your API key for OpenAI. <a href="apikey.html" target="_blank">Get one
-                            here</a>.
-                    </p>
+                            here</a>.</p>
                 </div>
                 <div class="setting-item">
                     <label for="bibleApiKey">Open bibles API Key</label>
                     <input type="text" id="bibleApiKey">
-                    <p class="setting-info">Your API key for non-copyrighted bibles.
-                    </p>
+                    <p class="setting-info">Your API key for non-copyrighted bibles.</p>
                 </div>
                 <div class="setting-item">
                     <label for="esvApiKey">ESV API Key</label>
                     <input type="text" id="esvApiKey">
-                    <p class="setting-info">Your API key for copyrighted ESV bible.
-                    </p>
+                    <p class="setting-info">Your API key for copyrighted ESV bible.</p>
                 </div>
             </div>
         </div>
@@ -129,4 +128,5 @@
     <script src="ai.js" defer></script>
     <script src="listPopup.js" defer></script>
 </body>
+
 </html>

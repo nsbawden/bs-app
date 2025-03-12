@@ -599,6 +599,23 @@ footer.expanded #ai-output-container {
     background-color: var(--button-hover-bg);
 }
 
+.note-popup-close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 8px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.note-popup-close:hover {
+    background-color: var(--button-hover-bg);
+}
+
 .list-popup {
     position: fixed;
     top: 10%;

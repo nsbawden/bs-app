@@ -201,16 +201,26 @@ class SettingsManager {
 }
 
 function exportLocalUser() {
+    const excludeKeys = ['chapterCache']; // Keys to exclude from export
     const storageData = {};
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        storageData[key] = localStorage.getItem(key);
+        if (!excludeKeys.includes(key)) { // Only include keys not in excludeKeys
+            storageData[key] = localStorage.getItem(key);
+        }
     }
-    return JSON.stringify(storageData, null, 2); // Pretty-printed with 2-space indentation
+    const jsonString = JSON.stringify(storageData); // Tightest JSON
+    const compressed = pako.gzip(jsonString); // Compress with gzip
+    return btoa(String.fromCharCode.apply(null, compressed)); // Convert binary to Base64
 }
 
-function importLocalUser(jsonString) {
+function importLocalUser(encodedData) {
     try {
+        // Trim leading/trailing whitespace and remove all internal whitespace
+        const cleanedData = encodedData.trim().replace(/\s+/g, '');
+        const binaryString = atob(cleanedData); // Decode Base64 to binary
+        const compressed = new Uint8Array(binaryString.split('').map(char => char.charCodeAt(0))); // Convert to byte array
+        const jsonString = pako.ungzip(compressed, { to: 'string' }); // Decompress to string
         const storageData = JSON.parse(jsonString);
         if (typeof storageData !== 'object' || storageData === null) {
             throw new Error('Invalid JSON: Must be an object');
@@ -219,7 +229,7 @@ function importLocalUser(jsonString) {
             localStorage.setItem(key, value);
         });
     } catch (error) {
-        console.error('Failed to import JSON to localStorage:', error.message);
+        console.error('Failed to import user data from compressed Base64:', error.message);
     }
 }
 

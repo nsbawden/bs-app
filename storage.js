@@ -132,21 +132,8 @@ function pruneOldChapters(count) {
     return toRemove.length;
 }
 
-// Generalized function to prune a specific number of oldest chapters from chapter cache
-function pruneOldChapters(count) {
-    const keys = Object.keys(chapterCache);
-    if (keys.length === 0) return 0;
-
-    const sortedKeys = keys.sort((a, b) => {
-        return (chapterCache[a].lastLoaded || 0) - (chapterCache[b].lastLoaded || 0);
-    });
-
-    const pruneCount = Math.min(count, keys.length);
-    const toRemove = sortedKeys.slice(0, pruneCount);
-    toRemove.forEach(key => delete chapterCache[key]);
-
-    console.log(`Pruned ${toRemove.length} chapters, now at ${Object.keys(chapterCache).length}`);
-    return toRemove.length;
+function pruneCaches() {
+    pruneOldChapters(5);
 }
 
 function saveChapterCache() {
@@ -337,3 +324,123 @@ function loadQueryString() {
         state.currentVerse.verse = parseInt(verseParam, 10); // Convert to integer
     }
 }
+
+// Example usage:
+/*
+// Store an item
+storeTextItem({
+    text: "Hello World",
+    label: "greeting",
+    maxSize: 3,
+    storageKey: "textStorage"
+});
+
+// Get all labels
+const labels = getStoredLabels("textStorage");
+console.log(labels); // ["greeting"]
+
+// Get item by label
+const itemByLabel = getStoredItem("textStorage", "greeting");
+console.log(itemByLabel); // {text: "Hello World", label: "greeting", timestamp: "..."}
+
+// Get item by index
+const itemByIndex = getStoredItem("textStorage", 0);
+console.log(itemByIndex); // {text: "Hello World", label: "greeting", timestamp: "..."}
+*/
+
+// Main function to store text item in localStorage
+function storeTextItem({ text, label, maxSize, storageKey }) {
+    // Validate input
+    if (!text || !label || !storageKey) {
+        throw new Error('Text, label, and storageKey are required');
+    }
+
+    // Normalize maxSize (0 or negative means infinite)
+    maxSize = Math.max(0, maxSize || 0);
+
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    function tryStore() {
+        try {
+            // Get existing array or create new one
+            let items = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+            // Create new item with timestamp
+            const newItem = {
+                text,
+                label,
+                timestamp: new Date().toISOString()
+            };
+
+            // Remove existing item with same label if it exists
+            items = items.filter(item => item.label !== label);
+
+            // Add new item
+            items.push(newItem);
+
+            // If maxSize is set and exceeded, remove oldest items
+            if (maxSize > 0 && items.length > maxSize) {
+                // Sort by timestamp to find oldest
+                items.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                // Keep only the newest items up to maxSize
+                items = items.slice(-maxSize);
+            }
+
+            // Store updated array
+            localStorage.setItem(storageKey, JSON.stringify(items));
+            return true;
+        } catch (error) {
+            if (error.name === 'QuotaExceededError' && attempts < maxAttempts) {
+                attempts++;
+                pruneCaches(); // External function to clear memory
+                return tryStore(); // Recursive retry
+            }
+            console.error(`Failed to store item after ${attempts} attempts:`, error);
+            return false;
+        }
+    }
+
+    return tryStore();
+}
+
+// Function to get list of labels
+function getStoredLabels(storageKey) {
+    try {
+        const items = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        return items.map(item => item.label);
+    } catch (error) {
+        console.error('Error retrieving labels:', error);
+        return [];
+    }
+}
+
+// Function to retrieve item by label or index
+function getStoredItem(storageKey, identifier) {
+    try {
+        const items = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+        if (typeof identifier === 'number') {
+            // Retrieve by index
+            return items[identifier] || null;
+        } else if (typeof identifier === 'string') {
+            // Retrieve by label
+            return items.find(item => item.label === identifier) || null;
+        }
+        throw new Error('Identifier must be a number (index) or string (label)');
+    } catch (error) {
+        console.error('Error retrieving item:', error);
+        return null;
+    }
+}
+
+function removeStoredItem(storageKey, label) {
+    try {
+        let items = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        items = items.filter(item => item.label !== label);
+        localStorage.setItem(storageKey, JSON.stringify(items));
+    } catch (error) {
+        console.error('Error removing item:', error);
+    }
+}
+

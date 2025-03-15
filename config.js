@@ -34,6 +34,11 @@ const RESTRICTED_MAX_STORAGE = 5242880; // 5MB, for Opera and older browsers
 
 let chapterCache = {};
 
+const currentAiOutput = {
+    question: '',
+    answer: ''
+}
+
 // Translation cache stored in localStorage
 const MAX_TRANSLATION_CACHE_SIZE = 50; // Limit to 50 translations
 let translationCache = {};

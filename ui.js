@@ -7,6 +7,7 @@ const verseDisplay = document.getElementById('verse-display');
 const aiPrompt = document.getElementById('ai-prompt');
 const aiSubmit = document.getElementById('ai-submit');
 const aiTranslate = document.getElementById('ai-translate');
+const aiSave = document.getElementById('ai-save');
 const aiOutput = document.getElementById('ai-output');
 const aiToggle = document.getElementById('ai-toggle');
 const aiPopup = document.getElementById('ai-popup');
@@ -16,6 +17,19 @@ const topBarToggle = document.getElementById('top-bar-toggle');
 const topBarControls = document.querySelector('.top-bar-controls');
 const topBarSummary = document.getElementById('top-bar-summary');
 const topBar = document.querySelector('.top-bar');
+
+// General utility function for temporary notifications
+function showTempNotification(message, duration = 333) {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.className = 'temp-notification'; // Use a class instead of inline styles
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300); // Remove after fade
+    }, duration); // Display for 333ms, then fade
+}
 
 // Book/Chapter/Verse selection
 bookSelect.addEventListener('change', () => {
@@ -189,6 +203,40 @@ function constructTranslationPrompt(verseReference) {
 
 aiTranslate.addEventListener('click', submitAITranslate);
 
+aiSave.addEventListener('click', () => {
+    if (!currentAiOutput?.answer) {
+        console.log('Skipping save: No text to save');
+        return;
+    }
+
+    const saveWithLabel = (label) => {
+        storeTextItem({
+            text: currentAiOutput.answer,
+            label,
+            maxSize: 0,
+            storageKey: "savedOutputs"
+        });
+        showTempNotification('Saving...'); // Add feedback here
+    };
+
+    const question = currentAiOutput?.question;
+    if (!question) {
+        showUserInteraction({
+            prompt: 'Enter description of text...',
+            buttonText: 'Save',
+            action: (text) => {
+                if (!text) {
+                    console.log('Skipping save: No label provided');
+                    return;
+                }
+                saveWithLabel(text);
+            }
+        });
+    } else {
+        saveWithLabel(question);
+    }
+});
+
 aiPrompt.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         submitAIQuery();
@@ -250,20 +298,20 @@ function toggleTopBar(e) {
 
 topBar.addEventListener('click', toggleTopBar);
 
-document.getElementById('show-list').addEventListener('click', async () => {
-    const tabs = constructTabs();
-    const result = await showListPopup(tabs);
-    if (result.itemIndex >= 0) {
-        console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
-        switch (result.tabIndex) {
-            case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
-            case 1: goToNote(result.itemIndex); break;
-            case 2: goToTag(result.itemIndex); break;
-            case 3: tabs[3].items[result.itemIndex].handler(); break;
-            default: console.log("Unhandled tab index:", result.tabIndex);
-        }
-    }
-});
+// document.getElementById('show-list').addEventListener('click', async () => {
+//     const tabs = constructTabs();
+//     const result = await showListPopup(tabs);
+//     if (result.itemIndex >= 0) {
+//         console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
+//         switch (result.tabIndex) {
+//             // case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
+//             case 1: goToNote(result.itemIndex); break;
+//             case 2: goToTag(result.itemIndex); break;
+//             case 3: tabs[3].items[result.itemIndex].handler(); break;
+//             default: tabs[result.tabIndex].items[result.itemIndex].handler(); break;
+//         }
+//     }
+// });
 
 // Initial summary
 updateTopBarSummary();
@@ -326,66 +374,6 @@ document.querySelectorAll('.tab').forEach(tab => {
         }
     });
 });
-
-// Navigation Functions
-function goToNote(index) {
-    const notes = getNotes();
-    const noteKeys = Object.keys(notes);
-    if (index >= 0 && index < noteKeys.length) {
-        const [book, chapter, verse] = noteKeys[index].split('/');
-        document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
-    } else {
-        console.error("Invalid note index:", index);
-    }
-}
-
-function goToTag(index) {
-    const tags = JSON.parse(localStorage.getItem('tagStorage') || '{}');
-    const tagKeys = Object.keys(tags);
-    const selectedTag = tagKeys[index];
-    const noteKeys = tags[selectedTag];
-    if (noteKeys.length === 1) {
-        const [book, chapter, verse] = noteKeys[0].split('/');
-        document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
-    } else {
-        const tagTab = [{
-            label: `${selectedTag} Locations`,
-            items: noteKeys.map(key => {
-                const [book, chapter, verse] = key.split('/');
-                return { label: `${selectedTag} ${book} ${chapter}:${verse}` };
-            }),
-            editable: false
-        }];
-        showListPopup(tagTab).then(result => {
-            if (result.itemIndex >= 0) {
-                const [book, chapter, verse] = noteKeys[result.itemIndex].split('/');
-                document.location = `index.html?book=${encodeURIComponent(book)}&chapter=${chapter}&verse=${verse}`;
-            }
-        });
-    }
-}
-
-function renameTag(oldTag, newTag) {
-    if (oldTag === newTag || !newTag.startsWith('#')) {
-        console.log("Invalid rename:", oldTag, newTag);
-        return false;
-    }
-    const notes = getNotes();
-    let tagFound = false;
-    const tagRegex = new RegExp(`${oldTag}\\b`, 'gi');
-    Object.entries(notes).forEach(([key, note]) => {
-        if (tagRegex.test(note)) {
-            tagFound = true;
-            notes[key] = note.replaceAll(tagRegex, newTag);
-        }
-    });
-    if (!tagFound) {
-        console.log(`Tag '${oldTag}' not found`);
-        return false;
-    }
-    localStorage.setItem('bibleNotes', JSON.stringify(notes));
-    return true;
-}
 
 function showVerseMenu(verseSpan, event) {
     const existingPopup = document.querySelector('.verse-popup');

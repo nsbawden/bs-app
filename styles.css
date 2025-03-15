@@ -191,6 +191,8 @@ body {
 }
 
 .gear-btn {
+    position: absolute;
+    right: 0;
     cursor: pointer;
     font-size: 20px;
     padding: 0 10px;
@@ -292,7 +294,8 @@ footer.expanded {
 
 #ai-submit,
 #ai-translate,
-#ai-toggle {
+#ai-toggle,
+#ai-save {
     width: 30px;
     height: 30px;
     padding: 0;
@@ -605,15 +608,20 @@ footer.expanded #ai-output-container {
 
 .note-popup-close {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: -15px;
+    right: -15px;
+    width: 2em;
+    height: 2em;
     padding: 2px 8px;
     background-color: var(--button-bg);
     color: var(--button-text);
     border: none;
     cursor: pointer;
     font-size: 14px;
+    font-weight: bold;
     line-height: 1;
+    border: 1px solid gray;
+    border-radius: 20px;
 }
 
 .note-popup-close:hover {
@@ -696,6 +704,15 @@ footer.expanded #ai-output-container {
     border: 1px solid var(--edit-input-border);
 }
 
+.list-item textarea.edit-input {
+    resize: vertical;
+    min-height: 60px;
+    max-height: 150px;
+    box-sizing: border-box;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
 .close-btn {
     position: absolute;
     top: 5px;
@@ -706,6 +723,22 @@ footer.expanded #ai-output-container {
     border: none;
     cursor: pointer;
     font-size: 14px;
+}
+
+/* Temporary Notification Bubble */
+.temp-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: 1px solid var(--popup-border);
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 /* Mobile Optimizations */

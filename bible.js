@@ -526,45 +526,42 @@ function showNotePopup(reference, verseSpan = null, event = null) {
     }
 }
 
-function showUserDataPopup(isExportMode = true) {
+function showUserInteraction(config) {
+    // Validate required config properties
+    const requiredProps = ['buttonText', 'action'];
+    for (const prop of requiredProps) {
+        if (!(prop in config)) {
+            throw new Error(`Missing required config property: ${prop}`);
+        }
+    }
+
     // Remove any existing popup
-    const existingPopup = document.querySelector('.note-popup'); // Reuse note-popup class
+    const existingPopup = document.querySelector('.note-popup');
     if (existingPopup) existingPopup.remove();
 
     // Create popup elements
     const popup = document.createElement('div');
-    popup.className = 'note-popup'; // Use same class as original for consistency
+    popup.className = 'note-popup';
 
     const textarea = document.createElement('textarea');
-    textarea.className = 'note-popup-textarea'; // Reuse existing textarea styling
+    textarea.className = 'note-popup-textarea';
+    textarea.value = config.text || ''; // Default to empty string if no text provided
+    if (config.prompt) textarea.placeholder = config.prompt;
 
     const actionButton = document.createElement('button');
-    actionButton.className = 'note-popup-button'; // Reuse existing button styling
+    actionButton.className = 'note-popup-button';
+    actionButton.textContent = config.buttonText;
 
     const closeButton = document.createElement('button');
-    closeButton.textContent = '×';
-    closeButton.className = 'note-popup-close'; // New class, styled below
+    closeButton.textContent = '✕';
+    closeButton.className = 'note-popup-close';
     closeButton.title = 'Close';
 
-    // Configure based on mode
-    if (isExportMode) {
-        textarea.value = exportLocalUser(); // Assumes this returns a string
-        actionButton.textContent = 'Copy';
-        actionButton.addEventListener('click', () => {
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value)
-                .then(() => console.log('User data copied to clipboard'))
-                .catch(err => console.error('Copy failed:', err));
-            cleanupAndRemove();
-        });
-    } else {
-        textarea.placeholder = 'Paste user data here...';
-        actionButton.textContent = 'Apply';
-        actionButton.addEventListener('click', () => {
-            importLocalUser(textarea.value); // Assumes this handles the string
-            cleanupAndRemove();
-        });
-    }
+    // Setup action handler
+    actionButton.addEventListener('click', () => {
+        config.action(textarea.value);
+        cleanupAndRemove();
+    });
 
     // Append elements
     popup.appendChild(closeButton);
@@ -572,7 +569,7 @@ function showUserDataPopup(isExportMode = true) {
     popup.appendChild(actionButton);
     document.body.appendChild(popup);
 
-    // Center the popup (fixed positioning)
+    // Center the popup
     const popupHeight = popup.offsetHeight;
     const popupWidth = popup.offsetWidth;
     const viewportWidth = window.innerWidth;
@@ -603,6 +600,41 @@ function showUserDataPopup(isExportMode = true) {
     textarea.focus();
 }
 
+// Copy user data to clipboard
+function exportUserData() {
+    showUserInteraction({
+        text: exportLocalUser(),
+        buttonText: 'Copy',
+        action: (text) => {
+            navigator.clipboard.writeText(text)
+                .then(() => console.log('User data copied to clipboard'))
+                .catch(err => console.error('Copy failed:', err));
+        }
+    });
+}
+
+// Import user data
+function importUserData() {
+    showUserInteraction({
+        prompt: 'Paste user data here...',
+        buttonText: 'Apply',
+        action: (text) => {
+            importLocalUser(text);
+        }
+    });
+}
+
+// Import AI area output text
+function importAiOutput() {
+    showUserInteraction({
+        prompt: 'Paste text here...',
+        buttonText: 'Apply',
+        action: (text) => {
+            showText(text);
+        }
+    });
+}
+
 function linkVerses(text) {
     // Extract book names from the books array
     const bookNames = books.map(book => book.key);
@@ -624,6 +656,8 @@ function convertMarkdown(text) {
 }
 
 function displayResult(question, answer, expand = true) {
+    currentAiOutput.question = question;
+    currentAiOutput.answer = answer;
     let htmlText = convertMarkdown(answer);
     let linkedContent = linkVerses(htmlText);
     if (question) {
@@ -637,6 +671,70 @@ function displayResult(question, answer, expand = true) {
     else {
         aiCollapse();
     }
+}
+
+function detectMarkdown(text) {
+    const markdownPatterns = {
+        headings: /^#{1,6}\s+.+/m, // Matches lines that start with 1-6 '#' followed by text
+        bold: /\*\*.+?\*\*|__.+?__/g, // Matches **bold** or __bold__
+        italic: /\*[^*]+\*|_[^_]+_/g, // Matches *italic* or _italic_
+        lists: /^\s*([-*+]|\d+\.)\s+.+/m, // Matches lists (- item, * item, 1. item)
+        blockquote: /^\s*>.+/m, // Matches blockquotes starting with '>'
+        inline_code: /`[^`]+`/g // Matches inline code `code`
+    };
+
+    let detected = {};
+    for (const [key, regex] of Object.entries(markdownPatterns)) {
+        detected[key] = regex.test(text);
+    }
+    return detected;
+}
+
+function convertToMarkdown(text) {
+    if (detectMarkdown(text)) {
+        return text;
+    }
+
+    // Split the text into lines and filter out empty ones
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+
+    let markdown = '';
+    let inList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Handle header lines (ending with colon)
+        if (line.endsWith(':')) {
+            if (inList) {
+                markdown += '\n'; // End previous list with extra newline
+                inList = false;
+            }
+            markdown += `### ${line}\n\n`;
+            continue;
+        }
+
+        // Treat any other line as a list item
+        // Start a new list if not already in one
+        if (!inList) {
+            inList = true;
+        }
+
+        // Use unordered list with "- " prefix
+        markdown += `- ${line}\n`;
+
+        // Add a blank line if this is the last item before a header or end
+        if (i + 1 < lines.length && lines[i + 1].endsWith(':')) {
+            markdown += '\n';
+            inList = false;
+        }
+    }
+
+    return markdown.trim();
+}
+
+function showText(text) {
+    displayResult('', convertToMarkdown(text), true);    
 }
 
 function showBook(label, content) {

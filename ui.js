@@ -194,7 +194,7 @@ function submitAITranslate() {
 // }
 
 function constructTranslationPrompt(verseReference) {
-    return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not biblical 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in regular, modern English (e.g., 'listen under' as 'listen attentivly'), using natural swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
+    return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not biblical 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in regular, modern English (e.g., 'listen under' as 'listen attentively'), using natural swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
 }
 
 // function constructTranslationPrompt(verseReference) {
@@ -511,5 +511,116 @@ function adjustContainerMargin() {
 window.addEventListener('DOMContentLoaded', () => {
     adjustContainerMargin();
     updateTopBarSummary();
+
+    // Sample menu configuration
+    const menuConfig = {
+        'Paste text': () => console.log('Option 1 selected'),
+        'Option 2': () => console.log('Option 2 selected'),
+        'Option 3': () => console.log('Option 3 selected')
+    };
+
+    // Create the menu
+    const dropdown = createDropdownMenu(menuConfig);
+    document.body.appendChild(dropdown.element);
+
+    // Button handler
+    const showMenuBtn = document.getElementById('show-menu');
+    if (showMenuBtn) {
+        showMenuBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Position menu below the button
+            const rect = showMenuBtn.getBoundingClientRect();
+            const x = rect.left;
+            const y = rect.bottom + window.scrollY;
+
+            dropdown.show(x, y);
+        });
+    }
+
 });
+
 window.addEventListener('resize', adjustContainerMargin);
+
+// Function to create a dropdown menu
+function createDropdownMenu(menuConfig) {
+    // Create menu container
+    const menu = document.createElement('div');
+    menu.className = 'dropdown-menu hidden';
+
+    // Apply base styling from popup variables
+    menu.style.position = 'absolute';
+    menu.style.backgroundColor = 'var(--popup-bg)';
+    menu.style.border = '1px solid var(--popup-border)';
+    menu.style.color = 'var(--popup-text)';
+    menu.style.zIndex = '1000';
+    menu.style.padding = '5px 0';
+    menu.style.borderRadius = '4px';
+    menu.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+    menu.style.minWidth = '150px';
+
+    // Process menu items from config
+    Object.entries(menuConfig).forEach(([label, action]) => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = label;
+
+        item.style.padding = '5px 10px';
+        item.style.cursor = 'pointer';
+
+        if (typeof action === 'function') {
+            item.addEventListener('click', (e) => {
+                action(e);
+                menu.classList.add('hidden');
+            });
+        }
+
+        menu.appendChild(item);
+    });
+
+    // Close handler for clicking outside
+    const closeHandler = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+
+    return {
+        element: menu,
+        show: (x, y) => {
+            // Temporarily show menu to get its dimensions
+            menu.style.left = '0px';
+            menu.style.top = '0px';
+            menu.classList.remove('hidden');
+
+            // Calculate position with edge detection
+            const menuWidth = menu.offsetWidth;
+            const windowWidth = window.innerWidth;
+            const rightMargin = 10;
+
+            // Adjust x position if menu would extend beyond right edge
+            let adjustedX = x;
+            if (x + menuWidth > windowWidth - rightMargin) {
+                adjustedX = windowWidth - menuWidth - rightMargin;
+                // Ensure it doesn't go negative
+                adjustedX = Math.max(adjustedX, rightMargin);
+            }
+
+            // Set final position
+            menu.style.left = `${adjustedX}px`;
+            menu.style.top = `${y}px`;
+
+            // Add close handler after slight delay
+            setTimeout(() => {
+                document.addEventListener('click', closeHandler);
+            }, 10);
+        },
+        hide: () => {
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+}
+

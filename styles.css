@@ -192,10 +192,26 @@ body {
 
 .gear-btn {
     position: absolute;
+    top: 9px;
     right: 0;
     cursor: pointer;
     font-size: 20px;
-    padding: 0 10px;
+    padding-right: 10px;
+}
+
+#show-list,
+#show-menu {
+    padding: 5px 10px;
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: var(--button-text);
+    cursor: pointer;
+}
+
+#show-menu {
+    position: absolute;
+    right: 40px;
 }
 
 .container {
@@ -230,7 +246,7 @@ p {
 
 .verse {
     cursor: pointer;
-}
+    margin-right: 5px;}
 
 .verse-num {
     color: var(--verse-num-color);
@@ -365,6 +381,23 @@ footer.expanded #ai-output-container {
     overflow: var(--ai-output-overflow, hidden);
     transition: max-height 0.3s ease;
     box-sizing: border-box;
+}
+
+/* Dropdown Menu Styles */
+.dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu.hidden {
+    display: none;
+}
+
+.dropdown-item {
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: var(--popup-item-hover-bg);
 }
 
 .popup {
@@ -760,7 +793,9 @@ footer.expanded #ai-output-container {
         width: 95%;
     }
 
-    #show-list {
+    #show-list, 
+    #show-menu 
+    {
         padding: 5px 10px;
         font-size: 24px;
         background: none;

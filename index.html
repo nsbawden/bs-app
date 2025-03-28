@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js" defer></script>
+    <!-- Load the idb library for IndexedDB -->
+    <script src="https://unpkg.com/idb@7.1.1/build/umd.js"></script>
 </head>
 
 <body class="sans-serif-1">
@@ -33,7 +35,6 @@
         </div>
         <button id="show-list" title="lists">≡</button>
         <button id="show-menu" title="additional actions">⋮</button>
-        <span class="gear-btn" id="settings-btn" title="settings">⚙️</span>        
     </div>
     <div class="container">
         <main id="verse-display"></main>
@@ -129,6 +130,49 @@
     <script src="bible.js" defer></script>
     <script src="ai.js" defer></script>
     <script src="listPopup.js" defer></script>
+    <script src="bookManager.js" defer></script>
+
+<input type="file" id="loadBookInput" accept=".json">
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        return;
+        // Test the library functions
+        window.QB.createBook('QuantumBible', { title: 'Quantum Bible', author: 'User' }).then(() => {
+            return window.QB.saveChapter('QuantumBible', 'Chapter1', 'In the beginning...');
+        }).then(() => {
+            console.log('Chapter saved!');
+            return window.QB.loadChapter('QuantumBible', 'Chapter1');
+        }).then(content => {
+            console.log('Retrieved:', content);
+            return window.QB.listBooks();
+        }).then(books => {
+            console.log('Books:', books);
+            return window.QB.exportBook('QuantumBible');
+        }).then(() => {
+            console.log('Book exported!');
+        }).catch(err => {
+            console.error('Error:', err);
+        });
+
+        // Handle file input for loading books
+        document.getElementById('loadBookInput').addEventListener('change', (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length > 0) {
+                Promise.all(files.map(file => window.QB.loadBookFromFile(file)))
+                    .then(bookNames => {
+                        console.log(`Loaded books: ${bookNames.join(', ')}`);
+                        return window.QB.listBooks();
+                    })
+                    .then(books => {
+                        console.log('All books:', books);
+                    })
+                    .catch(err => {
+                        console.error('Error loading books:', err);
+                    });
+            }
+        });
+    });
+</script>
 </body>
 
 </html>

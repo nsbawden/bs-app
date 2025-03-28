@@ -516,7 +516,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const menuConfig = {
         'Paste text': () => console.log('Option 1 selected'),
         'Option 2': () => console.log('Option 2 selected'),
-        'Option 3': () => console.log('Option 3 selected')
+        'Option 3': () => console.log('Option 3 selected'),
+        '⚙️ Settings': () => settingsManager.openPopup()
     };
 
     // Create the menu

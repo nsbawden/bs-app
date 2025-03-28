@@ -13,28 +13,32 @@ document.getElementById('show-list').addEventListener('click', async () => {
     }
 });
 
+function collectTags() {
+    const notes = getNotes();
+    let tagStorage = {}; // Always start fresh
+
+    const tagCaseMap = {};
+    Object.entries(notes).forEach(([key, note]) => {
+        const tags = (note.match(/#\w+\b/g) || []);
+        tags.forEach(tag => {
+            const lowerTag = tag.toLowerCase();
+            if (!tagCaseMap[lowerTag]) {
+                tagCaseMap[lowerTag] = tag;
+                tagStorage[tag] = [];
+            }
+            const preferredTag = tagCaseMap[lowerTag];
+            if (!tagStorage[preferredTag].includes(key)) {
+                tagStorage[preferredTag].push(key);
+            }
+        });
+    });
+    localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
+    return tagStorage;
+}
+
 function constructTabs() {
     const notes = getNotes();
-    let tagStorage = JSON.parse(localStorage.getItem('tagStorage') || '{}');
-
-    if (Object.keys(tagStorage).length === 0) {
-        const tagCaseMap = {};
-        Object.entries(notes).forEach(([key, note]) => {
-            const tags = (note.match(/#\w+\b/g) || []);
-            tags.forEach(tag => {
-                const lowerTag = tag.toLowerCase();
-                if (!tagCaseMap[lowerTag]) {
-                    tagCaseMap[lowerTag] = tag;
-                    tagStorage[tag] = [];
-                }
-                const preferredTag = tagCaseMap[lowerTag];
-                if (!tagStorage[preferredTag].includes(key)) {
-                    tagStorage[preferredTag].push(key);
-                }
-            });
-        });
-        localStorage.setItem('tagStorage', JSON.stringify(tagStorage));
-    }
+    let tagStorage = collectTags();
 
     return [
         {
@@ -119,6 +123,9 @@ function showListPopup(tabData, persistTab = true) {
             resolve({ tabIndex: -1, itemIndex: -1 });
         };
 
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'content-wrapper';
+
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tab-container';
 
@@ -145,9 +152,11 @@ function showListPopup(tabData, persistTab = true) {
         const displayItems = prepareDisplayItems(activeTab);
         renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove, displayItems);
 
+        // Assemble the structure
         popup.appendChild(closeButton);
-        popup.appendChild(tabContainer);
-        popup.appendChild(listContainer);
+        contentWrapper.appendChild(tabContainer);
+        contentWrapper.appendChild(listContainer);
+        popup.appendChild(contentWrapper);
         document.body.appendChild(popup);
 
         function switchTab(index) {
@@ -178,6 +187,7 @@ function showListPopup(tabData, persistTab = true) {
             popup.remove();
         }
 
+        // Rest of the functions remain unchanged (prepareDisplayItems, renderList, etc.)
         function prepareDisplayItems(tab) {
             if (!tab.items) return [];
             const itemsWithIndex = tab.items.map((item, index) => ({
@@ -196,7 +206,7 @@ function showListPopup(tabData, persistTab = true) {
             const tabs = constructTabs();
             if (!popup) return;
             listContainer.innerHTML = '';
-            const activeTab = tabs[2]; // Tags tab is always index 2
+            const activeTab = tabs[2];
             const displayItems = prepareDisplayItems(activeTab);
             renderList(listContainer, activeTab, 2, resolve, cleanupAndRemove, displayItems);
         }
@@ -253,7 +263,7 @@ function showListPopup(tabData, persistTab = true) {
 
             function toggleEditMode(div, item, items, tabIndex, resolve, cleanup) {
                 const editBtn = div.querySelector('.edit-btn');
-                let isExiting = false; // Flag to prevent re-entry
+                let isExiting = false;
 
                 if (div.className.includes('editing')) {
                     const input = div.querySelector('.edit-input');
@@ -273,20 +283,17 @@ function showListPopup(tabData, persistTab = true) {
                     div.insertBefore(newTextSpan, input);
                     div.removeChild(input);
                     div.className = div.className.replace(' editing', '');
-                    isExiting = true; // Mark that we’re exiting edit mode
+                    isExiting = true;
 
                     if (tabIndex === 2) {
                         refreshTagList();
                     }
-                } else if (!isExiting) { // Only enter edit mode if not just exited
+                } else if (!isExiting) {
                     const textSpan = div.querySelector('.list-text');
                     const isTextarea = tab.useTextarea || false;
                     const input = document.createElement(isTextarea ? 'textarea' : 'input');
-                    if (!isTextarea) {
-                        input.type = 'text';
-                    } else {
-                        input.rows = 4;
-                    }
+                    if (!isTextarea) input.type = 'text';
+                    else input.rows = 4;
                     input.value = item.label || item.toString();
                     input.className = 'edit-input';
                     div.insertBefore(input, textSpan);
@@ -300,7 +307,6 @@ function showListPopup(tabData, persistTab = true) {
                         toggleEditMode(div, item, items, tabIndex, resolve, cleanup);
                     };
 
-                    // Set edit button to exit when clicked during edit mode
                     editBtn.onclick = (e) => {
                         e.stopPropagation();
                         handleExit();
@@ -308,17 +314,232 @@ function showListPopup(tabData, persistTab = true) {
 
                     input.onblur = handleExit;
                     input.onkeydown = (e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            handleExit();
-                        } else if (e.key === 'Escape') {
-                            handleExit();
-                        } else if (e.key === 'Enter' && e.shiftKey && isTextarea) {
-                            // Shift+Enter adds a newline in textarea
-                        }
+                        if (e.key === 'Enter' && !e.shiftKey) handleExit();
+                        else if (e.key === 'Escape') handleExit();
                     };
                 }
 
-                // After exiting, reset the edit button to enter edit mode
+                if (isExiting) {
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleEditMode(div, item, items, tabIndex, resolve, cleanup);
+                    };
+                }
+            }
+        }
+    });
+} function showListPopup(tabData, persistTab = true) {
+    return new Promise((resolve) => {
+        const existingPopup = document.querySelector('.list-popup');
+        if (existingPopup) existingPopup.remove();
+
+        const popup = document.createElement('div');
+        popup.className = 'list-popup';
+
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'X';
+        closeButton.className = 'close-btn';
+        closeButton.onclick = () => {
+            cleanupAndRemove();
+            resolve({ tabIndex: -1, itemIndex: -1 });
+        };
+
+        const tabContainer = document.createElement('div');
+        tabContainer.className = 'tab-container';
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'content-wrapper';
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'list-container';
+
+        let activeTabIndex = parseInt(sessionStorage.getItem('lastActiveTab')) || 0;
+        if (activeTabIndex >= tabData.length || activeTabIndex < 0) {
+            activeTabIndex = 0;
+            if (persistTab) {
+                sessionStorage.setItem('lastActiveTab', '0');
+            }
+        }
+
+        tabData.forEach((tab, index) => {
+            const tabButton = document.createElement('button');
+            tabButton.textContent = tab.label;
+            tabButton.className = 'tab-btn' + (index === activeTabIndex ? ' active' : '');
+            tabButton.onclick = () => switchTab(index);
+            tabContainer.appendChild(tabButton);
+        });
+
+        const activeTab = tabData[activeTabIndex];
+        const displayItems = prepareDisplayItems(activeTab);
+        renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove, displayItems);
+
+        // Assemble the structure
+        popup.appendChild(closeButton);
+        popup.appendChild(tabContainer);
+        contentWrapper.appendChild(listContainer);
+        popup.appendChild(contentWrapper);
+        document.body.appendChild(popup);
+
+        function switchTab(index) {
+            activeTabIndex = index;
+            if (persistTab && tabData.length > 1) {
+                sessionStorage.setItem('lastActiveTab', index);
+            }
+            const tabButtons = tabContainer.querySelectorAll('.tab-btn');
+            tabButtons.forEach((btn, i) => {
+                btn.className = 'tab-btn' + (i === index ? ' active' : '');
+            });
+            listContainer.innerHTML = '';
+            const tab = tabData[index];
+            const displayItems = prepareDisplayItems(tab);
+            renderList(listContainer, tab, index, resolve, cleanupAndRemove, displayItems);
+        }
+
+        function handleEscape(event) {
+            if (event.key === 'Escape') {
+                cleanupAndRemove();
+                resolve({ tabIndex: -1, itemIndex: -1 });
+            }
+        }
+        document.addEventListener('keydown', handleEscape);
+
+        function cleanupAndRemove() {
+            document.removeEventListener('keydown', handleEscape);
+            popup.remove();
+        }
+
+        // Rest of the functions remain unchanged
+        function prepareDisplayItems(tab) {
+            if (!tab.items) return [];
+            const itemsWithIndex = tab.items.map((item, index) => ({
+                ...item,
+                originalIndex: index
+            }));
+            if (tab.sorted) {
+                itemsWithIndex.sort((a, b) =>
+                    (a.label || a.toString()).localeCompare(b.label || b.toString(), undefined, { sensitivity: 'base' })
+                );
+            }
+            return itemsWithIndex;
+        }
+
+        function refreshTagList() {
+            const tabs = constructTabs();
+            if (!popup) return;
+            listContainer.innerHTML = '';
+            const activeTab = tabs[2];
+            const displayItems = prepareDisplayItems(activeTab);
+            renderList(listContainer, activeTab, 2, resolve, cleanupAndRemove, displayItems);
+        }
+
+        function renderList(container, tab, tabIndex, resolve, cleanup, displayItems) {
+            const list = document.createElement('div');
+            list.className = 'list-items';
+
+            if (displayItems && displayItems.length > 0) {
+                displayItems.forEach((item, displayIndex) => {
+                    const itemDiv = createListItem(item, displayIndex, tab, tabIndex, resolve, cleanup);
+                    list.appendChild(itemDiv);
+                });
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.textContent = 'Empty';
+                placeholder.className = 'list-placeholder';
+                list.appendChild(placeholder);
+            }
+
+            container.appendChild(list);
+            listPopupMakeSortable(list, displayItems || []);
+
+            function createListItem(item, displayIndex, tab, tabIndex, resolve, cleanup) {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.dataset.index = displayIndex;
+                div.draggable = true;
+
+                const textSpan = document.createElement('span');
+                const fullText = item.label || item.toString();
+                textSpan.textContent = fullText.length > 80 ? fullText.slice(0, 80) + '…' : fullText;
+                textSpan.className = 'list-text';
+                textSpan.onclick = () => {
+                    item.handler.call(item);
+                    cleanup();
+                };
+
+                div.appendChild(textSpan);
+
+                if (tab.editable) {
+                    const editBtn = document.createElement('span');
+                    editBtn.textContent = '✎';
+                    editBtn.className = 'edit-btn';
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleEditMode(div, item, tab.items, tabIndex, resolve, cleanup);
+                    };
+                    div.appendChild(editBtn);
+                }
+
+                return div;
+            }
+
+            function toggleEditMode(div, item, items, tabIndex, resolve, cleanup) {
+                const editBtn = div.querySelector('.edit-btn');
+                let isExiting = false;
+
+                if (div.className.includes('editing')) {
+                    const input = div.querySelector('.edit-input');
+                    if (!input) return;
+                    const oldLabel = item.label;
+                    item.label = input.value.trim();
+                    if (item.editHandler) {
+                        item.editHandler(oldLabel, item.label);
+                    }
+                    const newTextSpan = document.createElement('span');
+                    newTextSpan.textContent = item.label;
+                    newTextSpan.className = 'list-text';
+                    newTextSpan.onclick = () => {
+                        item.handler.call(item);
+                        cleanup();
+                    };
+                    div.insertBefore(newTextSpan, input);
+                    div.removeChild(input);
+                    div.className = div.className.replace(' editing', '');
+                    isExiting = true;
+
+                    if (tabIndex === 2) {
+                        refreshTagList();
+                    }
+                } else if (!isExiting) {
+                    const textSpan = div.querySelector('.list-text');
+                    const isTextarea = tab.useTextarea || false;
+                    const input = document.createElement(isTextarea ? 'textarea' : 'input');
+                    if (!isTextarea) input.type = 'text';
+                    else input.rows = 4;
+                    input.value = item.label || item.toString();
+                    input.className = 'edit-input';
+                    div.insertBefore(input, textSpan);
+                    div.removeChild(textSpan);
+                    div.className += ' editing';
+                    input.focus();
+
+                    const handleExit = () => {
+                        input.onblur = null;
+                        input.onkeydown = null;
+                        toggleEditMode(div, item, items, tabIndex, resolve, cleanup);
+                    };
+
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        handleExit();
+                    };
+
+                    input.onblur = handleExit;
+                    input.onkeydown = (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) handleExit();
+                        else if (e.key === 'Escape') handleExit();
+                    };
+                }
+
                 if (isExiting) {
                     editBtn.onclick = (e) => {
                         e.stopPropagation();

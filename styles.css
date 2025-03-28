@@ -201,7 +201,7 @@ body {
 
 #show-list,
 #show-menu {
-    padding: 5px 10px;
+    padding: 5px 0;
     font-size: 24px;
     background: none;
     border: none;
@@ -211,7 +211,7 @@ body {
 
 #show-menu {
     position: absolute;
-    right: 40px;
+    right: 10px;
 }
 
 .container {
@@ -672,13 +672,23 @@ footer.expanded #ai-output-container {
     z-index: 1000;
     width: 500px;
     max-height: 80vh;
-    overflow-y: auto;
+    overflow: hidden;
+    /* No scrolling on popup */
 }
 
 .tab-container {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    padding-bottom: 10px;
+    /* Optional: extra spacing below tabs */
+}
+
+.content-wrapper {
+    max-height: calc(80vh - 70px - 40px);
+    /* 80vh - tab height (70px) - padding (40px) */
+    overflow-y: auto;
+    /* Only this scrolls */
 }
 
 .tab-btn {
@@ -793,9 +803,8 @@ footer.expanded #ai-output-container {
         width: 95%;
     }
 
-    #show-list, 
-    #show-menu 
-    {
+    #show-list,
+    #show-menu {
         padding: 5px 10px;
         font-size: 24px;
         background: none;
@@ -890,6 +899,11 @@ footer.expanded #ai-output-container {
 
     .list-popup {
         width: 90%;
+    }
+
+    .content-wrapper {
+        max-height: calc(80vh - 70px - 30px);
+        /* Adjust for smaller padding */
     }
 
     .tab-btn {

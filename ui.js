@@ -54,8 +54,16 @@ verseSelect.addEventListener('change', () => {
 });
 
 versionSelect.addEventListener('change', () => {
-    state.lastBibleVersion = state.bibleVersion !== 'custom' ? state.bibleVersion : (state.lastBibleVersion || 'kjv');
-    state.bibleVersion = versionSelect.value;
+    switch (versionSelect.value) {
+        case 'custom':
+            state.bookSource = 'custom';
+            state.bibleVersion = state.bibleVersion || 'kjv';
+            break;
+        default:
+            state.bookSource = 'bible';
+            state.bibleVersion = state.bibleVersion || 'kjv';
+            break;
+    }
     loadBooks().then(() => {
         getApiSource();
         updateTopBarSummary();
@@ -500,6 +508,7 @@ function adjustContainerMargin() {
     const topBar = document.querySelector('.top-bar');
     const container = document.querySelector('.container');
     const topBarHeight = topBar.offsetHeight;
+    container.style.marginTop = '0';
     container.style.paddingTop = `${topBarHeight}px`;
     container.style.height = `calc(100vh - ${topBarHeight}px)`;
 }

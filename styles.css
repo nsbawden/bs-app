@@ -236,6 +236,7 @@ select {
 main {
     flex: 1 1 auto;
     padding: 20px;
+    padding-top: 10px;
     overflow-y: auto;
     box-sizing: border-box;
 }
@@ -865,6 +866,7 @@ footer.expanded #ai-output-container {
 
     main {
         padding: 15px;
+        padding-top: 10px;
     }
 
     .ai-input-container {

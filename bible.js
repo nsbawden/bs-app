@@ -5,7 +5,7 @@ async function fetchChapter(book, chapter, version) {
     let result;
 
     // Handle custom version first
-    if (version === 'custom') {
+    if (bookSource() === 'custom') {
         const chapterContent = await QB.loadChapter(book, chapter.toString());
         if (!chapterContent) {
             throw new Error(`Chapter ${chapter} not found in custom book ${book}`);
@@ -293,15 +293,23 @@ function updateMy(hasBooks) {
 
 async function validateBook() {
     const hasBooks = (await QB.hasBooks());
-    if (state.bibleVersion === 'custom' && !hasBooks) {
-        state.bibleVersion = state.lastBibleVersion || 'kjv';
+    if (bookSource() === 'bible') {
+        state.bibleVersion = state.bibleVersion === 'custom' ? 'kjv' : state.bibleVersion;
+    }
+    else {
+        if (!hasBooks) {
+            state.bookSource = 'bible';
+            state.bibleVersion = state.bibleVersion === 'custom' ? 'kjv' : state.bibleVersion;
+        } else {
+            state.bookSource = 'custom';
+        }
     }
     updateMy(hasBooks);
 }
 
 async function loadBooks() {
     await validateBook();
-    if (state.bibleVersion === 'custom') {
+    if (bookSource() === 'custom') {
         // Populate books selector with custom books from QB
         const customBooks = await QB.listBooks();
         if (customBooks.length === 0) {
@@ -327,14 +335,14 @@ async function loadBooks() {
     }
 
     bookSelect.value = state.currentVerse.book;
-    versionSelect.value = state.bibleVersion;
+    versionSelect.value = bookSource() === 'custom' ? 'custom' : state.bibleVersion;
     await updateChapters();
 }
 
 async function updateChapters() {
     verseDisplay.innerHTML = ''; // Clear display while loading
 
-    if (state.bibleVersion === 'custom') {
+    if (bookSource() === 'custom') {
         // Get chapter list for custom book
         const chapters = await QB.listChapters(state.currentVerse.book);
         if (chapters.length === 0) {
@@ -385,7 +393,7 @@ async function refreshDisplay() {
     let nextLabel = '';
     let prevLabel = '';
 
-    if (state.bibleVersion === 'custom') {
+    if (bookSource() === 'custom') {
         const chapterCount = QB.getChapterCount(state.currentVerse.book);
         prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : '';
         nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : '';

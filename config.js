@@ -3,6 +3,7 @@ const BIBLE_API_BASE = 'https://bible-api.com';
 
 const defaults = {
     currentVerse: { book: 'John', chapter: 1, verse: 1 },
+    bookSource: 'bible',
     bibleVersion: 'asv',
     maxHistoryLength: 10,
     apiSource: 'api.bible', /* api.bible or bible-api.com */

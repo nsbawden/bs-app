@@ -1,5 +1,9 @@
 // storage.js
 
+function bookSource() {
+    return state.bookSource || 'bible';
+}
+
 // Function to generate bookMap from books array
 function generateBookMap(booksArray) {
     const bookMap = {};
@@ -68,6 +72,7 @@ function getApiSource() {
 
 function saveState() {
     // Ensure openaiSettings is fully merged into state before saving
+    delete state.lastBibleVersion;
     state.openaiSettings = { ...state.openaiSettings, ...openaiSettings };
     localStorage.setItem('bibleState', JSON.stringify(state));
     localStorage.setItem('aiHistory', JSON.stringify(aiHistory));

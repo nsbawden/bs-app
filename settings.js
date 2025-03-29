@@ -6,7 +6,6 @@ class SettingsManager {
         this.openaiSettings = openaiSettingsRef; // Reference to global openaiSettings from config.js
         this.elements = new Map();
         this.settingsConfig = {
-            'settings-btn': { events: { 'click': this.openPopup.bind(this) } },
             'settings-close': { events: { 'click': this.closePopup.bind(this) } },
             'theme-select': {
                 type: 'select',

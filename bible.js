@@ -1,7 +1,25 @@
 // bible.js
 
-// Main dispatcher function with caching
+// Main chapter retrieval dispatcher function with caching
 async function fetchChapter(book, chapter, version) {
+    let result;
+
+    // Handle custom version first
+    if (version === 'custom') {
+        const chapterContent = await QB.loadChapter(book, chapter.toString());
+        if (!chapterContent) {
+            throw new Error(`Chapter ${chapter} not found in custom book ${book}`);
+        }
+        // Parse markdown content into verses format
+        result = QB.parseVerses(book, parseInt(chapter), chapterContent);
+        // Add translation metadata
+        result.translation_id = 'custom';
+        result.translation_name = 'Custom Version';
+        result.translation_note = 'User-created content';
+        return result;
+    }
+
+    // API Bible versions
     const bookData = books.find(b => b.key === book);
     if (!bookData) throw new Error(`Book ${book} not found in books array`);
 
@@ -15,7 +33,6 @@ async function fetchChapter(book, chapter, version) {
         return chapterCache[cacheKey].data;
     }
 
-    let result;
     switch (bookData.handler) {
         case 'localJson':
             const response = await fetch(bookData.url);
@@ -43,7 +60,7 @@ async function fetchChapter(book, chapter, version) {
     }
 
     // Store in cache with retry logic on failure
-    const maxRetries = 5; // Limit retries to prevent infinite loops
+    const maxRetries = 5;
     let retries = 0;
     while (retries < maxRetries) {
         try {
@@ -51,23 +68,22 @@ async function fetchChapter(book, chapter, version) {
                 data: result,
                 lastLoaded: Date.now()
             };
-            saveChapterCache(); // This might throw QuotaExceededError
+            saveChapterCache();
             console.log(`Cache miss - stored ${cacheKey}`);
-            break; // Success, exit loop
+            break;
         } catch (error) {
             if (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
                 retries++;
                 console.log(`Cache write failed (attempt ${retries}/${maxRetries}): ${error.message}`);
                 if (retries < maxRetries) {
                     console.log('Pruning 5 chapters to free space...');
-                    pruneOldChapters(5); // Prune 5 chapters
-                    saveChapterCache(); // Update storage after pruning
+                    pruneOldChapters(5);
+                    saveChapterCache();
                 } else {
                     console.error('Max retries reached, unable to cache chapter');
                     throw new Error(`Failed to cache ${cacheKey} after ${maxRetries} attempts: ${error.message}`);
                 }
             } else {
-                // Non-quota error (e.g., JSON.stringify failure), rethrow immediately
                 throw error;
             }
         }
@@ -263,31 +279,102 @@ function goToVerse(verse, chapter, book) {
     if (verse && verse > 0) {
         state.currentVerse.verse = verse;
     }
-    loadVerse();
+    loadBooks();
 }
 
-function loadVerse() {
-    // Populate the books selector
-    bookSelect.innerHTML = books.map(b => `<option value="${b.key}">${b.label}</option>`).join('');
+function updateMy(hasBooks) {
+    const cbo = document.getElementById('custom-books-option');
+    if (hasBooks) {
+        cbo.style.visibility = 'visible';
+    } else {
+        cbo.style.visibility = 'hidden';
+    }
+}
+
+async function validateBook() {
+    const hasBooks = (await QB.hasBooks());
+    if (state.bibleVersion === 'custom' && !hasBooks) {
+        state.bibleVersion = state.lastBibleVersion || 'kjv';
+    }
+    updateMy(hasBooks);
+}
+
+async function loadBooks() {
+    await validateBook();
+    if (state.bibleVersion === 'custom') {
+        // Populate books selector with custom books from QB
+        const customBooks = await QB.listBooks();
+        if (customBooks.length === 0) {
+            bookSelect.innerHTML = '<option value="">No custom books available</option>';
+        } else {
+            bookSelect.innerHTML = customBooks.map(book =>
+                `<option value="${book}">${book}</option>`
+            ).join('');
+            // Ensure current book is valid, default to first book if not
+            if (!customBooks.includes(state.currentVerse.book)) {
+                state.currentVerse.book = customBooks[0];
+            }
+        }
+    } else {
+        // Populate with standard Bible books
+        bookSelect.innerHTML = books.map(b =>
+            `<option value="${b.key}">${b.label}</option>`
+        ).join('');
+        // Ensure current book is valid, default to first book if not
+        if (!books.some(b => b.key === state.currentVerse.book)) {
+            state.currentVerse.book = books[0].key;
+        }
+    }
+
     bookSelect.value = state.currentVerse.book;
     versionSelect.value = state.bibleVersion;
-    updateChapters();
+    await updateChapters();
 }
 
 async function updateChapters() {
-    // Populate the chapters selector
-    const book = books.find(b => b.key === state.currentVerse.book);
-    const chapterCount = book.chapters;
-    chapterSelect.innerHTML = Array.from({ length: chapterCount }, (_, i) =>
-        `<option value="${i + 1}">${i + 1}</option>`
-    ).join('');
+    verseDisplay.innerHTML = ''; // Clear display while loading
+
+    if (state.bibleVersion === 'custom') {
+        // Get chapter list for custom book
+        const chapters = await QB.listChapters(state.currentVerse.book);
+        if (chapters.length === 0) {
+            chapterSelect.innerHTML = '<option value="">No chapters available</option>';
+        } else {
+            // Chapters are stored as strings, convert to numbers for sorting
+            const chapterNumbers = chapters.map(ch => parseInt(ch)).sort((a, b) => a - b);
+            chapterSelect.innerHTML = chapterNumbers.map(num =>
+                `<option value="${num}">${num}</option>`
+            ).join('');
+            // Validate current chapter
+            if (!chapterNumbers.includes(state.currentVerse.chapter)) {
+                state.currentVerse.chapter = chapterNumbers[0];
+            }
+        }
+    } else {
+        // Standard Bible book chapters
+        const book = books.find(b => b.key === state.currentVerse.book);
+        const chapterCount = book ? book.chapters : 0;
+        if (chapterCount === 0) {
+            chapterSelect.innerHTML = '<option value="">No chapters available</option>';
+        } else {
+            chapterSelect.innerHTML = Array.from({ length: chapterCount }, (_, i) =>
+                `<option value="${i + 1}">${i + 1}</option>`
+            ).join('');
+            // Validate current chapter
+            if (state.currentVerse.chapter > chapterCount || state.currentVerse.chapter < 1) {
+                state.currentVerse.chapter = 1;
+            }
+        }
+    }
+
     chapterSelect.value = state.currentVerse.chapter;
     await refreshDisplay();
 }
 
 async function refreshDisplay() {
     verseDisplay.innerHTML = '';
-    const data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
+    let data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
+    window.currentData = data;
     const verseCount = data.verses.length;
 
     // Populate verse selector
@@ -295,12 +382,20 @@ async function refreshDisplay() {
         `<option value="${i + 1}">${i + 1}</option>`
     ).join('');
     verseSelect.value = state.currentVerse.verse;
+    let nextLabel = '';
+    let prevLabel = '';
 
-    const currentBook = books.find(b => b.key === state.currentVerse.book);
-    const currentBookIndex = books.indexOf(currentBook);
-    const chapterCount = currentBook.chapters;
-    let prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
-    let nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
+    if (state.bibleVersion === 'custom') {
+        const chapterCount = QB.getChapterCount(state.currentVerse.book);
+        prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : '';
+        nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : '';
+    } else {
+        const currentBook = books.find(b => b.key === state.currentVerse.book);
+        const currentBookIndex = books.indexOf(currentBook);
+        const chapterCount = currentBook.chapters;
+        prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
+        nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
+    }
 
     let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
     // Always include the bookmark-list span, even if empty
@@ -374,7 +469,7 @@ window.goToNext = function () {
         return;
     }
     state.currentVerse.verse = 1;
-    loadVerse();
+    loadBooks();
 };
 
 window.goToPrevious = function () {
@@ -390,7 +485,7 @@ window.goToPrevious = function () {
         return;
     }
     state.currentVerse.verse = 1;
-    loadVerse();
+    loadBooks();
 };
 
 function getSelectedVerseText() {
@@ -526,27 +621,74 @@ function showNotePopup(reference, verseSpan = null, event = null) {
     }
 }
 
-function showUserInteraction(config) {
+/*
+ * askUser(config)
+ * Displays a popup with one or two textareas and an action button.
+ *
+ * Config Options:
+ * - buttonText (string, required): Text for the submit button.
+ * - action (function, required): Function to call with the first textarea's value.
+ * - text (string, optional): Default value for the first textarea.
+ * - prompt (string, optional): Placeholder text for the first textarea.
+ * - rows (number, optional): Number of rows for the first textarea (default: 3).
+ * - prompt2 (string, optional): If provided, a second textarea is added.
+ * - rows2 (number, optional): Number of rows for the second textarea (default: 3).
+ * - action2 (function, optional): Function to call with the second textarea's value.
+ *   - If omitted, `action` will receive an array `[text1, text2]` instead.
+ *
+ * Behavior:
+ * - Pressing Enter in the first textarea moves focus to the second (if present).
+ * - Clicking the submit button calls `action` (and `action2` if provided).
+ * - Pressing Escape or clicking the close button removes the popup.
+ */
+
+/*
+ * askUser(config)
+ * Displays a popup with one or two textareas and an action button.
+ *
+ * Config Options:
+ * - buttonText (string, required): Text for the submit button.
+ * - action (function, required): Function to call with the first textarea's value.
+ * - text (string, optional): Default value for the first textarea.
+ * - prompt (string, optional): Placeholder text for the first textarea.
+ * - rows (number, optional): Number of rows for the first textarea (default: 3).
+ * - prompt2 (string, optional): If provided, a second textarea is added.
+ * - rows2 (number, optional): Number of rows for the second textarea (default: 3).
+ * - action2 (function, optional): Function to call with the second textarea's value.
+ *   - If omitted, `action` will receive an array `[text1, text2]` instead.
+ *
+ * Behavior:
+ * - Pressing Enter in the first textarea moves focus to the second (if present).
+ * - Clicking the submit button calls `action` (and `action2` if provided).
+ * - Pressing Escape or clicking the close button removes the popup.
+ */
+
+function askUser(config) {
     // Validate required config properties
-    const requiredProps = ['buttonText', 'action'];
-    for (const prop of requiredProps) {
-        if (!(prop in config)) {
-            throw new Error(`Missing required config property: ${prop}`);
-        }
+    if (!config.buttonText || !config.action) {
+        throw new Error('Missing required config property: buttonText or action');
     }
 
     // Remove any existing popup
-    const existingPopup = document.querySelector('.note-popup');
-    if (existingPopup) existingPopup.remove();
+    document.querySelector('.note-popup')?.remove();
 
     // Create popup elements
     const popup = document.createElement('div');
     popup.className = 'note-popup';
 
-    const textarea = document.createElement('textarea');
-    textarea.className = 'note-popup-textarea';
-    textarea.value = config.text || ''; // Default to empty string if no text provided
-    if (config.prompt) textarea.placeholder = config.prompt;
+    const textarea1 = document.createElement('textarea');
+    textarea1.className = 'note-popup-textarea';
+    textarea1.value = config.text || '';
+    textarea1.placeholder = config.prompt || '';
+    textarea1.rows = config.rows || 3;
+
+    let textarea2 = null;
+    if (config.prompt2) {
+        textarea2 = document.createElement('textarea');
+        textarea2.className = 'note-popup-textarea';
+        textarea2.placeholder = config.prompt2;
+        textarea2.rows = config.rows2 || 3;
+    }
 
     const actionButton = document.createElement('button');
     actionButton.className = 'note-popup-button';
@@ -559,25 +701,39 @@ function showUserInteraction(config) {
 
     // Setup action handler
     actionButton.addEventListener('click', () => {
-        config.action(textarea.value);
+        if (config.prompt2) {
+            if (config.action2) {
+                config.action(textarea1.value);
+                config.action2(textarea2.value);
+            } else {
+                config.action([textarea1.value, textarea2.value]);
+            }
+        } else {
+            config.action(textarea1.value);
+        }
         cleanupAndRemove();
+    });
+
+    // Move focus to second textarea on Enter
+    textarea1.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && textarea2) {
+            e.preventDefault();
+            textarea2.focus();
+        }
     });
 
     // Append elements
     popup.appendChild(closeButton);
-    popup.appendChild(textarea);
+    popup.appendChild(textarea1);
+    if (textarea2) popup.appendChild(textarea2);
     popup.appendChild(actionButton);
     document.body.appendChild(popup);
 
-    // Center the popup
-    const popupHeight = popup.offsetHeight;
-    const popupWidth = popup.offsetWidth;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
+    // Center the popup in the viewport
     popup.style.position = 'fixed';
-    popup.style.left = `${(viewportWidth - popupWidth) / 2}px`;
-    popup.style.top = `${(viewportHeight - popupHeight) / 2}px`;
+    popup.style.left = '50%';
+    popup.style.top = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
 
     // Cleanup function
     const cleanupAndRemove = () => {
@@ -587,22 +743,20 @@ function showUserInteraction(config) {
 
     // Escape key handler
     const handleKeyPress = (e) => {
-        if (e.key === 'Escape') {
-            cleanupAndRemove();
-        }
+        if (e.key === 'Escape') cleanupAndRemove();
     };
 
     // Event listeners
     closeButton.addEventListener('click', cleanupAndRemove);
     document.addEventListener('keydown', handleKeyPress);
 
-    // Focus textarea
-    textarea.focus();
+    // Focus first textarea
+    textarea1.focus();
 }
 
 // Copy user data to clipboard
 function exportUserData() {
-    showUserInteraction({
+    askUser({
         text: exportLocalUser(),
         buttonText: 'Copy',
         action: (text) => {
@@ -615,7 +769,7 @@ function exportUserData() {
 
 // Import user data
 function importUserData() {
-    showUserInteraction({
+    askUser({
         prompt: 'Paste user data here...',
         buttonText: 'Apply',
         action: (text) => {
@@ -626,7 +780,7 @@ function importUserData() {
 
 // Import AI area output text
 function importAiOutput() {
-    showUserInteraction({
+    askUser({
         prompt: 'Paste text here...',
         buttonText: 'Apply',
         action: (text) => {
@@ -634,6 +788,24 @@ function importAiOutput() {
         }
     });
 }
+
+// Import book
+function importBook() {
+    askUser({
+        prompt: 'Book name',
+        rows: 1,
+        prompt2: 'Paste book text here...',
+        buttonText: 'Save',
+        action: (texts) => {
+            const bookName = texts[0];
+            QB.createBook(bookName);
+            QB.saveChapter(bookName, "1", texts[1]);
+            updateMy(true);
+        }
+    });
+}
+
+
 
 function linkVerses(text) {
     // Extract book names from the books array
@@ -741,8 +913,11 @@ function showBook(label, content) {
     displayResult("", content, true);
 }
 
+
+
 // Initialize
 loadQueryString();
-loadVerse();
-adjustTabCount();
-setActiveTab(1);
+loadBooks().then(() => {
+    adjustTabCount();
+    setActiveTab(1);
+});

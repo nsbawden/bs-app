@@ -54,13 +54,10 @@ verseSelect.addEventListener('change', () => {
 });
 
 versionSelect.addEventListener('change', () => {
+    state.lastBibleVersion = state.bibleVersion !== 'custom' ? state.bibleVersion : (state.lastBibleVersion || 'kjv');
     state.bibleVersion = versionSelect.value;
-    getApiSource();
-    fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion).then(data => {
-        if (state.currentVerse.verse > data.verses.length) {
-            state.currentVerse.verse = 1;
-        }
-        refreshDisplay();
+    loadBooks().then(() => {
+        getApiSource();
         updateTopBarSummary();
     });
 });
@@ -221,7 +218,7 @@ aiSave.addEventListener('click', () => {
 
     const question = currentAiOutput?.question;
     if (!question) {
-        showUserInteraction({
+        askUser({
             prompt: 'Enter description of text...',
             buttonText: 'Save',
             action: (text) => {
@@ -512,10 +509,10 @@ window.addEventListener('DOMContentLoaded', () => {
     adjustContainerMargin();
     updateTopBarSummary();
 
-    // Sample menu configuration
+    // Menu configuration
     const menuConfig = {
         'Paste text': () => console.log('Option 1 selected'),
-        'Option 2': () => console.log('Option 2 selected'),
+        'Add book': () => importBook(),
         'Option 3': () => console.log('Option 3 selected'),
         '⚙️ Settings': () => settingsManager.openPopup()
     };
@@ -590,7 +587,13 @@ function createDropdownMenu(menuConfig) {
 
     return {
         element: menu,
-        show: (x, y) => {
+        show: function (x, y) {
+            // Toggle: If menu is already visible, hide it and return
+            if (!menu.classList.contains('hidden')) {
+                this.hide(); // Use the hide method
+                return;
+            }
+
             // Temporarily show menu to get its dimensions
             menu.style.left = '0px';
             menu.style.top = '0px';
@@ -618,7 +621,7 @@ function createDropdownMenu(menuConfig) {
                 document.addEventListener('click', closeHandler);
             }, 10);
         },
-        hide: () => {
+        hide: function () {
             menu.classList.add('hidden');
             document.removeEventListener('click', closeHandler);
         }

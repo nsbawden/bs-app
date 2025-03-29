@@ -201,7 +201,7 @@ body {
 
 #show-list,
 #show-menu {
-    padding: 5px 0;
+    padding: 0 10px;
     font-size: 24px;
     background: none;
     border: none;

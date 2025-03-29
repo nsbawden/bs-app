@@ -53,8 +53,8 @@ QB.createBook = async function (bookName, metadata = {}) {
         await db.put('books', bookData, bookName);
         console.log(`Created book '${bookName}'`);
     } catch (error) {
-        console.error('Error creating book:', error);
-        throw error;
+        console.log('Error creating book:', error);
+        // throw error;
     }
 };
 
@@ -97,8 +97,8 @@ QB.saveChapter = async function (bookName, chapterName, content) {
         await db.put('books', bookData, bookName);
         console.log(`Saved chapter '${chapterName}' in '${bookName}'`);
     } catch (error) {
-        console.error('Error saving chapter:', error);
-        throw error;
+        console.log('Error saving chapter:', error);
+        // throw error;
     }
 };
 
@@ -127,6 +127,17 @@ QB.loadChapter = async function (bookName, chapterName) {
     } catch (error) {
         console.error('Error loading chapter:', error);
         throw error;
+    }
+};
+
+// Check if any books exist in the database, returns false on any failure
+QB.hasBooks = async function () {
+    try {
+        const db = await dbPromise;
+        const bookNames = await db.getAllKeys('books');
+        return bookNames.length > 0;
+    } catch (error) {
+        return false;
     }
 };
 
@@ -170,6 +181,18 @@ QB.listChapters = async function (bookName) {
     } catch (error) {
         console.error('Error listing chapters:', error);
         throw error;
+    }
+};
+
+QB.getChapterCount = async function (bookName) {
+    try {
+        QB.validateBookName(bookName);
+        const db = await dbPromise;
+        const bookData = await db.get('books', bookName);
+        return bookData?.chapters?.length || 0;
+    } catch (error) {
+        console.error('Error getting chapter count:', error);
+        return 0;
     }
 };
 
@@ -264,6 +287,59 @@ QB.loadBookFromFile = function (file) {
         reader.readAsText(file);
     });
 };
+
+// Parse a markdown chapter into a JSON verses object
+QB.parseVerses = function parseVerses(bookName, chapterNumber, markdownText) {
+    // Generate a simple book ID (first 3 letters uppercase)
+    const bookId = bookName.slice(0, 3).toUpperCase();
+
+    // Split text into lines and process
+    const lines = markdownText.split('\n');
+    let verses = [];
+    let verseNumber = 1;
+    let currentText = '';
+
+    // Process each line
+    lines.forEach(line => {
+        // Skip empty lines
+        if (line.trim() === '') return;
+
+        // Check if line is a header (starts with #)
+        if (line.trim().startsWith('#')) return;
+
+        // Split line into sentences (considering .!? as sentence endings)
+        const sentences = line.match(/[^.!?]+[.!?]+/g) || [line];
+
+        sentences.forEach(sentence => {
+            sentence = sentence.trim();
+            if (sentence) {
+                // Preserve markdown formatting and newlines
+                currentText = sentence;
+
+                verses.push({
+                    book_id: bookId,
+                    book_name: bookName,
+                    chapter: chapterNumber,
+                    verse: verseNumber,
+                    text: currentText
+                });
+
+                verseNumber++;
+            }
+        });
+    });
+
+    // Construct the final JSON object
+    const result = {
+        reference: `${bookName} ${chapterNumber}`,
+        verses: verses,
+        text: markdownText
+    };
+
+    return result;
+    // return JSON.stringify(result, null, 2);
+};
+
 
 // Attach the library to the global window object under a single namespace
 window.QB = QB;

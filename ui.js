@@ -500,7 +500,7 @@ function adjustContainerMargin() {
     const topBar = document.querySelector('.top-bar');
     const container = document.querySelector('.container');
     const topBarHeight = topBar.offsetHeight;
-    container.style.marginTop = `${topBarHeight}px`;
+    container.style.paddingTop = `${topBarHeight}px`;
     container.style.height = `calc(100vh - ${topBarHeight}px)`;
 }
 

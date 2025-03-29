@@ -677,7 +677,7 @@ function askUser(config) {
     popup.className = 'note-popup';
 
     const textarea1 = document.createElement('textarea');
-    textarea1.className = 'note-popup-textarea';
+    textarea1.className = 'ask-popup-textarea';
     textarea1.value = config.text || '';
     textarea1.placeholder = config.prompt || '';
     textarea1.rows = config.rows || 3;
@@ -685,7 +685,7 @@ function askUser(config) {
     let textarea2 = null;
     if (config.prompt2) {
         textarea2 = document.createElement('textarea');
-        textarea2.className = 'note-popup-textarea';
+        textarea2.className = 'ask-popup-textarea';
         textarea2.placeholder = config.prompt2;
         textarea2.rows = config.rows2 || 3;
     }

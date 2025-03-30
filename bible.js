@@ -978,7 +978,4 @@ function showBook(label, content) {
 
 // Initialize
 loadQueryString();
-loadBooks().then(() => {
-    adjustTabCount();
-    setActiveTab(1);
-});
+loadBooks();

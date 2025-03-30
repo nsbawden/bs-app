@@ -259,8 +259,7 @@ function aiExpand() {
     const mainVisibleHeight = 100;
     const footerPadding = 20;
     const aiInputHeight = document.querySelector('.ai-input-container').offsetHeight;
-    const tabsHeight = document.querySelector('.tabs-container').offsetHeight;
-    const availableHeight = window.innerHeight - topBarHeight - mainVisibleHeight - footerPadding - aiInputHeight - tabsHeight;
+    const availableHeight = window.innerHeight - topBarHeight - mainVisibleHeight - footerPadding - aiInputHeight;
 
     aiOutput.style.setProperty('--ai-output-max-height', `${availableHeight}px`);
     aiOutput.style.setProperty('--ai-output-overflow', 'auto');
@@ -339,32 +338,6 @@ function scrollToSelectedVerse(topBuffer = true) {
         });
     }
 }
-
-// Tab Management
-function adjustTabCount() {
-    const tabCount = Math.min(aiHistory.length, 10);
-    document.querySelectorAll('.tab').forEach((tab, index) => {
-        tab.style.display = index < tabCount ? 'block' : 'none';
-    });
-}
-
-function setActiveTab(tabNum) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.tab[data-tab="${tabNum}"]`).classList.add('active');
-    aiExpand();
-}
-
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        const tabNum = parseInt(tab.dataset.tab);
-        setActiveTab(tabNum);
-        if (aiHistory[tabNum - 1]) {
-            displayResult(aiHistory[tabNum - 1].question, aiHistory[tabNum - 1].answer);
-        } else {
-            console.log(`Tab ${tabNum} clicked without content`);
-        }
-    });
-});
 
 function showVerseMenu(verseSpan, event) {
     const existingPopup = document.querySelector('.verse-popup');

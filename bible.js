@@ -258,7 +258,7 @@ async function fetchApiEsv(book, chapter) {
     return convertedData;
 }
 
-function hasBook(key) {
+function hasBibleBook(key) {
     return books.some(book => book.key === key);
 }
 
@@ -270,16 +270,30 @@ function bookProperty(bookName, property) {
 function goToVerse(verse, chapter, book) {
     chapter = chapter ? parseInt(chapter) : null;
     verse = verse ? parseInt(verse) : null;
-    if (book && hasBook(book)) {
+
+    if (book) {
+        state.bookSource = hasBibleBook(book) ? 'bible' : 'custom';
         state.currentVerse.book = book;
     }
-    if (chapter && chapter > 0 && bookProperty(state.currentVerse.book, 'chapters') >= chapter) {
-        state.currentVerse.chapter = chapter;
+
+    if (chapter && chapter > 0) {
+        if (state.bookSource === 'bible') {
+            // Only validate chapter for Bible books using static structure
+            const maxChapters = bookProperty(state.currentVerse.book, 'chapters');
+            if (maxChapters >= chapter) {
+                state.currentVerse.chapter = chapter;
+            }
+        } else {
+            // For custom books, accept the chapter without validation
+            state.currentVerse.chapter = chapter;
+        }
     }
+
     if (verse && verse > 0) {
         state.currentVerse.verse = verse;
     }
-    loadBooks();
+
+    loadBooks(); // Refresh UI
 }
 
 function updateMy(hasBooks) {
@@ -310,25 +324,21 @@ async function validateBook() {
 async function loadBooks() {
     await validateBook();
     if (bookSource() === 'custom') {
-        // Populate books selector with custom books from QB
         const customBooks = await QB.listBooks();
         if (customBooks.length === 0) {
             bookSelect.innerHTML = '<option value="">No custom books available</option>';
         } else {
             bookSelect.innerHTML = customBooks.map(book =>
-                `<option value="${book}">${book}</option>`
+                `<option value="${book.title}">${book.title}</option>` // Use title instead of key
             ).join('');
-            // Ensure current book is valid, default to first book if not
-            if (!customBooks.includes(state.currentVerse.book)) {
-                state.currentVerse.book = customBooks[0];
+            if (!customBooks.some(b => b.title === state.currentVerse.book)) {
+                state.currentVerse.book = customBooks[0].title; // Set to title
             }
         }
     } else {
-        // Populate with standard Bible books
         bookSelect.innerHTML = books.map(b =>
             `<option value="${b.key}">${b.label}</option>`
         ).join('');
-        // Ensure current book is valid, default to first book if not
         if (!books.some(b => b.key === state.currentVerse.book)) {
             state.currentVerse.book = books[0].key;
         }
@@ -420,9 +430,13 @@ async function refreshDisplay() {
         const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
-        const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
 
-        currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
+        // const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
+        // currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
+
+        const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><div class="verse-text">${v.text.trim()}</div>`;
+        currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
             paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
             currentParagraph = '';
@@ -797,18 +811,43 @@ function importAiOutput() {
     });
 }
 
-// Import book
+// Import Custom Book
 function importBook() {
     askUser({
         prompt: 'Book name',
         rows: 1,
         prompt2: 'Paste book text here...',
         buttonText: 'Save',
-        action: (texts) => {
-            const bookName = texts[0];
-            QB.createBook(bookName);
-            QB.saveChapter(bookName, "1", texts[1]);
-            updateMy(true);
+        action: async (texts) => {
+            try {
+                const bookName = texts[0].trim();
+                await QB.createBook(bookName);
+                await QB.saveChapter(bookName, "1", texts[1]);
+                updateMy(true);
+            } catch (error) {
+                alert(`Error importing book: ${error.message}`);
+            }
+        }
+    });
+}
+
+// Import Custom Chapter
+function importChapter() {
+    askUser({
+        prompt: 'Paste chapter content here...',
+        rows: 4,
+        buttonText: 'Save',
+        action: async (text) => {
+            try {
+                // Get the current number of chapters for the book
+                const chapterCount = await QB.getChapterCount(state.currentVerse.book);
+                // Next chapter number is count + 1
+                const nextChapter = (chapterCount + 1).toString();
+                await QB.saveChapter(state.currentVerse.book, nextChapter, text);
+                updateMy(true);
+            } catch (error) {
+                alert(`Error importing chapter: ${error.message}`);
+            }
         }
     });
 }
@@ -854,6 +893,19 @@ function displayResult(question, answer, expand = true) {
 }
 
 function detectMarkdown(text) {
+    const markdownPatterns = {
+        headings: /^#{1,6}\s+.+/m,
+        bold: /\*\*.+?\*\*|__.+?__/g,
+        italic: /\*[^*]+\*|_[^_]+_/g,
+        lists: /^\s*([-*+]|\d+\.)\s+.+/m,
+        blockquote: /^\s*>.+/m,
+        inline_code: /`[^`]+`/g
+    };
+
+    return Object.values(markdownPatterns).some(regex => regex.test(text));
+}
+
+function xdetectMarkdown(text) {
     const markdownPatterns = {
         headings: /^#{1,6}\s+.+/m, // Matches lines that start with 1-6 '#' followed by text
         bold: /\*\*.+?\*\*|__.+?__/g, // Matches **bold** or __bold__

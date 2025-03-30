@@ -303,20 +303,6 @@ function toggleTopBar(e) {
 
 topBar.addEventListener('click', toggleTopBar);
 
-// document.getElementById('show-list').addEventListener('click', async () => {
-//     const tabs = constructTabs();
-//     const result = await showListPopup(tabs);
-//     if (result.itemIndex >= 0) {
-//         console.log(`Selected tab ${result.tabIndex}, item ${result.itemIndex}: ${tabs[result.tabIndex].items[result.itemIndex].label}`);
-//         switch (result.tabIndex) {
-//             // case 0: displayResult(savedQuestions[result.itemIndex].label, savedQuestions[result.itemIndex].data); break;
-//             case 1: goToNote(result.itemIndex); break;
-//             case 2: goToTag(result.itemIndex); break;
-//             case 3: tabs[3].items[result.itemIndex].handler(); break;
-//             default: tabs[result.tabIndex].items[result.itemIndex].handler(); break;
-//         }
-//     }
-// });
 
 // Initial summary
 updateTopBarSummary();
@@ -521,8 +507,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // Menu configuration
     const menuConfig = {
         'Paste text': () => console.log('Option 1 selected'),
-        'Add book': () => importBook(),
-        'Option 3': () => console.log('Option 3 selected'),
+        '🗎 Add custom book': () => importBook(),
+        '⍈ Add custom chapter': () => importChapter(),
         '⚙️ Settings': () => settingsManager.openPopup()
     };
 

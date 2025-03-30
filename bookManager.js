@@ -1,14 +1,11 @@
 // bookManager.js
 
-// Ensure the idb library is loaded
 if (typeof idb === 'undefined') {
     throw new Error('idb library is required. Include it via <script src="https://unpkg.com/idb@7.1.1/build/umd.js"></script>');
 }
 
-// Define the QB namespace
 const QB = {};
 
-// Initialize IndexedDB using the idb library
 const dbPromise = idb.openDB('QuantumBibleDB', 1, {
     upgrade(db) {
         if (!db.objectStoreNames.contains('books')) {
@@ -17,32 +14,42 @@ const dbPromise = idb.openDB('QuantumBibleDB', 1, {
     }
 });
 
-// Validate book name (disallow special characters that might break keys or filenames)
+QB.generateBookKey = function (bookName) {
+    if (!bookName || typeof bookName !== 'string') {
+        throw new Error('Book name must be a non-empty string');
+    }
+    return bookName
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .slice(0, 50);
+};
+
 QB.validateBookName = function (bookName) {
     if (!bookName || typeof bookName !== 'string') {
         throw new Error('Book name must be a non-empty string');
     }
-    if (!/^[a-zA-Z0-9_-]+$/.test(bookName)) {
-        throw new Error('Book name can only contain letters, numbers, underscores, or hyphens');
+    if (/[\0-\x1F\x7F]/.test(bookName)) {
+        throw new Error('Book name cannot contain control characters');
     }
     return bookName;
 };
 
-// Create a new book with metadata
 QB.createBook = async function (bookName, metadata = {}) {
     try {
-        QB.validateBookName(bookName);
+        const displayName = QB.validateBookName(bookName);
+        const key = QB.generateBookKey(bookName);
         const db = await dbPromise;
-        const existingBook = await db.get('books', bookName);
+        const existingBook = await db.get('books', key);
         if (existingBook) {
-            throw new Error(`Book '${bookName}' already exists`);
+            throw new Error(`Book with key '${key}' already exists`);
         }
 
         const now = new Date().toISOString();
         const bookData = {
             version: '1.0',
             metadata: {
-                title: metadata.title || bookName,
+                title: displayName,
                 author: metadata.author || 'Unknown',
                 createdAt: now,
                 updatedAt: now
@@ -50,18 +57,19 @@ QB.createBook = async function (bookName, metadata = {}) {
             chapters: []
         };
 
-        await db.put('books', bookData, bookName);
-        console.log(`Created book '${bookName}'`);
+        await db.put('books', bookData, key);
+        console.log(`Created book '${displayName}' with key '${key}'`);
+        return key;
     } catch (error) {
         console.log('Error creating book:', error);
-        // throw error;
+        throw error;
     }
 };
 
-// Save or update a chapter in a book
-QB.saveChapter = async function (bookName, chapterName, content) {
+QB.saveChapter = async function (bookKey, chapterName, content) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         if (!chapterName || typeof chapterName !== 'string') {
             throw new Error('Chapter name must be a non-empty string');
         }
@@ -70,17 +78,15 @@ QB.saveChapter = async function (bookName, chapterName, content) {
         }
 
         const db = await dbPromise;
-        let bookData = await db.get('books', bookName);
+        let bookData = await db.get('books', key);
         if (!bookData) {
-            // Create the book if it doesn't exist
-            await QB.createBook(bookName);
-            bookData = await db.get('books', bookName);
+            await QB.createBook(bookKey);
+            bookData = await db.get('books', key);
         }
 
         const now = new Date().toISOString();
         const chapterIndex = bookData.chapters.findIndex(ch => ch.name === chapterName);
         if (chapterIndex === -1) {
-            // Add new chapter
             bookData.chapters.push({
                 name: chapterName,
                 content: content,
@@ -88,92 +94,89 @@ QB.saveChapter = async function (bookName, chapterName, content) {
                 updatedAt: now
             });
         } else {
-            // Update existing chapter
             bookData.chapters[chapterIndex].content = content;
             bookData.chapters[chapterIndex].updatedAt = now;
         }
 
         bookData.metadata.updatedAt = now;
-        await db.put('books', bookData, bookName);
-        console.log(`Saved chapter '${chapterName}' in '${bookName}'`);
+        await db.put('books', bookData, key);
+        console.log(`Saved chapter '${chapterName}' in book with key '${key}'`);
     } catch (error) {
         console.log('Error saving chapter:', error);
-        // throw error;
+        throw error;
     }
 };
 
-// Load a chapter's content from a book
-QB.loadChapter = async function (bookName, chapterName) {
+QB.loadChapter = async function (bookKey, chapterName) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         if (!chapterName || typeof chapterName !== 'string') {
             throw new Error('Chapter name must be a non-empty string');
         }
 
         const db = await dbPromise;
-        const bookData = await db.get('books', bookName);
+        const bookData = await db.get('books', key);
         if (!bookData) {
-            console.log(`Book '${bookName}' not found`);
+            console.log(`Book with key '${key}' not found`);
             return null;
         }
 
         const chapter = bookData.chapters.find(ch => ch.name === chapterName);
-        if (!chapter) {
-            console.log(`Chapter '${chapterName}' not found in '${bookName}'`);
-            return null;
-        }
-
-        return chapter.content;
+        return chapter ? chapter.content : null;
     } catch (error) {
         console.error('Error loading chapter:', error);
         throw error;
     }
 };
 
-// Check if any books exist in the database, returns false on any failure
 QB.hasBooks = async function () {
     try {
         const db = await dbPromise;
         const bookNames = await db.getAllKeys('books');
         return bookNames.length > 0;
     } catch (error) {
+        console.error('Error checking for books:', error);
         return false;
     }
 };
 
-// List all books in IndexedDB
 QB.listBooks = async function () {
     try {
         const db = await dbPromise;
-        const bookNames = await db.getAllKeys('books');
-        return bookNames;
+        const keys = await db.getAllKeys('books');
+        const books = await Promise.all(keys.map(key => db.get('books', key)));
+        return books.map((book, i) => ({
+            key: keys[i],
+            title: book.metadata.title
+        }));
     } catch (error) {
         console.error('Error listing books:', error);
         throw error;
     }
 };
 
-// Delete a book from IndexedDB
-QB.deleteBook = async function (bookName) {
+QB.deleteBook = async function (bookKey) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         const db = await dbPromise;
-        await db.delete('books', bookName);
-        console.log(`Deleted book '${bookName}'`);
+        await db.delete('books', key);
+        console.log(`Deleted book with key '${key}'`);
     } catch (error) {
         console.error('Error deleting book:', error);
         throw error;
     }
 };
 
-// List all chapters in a book
-QB.listChapters = async function (bookName) {
+QB.listChapters = async function (bookKey) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         const db = await dbPromise;
-        const bookData = await db.get('books', bookName);
+        const bookData = await db.get('books', key);
         if (!bookData) {
-            console.log(`Book '${bookName}' not found`);
+            console.log(`Book with key '${key}' not found`);
             return [];
         }
 
@@ -184,11 +187,12 @@ QB.listChapters = async function (bookName) {
     }
 };
 
-QB.getChapterCount = async function (bookName) {
+QB.getChapterCount = async function (bookKey) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         const db = await dbPromise;
-        const bookData = await db.get('books', bookName);
+        const bookData = await db.get('books', key);
         return bookData?.chapters?.length || 0;
     } catch (error) {
         console.error('Error getting chapter count:', error);
@@ -196,56 +200,100 @@ QB.getChapterCount = async function (bookName) {
     }
 };
 
-// Delete a chapter from a book
-QB.deleteChapter = async function (bookName, chapterName) {
+QB.deleteChapter = async function (bookKey, chapterName) {
     try {
-        QB.validateBookName(bookName);
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
         if (!chapterName || typeof chapterName !== 'string') {
             throw new Error('Chapter name must be a non-empty string');
         }
 
         const db = await dbPromise;
-        const bookData = await db.get('books', bookName);
+        const bookData = await db.get('books', key);
         if (!bookData) {
-            console.log(`Book '${bookName}' not found`);
+            console.log(`Book with key '${key}' not found`);
             return;
         }
 
         bookData.chapters = bookData.chapters.filter(ch => ch.name !== chapterName);
         bookData.metadata.updatedAt = new Date().toISOString();
-        await db.put('books', bookData, bookName);
-        console.log(`Deleted chapter '${chapterName}' from '${bookName}'`);
+        await db.put('books', bookData, key);
+        console.log(`Deleted chapter '${chapterName}' from book with key '${key}'`);
     } catch (error) {
         console.error('Error deleting chapter:', error);
         throw error;
     }
 };
 
-// Export a book to a file
-QB.exportBook = async function (bookName) {
+QB.renameBook = async function (oldName, newName) {
     try {
-        QB.validateBookName(bookName);
+        const validatedOldName = QB.validateBookName(oldName);
+        const validatedNewName = QB.validateBookName(newName);
+        const oldKey = QB.generateBookKey(validatedOldName);
+        const newKey = QB.generateBookKey(validatedNewName);
+
         const db = await dbPromise;
-        const bookData = await db.get('books', bookName);
+        const tx = db.transaction('books', 'readwrite');
+        const store = tx.objectStore('books');
+
+        const bookData = await store.get(oldKey);
         if (!bookData) {
-            throw new Error(`Book '${bookName}' not found`);
+            throw new Error(`Book '${validatedOldName}' (key: '${oldKey}') not found`);
+        }
+
+        // Check if new key already exists (avoid overwriting)
+        const existingNewBook = await store.get(newKey);
+        if (existingNewBook && oldKey !== newKey) {
+            throw new Error(`Book with key '${newKey}' already exists`);
+        }
+
+        // Update metadata.title
+        bookData.metadata.title = validatedNewName;
+        bookData.metadata.updatedAt = new Date().toISOString();
+
+        if (oldKey !== newKey) {
+            // Move to new key and delete old
+            await store.put(bookData, newKey);
+            await store.delete(oldKey);
+            console.log(`Renamed book from '${oldKey}' to '${newKey}' with title '${validatedNewName}'`);
+        } else {
+            // Just update the existing entry
+            await store.put(bookData, oldKey);
+            console.log(`Updated book title to '${validatedNewName}' at key '${oldKey}'`);
+        }
+
+        await tx.done;
+        return true; // Success
+    } catch (error) {
+        console.error('Error renaming book:', error);
+        throw error;
+    }
+};
+
+QB.exportBook = async function (bookKey) {
+    try {
+        QB.validateBookName(bookKey);
+        const key = QB.generateBookKey(bookKey);
+        const db = await dbPromise;
+        const bookData = await db.get('books', key);
+        if (!bookData) {
+            throw new Error(`Book with key '${key}' not found`);
         }
 
         const blob = new Blob([JSON.stringify(bookData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `book-${bookName}.json`;
+        a.download = `book-${key}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        console.log(`Exported book '${bookName}' to 'book-${bookName}.json'`);
+        console.log(`Exported book '${bookData.metadata.title}' to 'book-${key}.json'`);
     } catch (error) {
         console.error('Error exporting book:', error);
         throw error;
     }
 };
 
-// Load a book from a file into IndexedDB
 QB.loadBookFromFile = function (file) {
     return new Promise((resolve, reject) => {
         if (!file || !file.name.endsWith('.json')) {
@@ -253,28 +301,25 @@ QB.loadBookFromFile = function (file) {
             return;
         }
 
-        // Extract book name from filename (e.g., 'book-QuantumBible.json' -> 'QuantumBible')
         const match = file.name.match(/^book-(.+)\.json$/);
         if (!match) {
-            reject(new Error('File must be named "book-NAME.json"'));
+            reject(new Error('File must be named "book-KEY.json"'));
             return;
         }
-        const bookName = match[1];
-        QB.validateBookName(bookName);
+        const key = match[1];
 
         const reader = new FileReader();
         reader.onload = async (event) => {
             try {
                 const bookData = JSON.parse(event.target.result);
-                // Basic validation of book data structure
                 if (!bookData.metadata || !Array.isArray(bookData.chapters)) {
                     throw new Error('Invalid book data format');
                 }
 
                 const db = await dbPromise;
-                await db.put('books', bookData, bookName);
-                console.log(`Loaded book '${bookName}' from file`);
-                resolve(bookName);
+                await db.put('books', bookData, key);
+                console.log(`Loaded book '${bookData.metadata.title}' with key '${key}'`);
+                resolve(key);
             } catch (error) {
                 console.error('Error loading book from file:', error);
                 reject(error);
@@ -288,58 +333,82 @@ QB.loadBookFromFile = function (file) {
     });
 };
 
-// Parse a markdown chapter into a JSON verses object
-QB.parseVerses = function parseVerses(bookName, chapterNumber, markdownText) {
-    // Generate a simple book ID (first 3 letters uppercase)
-    const bookId = bookName.slice(0, 3).toUpperCase();
+// Assuming detectMarkdown is defined elsewhere as a boolean-returning function
+QB.parseVerses = function parseVerses(bookName, chapterNumber, text) {
+    if (detectMarkdown(text)) {
+        text = convertMarkdown(text);
+        return this.parseHTMLVerses(bookName, chapterNumber, text);
+    }
+    return this.parseTextVerses(bookName, chapterNumber, text);
+};
 
-    // Split text into lines and process
-    const lines = markdownText.split('\n');
+QB.parseTextVerses = function parseTextVerses(bookName, chapterNumber, text) {
+    const bookId = bookName.slice(0, 3).toUpperCase();
+    const lines = text.split('\n');
     let verses = [];
     let verseNumber = 1;
-    let currentText = '';
 
-    // Process each line
+    const sentenceRegex = /(?<!\b(?:[A-Z][a-z]?\.){1,3})[.!?]\s+(?=\p{Lu})/gu;
+
     lines.forEach(line => {
-        // Skip empty lines
-        if (line.trim() === '') return;
-
-        // Check if line is a header (starts with #)
-        if (line.trim().startsWith('#')) return;
-
-        // Split line into sentences (considering .!? as sentence endings)
-        const sentences = line.match(/[^.!?]+[.!?]+/g) || [line];
-
+        if (line.trim() === '' || line.trim().startsWith('#')) return;
+        const sentences = line.split(sentenceRegex);
         sentences.forEach(sentence => {
             sentence = sentence.trim();
             if (sentence) {
-                // Preserve markdown formatting and newlines
-                currentText = sentence;
-
                 verses.push({
                     book_id: bookId,
                     book_name: bookName,
                     chapter: chapterNumber,
                     verse: verseNumber,
-                    text: currentText
+                    text: sentence
                 });
-
                 verseNumber++;
             }
         });
     });
 
-    // Construct the final JSON object
-    const result = {
+    return {
         reference: `${bookName} ${chapterNumber}`,
         verses: verses,
-        text: markdownText
+        text: text
     };
-
-    return result;
-    // return JSON.stringify(result, null, 2);
 };
 
+QB.parseHTMLVerses = function parseHTMLVerses(bookName, chapterNumber, htmlText) {
+    const bookId = bookName.slice(0, 3).toUpperCase();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
 
-// Attach the library to the global window object under a single namespace
+    let verses = [];
+    let verseNumber = 1;
+
+    const processElement = (element) => {
+        let verseText = element.outerHTML.trim();
+        if (verseText) {
+            verses.push({
+                book_id: bookId,
+                book_name: bookName,
+                chapter: chapterNumber,
+                verse: verseNumber,
+                text: verseText
+            });
+            verseNumber++;
+        }
+    };
+
+    const body = doc.body;
+    Array.from(body.children).forEach((element) => {
+        if (element.tagName === 'P' || element.tagName === 'OL' || element.tagName === 'UL') {
+            processElement(element);
+        }
+    });
+
+    return {
+        reference: `${bookName} ${chapterNumber}`,
+        verses: verses,
+        text: htmlText
+    };
+};
+
 window.QB = QB;

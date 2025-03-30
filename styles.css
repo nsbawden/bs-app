@@ -246,15 +246,26 @@ p {
 }
 
 .verse {
+    display: inline;
     cursor: pointer;
-    margin-right: 5px;}
+    margin-right: 5px;
+}
 
 .verse-num {
     color: var(--verse-num-color);
     margin-right: 5px;
 }
 
-.verse.selected .verse-text {
+.verse-text {
+    display: inline;
+}
+
+.verse-text>*>li {
+    margin-bottom: 20px;
+}
+
+.verse.selected .verse-text,
+.verse.selected .verse-text * {
     background-color: var(--verse-selected-bg);
 }
 
@@ -530,6 +541,7 @@ footer.expanded #ai-output-container {
 .bookmark-list {
     display: inline-block;
     margin-left: 10px;
+    margin-bottom: 8px;
     vertical-align: middle;
 }
 

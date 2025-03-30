@@ -823,6 +823,7 @@ function importBook() {
                 const bookName = texts[0].trim();
                 await QB.createBook(bookName);
                 await QB.saveChapter(bookName, "1", texts[1]);
+                loadBooks();
                 updateMy(true);
             } catch (error) {
                 alert(`Error importing book: ${error.message}`);

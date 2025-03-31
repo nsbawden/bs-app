@@ -427,45 +427,39 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
             throw new Error('Quill library is required. Include it via <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>');
         }
         if (typeof marked === 'undefined') {
-            throw new Error('Marked library is required for Markdown parsing. Include it via <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>');
+            throw new Error('Marked library is required. Include it via <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>');
         }
         if (typeof TurndownService === 'undefined') {
-            throw new Error('Turndown library is required for Markdown conversion. Include it via <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>');
+            throw new Error('Turndown library is required. Include it via <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>');
         }
 
-        // Get the current chapter content (assumed to be Markdown)
-        const key = QB.generateBookKey(bookKey);
+        // Get the current chapter content (Markdown)
+        const initialMarkdown = await QB.loadChapter(bookKey, chapterName) || '';
+        const initialHtml = marked.parse(initialMarkdown, { gfm: true });
+        const simplifiedHtml = initialHtml.replace(/<li><p>(.*?)<\/p>/g, '<li>$1');
 
-        let initialMarkdown = await QB.loadChapter(bookKey, chapterName) || '';
-        initialMarkdown = initialMarkdown.replace('<p>', '');
-        initialMarkdown = initialMarkdown.replace('</p>', '');
-        console.log(initialMarkdown);
-
-        const initialHtml = marked.parse(initialMarkdown); // Convert Markdown to HTML
-        console.log(initialHtml);
-
-        // Create a covering div
+        // Create editor container
         const rect = domElement.getBoundingClientRect();
         const editorContainer = document.createElement('div');
+        editorContainer.className = 'quill-editor-container';
         editorContainer.style.position = 'absolute';
         editorContainer.style.top = `${rect.top + window.scrollY}px`;
         editorContainer.style.left = `${rect.left + window.scrollX}px`;
         editorContainer.style.width = `${rect.width}px`;
         editorContainer.style.height = `${rect.height - 100}px`;
-        editorContainer.style.backgroundColor = '#1e1e1e';
-        editorContainer.style.color = '#ffffff';
         editorContainer.style.zIndex = '1000';
         document.body.appendChild(editorContainer);
 
-        // Create a specific div for Quill
+        // Create Quill div
         const quillEditor = document.createElement('div');
         editorContainer.appendChild(quillEditor);
 
-        // Initialize Quill editor with Snow theme
+        // Initialize Quill with headings in toolbar
         const quill = new Quill(quillEditor, {
             theme: 'snow',
             modules: {
                 toolbar: [
+                    [{ 'header': [1, 2, 3, false] }], // Heading levels 1-3, plus normal text
                     ['bold', 'italic', 'underline'],
                     ['link', 'blockquote', 'code-block'],
                     [{ 'list': 'ordered' }, { 'list': 'bullet' }]
@@ -473,95 +467,72 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
             }
         });
 
-        // Set initial content as HTML
-        quill.root.innerHTML = initialHtml;
+        // Set content using Delta
+        const delta = quill.clipboard.convert(simplifiedHtml);
+        quill.setContents(delta);
 
-        // Add dark theme styles dynamically
-        const style = document.createElement('style');
-        style.textContent = `
-            .ql-container.ql-snow {
-                background-color: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #444;
+        // Add buttons to toolbar after a delay
+        setTimeout(() => {
+            const toolbar = document.body.querySelector('.ql-toolbar');
+            if (!toolbar) {
+                console.error('Toolbar not found after delay, buttons not added');
+                return;
             }
-            .ql-toolbar.ql-snow {
-                background-color: #2d2d2d;
-                border: 1px solid #444;
-            }
-            .ql-toolbar.ql-snow .ql-picker-label,
-            .ql-toolbar.ql-snow .ql-button {
-                color: #ffffff;
-            }
-            .ql-toolbar.ql-snow .ql-picker-options {
-                background-color: #2d2d2d;
-                color: #ffffff;
-            }
-            .ql-editor {
-                background-color: #1e1e1e;
-                color: #ffffff;
-            }
-            .ql-editor a {
-                color: #1e90ff;
-            }
-        `;
-        document.head.appendChild(style);
 
-        // Add Save and Cancel buttons
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '10px';
-        const saveButton = document.createElement('button');
-        saveButton.textContent = 'Save';
-        saveButton.style.marginRight = '10px';
-        saveButton.style.backgroundColor = '#4CAF50';
-        saveButton.style.color = '#ffffff';
-        const cancelButton = document.createElement('button');
-        cancelButton.textContent = 'Cancel';
-        cancelButton.style.backgroundColor = '#f44336';
-        cancelButton.style.color = '#ffffff';
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'quill-button-container';
 
-        buttonContainer.appendChild(saveButton);
-        buttonContainer.appendChild(cancelButton);
-        editorContainer.appendChild(buttonContainer);
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Save';
+            saveButton.className = 'quill-save-btn';
+            saveButton.style.marginRight = '5px';
 
-        // Initialize Turndown for HTML-to-Markdown conversion
-        const turndownService = new TurndownService({
-            headingStyle: 'atx', // Use # for headings
-            bulletListMarker: '-', // Use - for bullets
-            codeBlockStyle: 'fenced', // Use ``` for code blocks
-            linkStyle: 'inlined' // Inline links as [text](url)
-        });
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.className = 'quill-cancel-btn';
 
-        // Cleanup function
+            buttonContainer.appendChild(saveButton);
+            buttonContainer.appendChild(cancelButton);
+            toolbar.appendChild(buttonContainer);
+
+            // Save handler
+            saveButton.onclick = async () => {
+                const htmlContent = quill.root.innerHTML;
+                const markdownContent = turndownService.turndown(htmlContent);
+                await QB.saveChapter(bookKey, chapterName, markdownContent);
+                cleanup();
+                if (typeof saveCallback === 'function') {
+                    saveCallback(markdownContent);
+                }
+                // console.log(markdownContent);
+            };
+
+            // Cancel handler
+            cancelButton.onclick = () => {
+                cleanup();
+                if (typeof saveCallback === 'function') {
+                    saveCallback(null);
+                }
+            };
+        }, 333); // 1/3 second delay
+
+        // Cleanup
         const cleanup = () => {
             if (editorContainer.parentNode) {
                 document.body.removeChild(editorContainer);
-            }
-            if (style.parentNode) {
-                document.head.removeChild(style);
             }
             quill.enable(false);
             quill.off('text-change');
             quill.off('selection-change');
         };
 
-        // Save handler
-        saveButton.onclick = async () => {
-            const htmlContent = quill.root.innerHTML;
-            const markdownContent = turndownService.turndown(htmlContent); // Convert HTML to Markdown
-            await QB.saveChapter(bookKey, chapterName, markdownContent);
-            cleanup();
-            if (typeof saveCallback === 'function') {
-                saveCallback(markdownContent);
-            }
-        };
-
-        // Cancel handler
-        cancelButton.onclick = () => {
-            cleanup();
-            if (typeof saveCallback === 'function') {
-                saveCallback(null);
-            }
-        };
+        // Initialize Turndown
+        const turndownService = new TurndownService({
+            headingStyle: 'atx',
+            bulletListMarker: '-',
+            codeBlockStyle: 'fenced',
+            linkStyle: 'inlined'
+        });
 
     } catch (error) {
         console.error('Error in editChapter:', error);

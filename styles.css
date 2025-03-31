@@ -797,10 +797,112 @@ footer.expanded #ai-output-container {
 }
 
 .list-placeholder {
-    /* Added */
     padding: 10px;
     color: var(--settings-info-text);
     text-align: center;
+}
+
+/* Quill Editor Styles */
+.quill-editor-container {
+    background-color: var(--popup-bg);
+    color: var(--popup-text);
+    border: 1px solid var(--popup-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.ql-container.ql-snow {
+    background-color: var(--popup-bg);
+    color: var(--popup-text);
+    border: none;
+    font-size: 16px;
+    /* Matches default body/verse text */
+    flex: 1;
+}
+
+.ql-toolbar.ql-snow {
+    background-color: var(--top-bar-bg);
+    border-bottom: 1px solid var(--popup-border);
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label,
+.ql-toolbar.ql-snow .ql-button {
+    color: var(--button-text);
+}
+
+.ql-toolbar.ql-snow .ql-picker-options {
+    background-color: var(--popup-bg);
+    color: var(--popup-text);
+    border: 1px solid var(--popup-border);
+}
+
+.ql-editor {
+    background-color: var(--popup-bg);
+    color: var(--popup-text);
+}
+
+.ql-editor a {
+    color: var(--link-color);
+}
+
+.ql-editor ol {
+    list-style-type: decimal;
+    padding-left: 40px;
+}
+
+.ql-editor ul {
+    list-style-type: disc;
+    padding-left: 40px;
+}
+
+.ql-editor li {
+    margin-bottom: 5px;
+}
+
+.quill-button-container {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+/* Override Quill default button styles for custom buttons */
+.ql-snow.ql-toolbar .quill-save-btn,
+.ql-snow.ql-toolbar .quill-cancel-btn {
+    background-color: #4CAF50;
+    /* Green for Save */
+    color: #ffffff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    float: none;
+    /* Override Quill's float */
+    height: auto;
+    /* Override fixed height */
+    width: auto;
+    /* Override fixed width */
+}
+
+.ql-snow.ql-toolbar .quill-save-btn:hover {
+    background-color: #45a049;
+    /* Darker green */
+}
+
+.ql-snow.ql-toolbar .quill-cancel-btn {
+    background-color: #f44336;
+    /* Red for Cancel */
+    margin-left: 5px;
+}
+
+.ql-snow.ql-toolbar .quill-cancel-btn:hover {
+    background-color: #da190b;
+    /* Darker red */
 }
 
 /* Temporary Notification Bubble */

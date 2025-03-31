@@ -163,7 +163,6 @@ async function queryAI(question, context, timer, shouldCacheTranslation = false)
         if (aiHistory.length > maxHistoryLength) {
             aiHistory = aiHistory.slice(0, maxHistoryLength);
         }
-        adjustTabCount(); // Show existing tabs and hide the rest
 
         saveState();
     } catch (error) {

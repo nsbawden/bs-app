@@ -169,6 +169,10 @@ function showListPopup(tabData, persistTab = true) {
         const popup = document.createElement('div');
         popup.className = 'list-popup';
 
+        // Create header section
+        const header = document.createElement('div');
+        header.className = 'popup-header';
+
         const closeButton = document.createElement('button');
         closeButton.textContent = 'X';
         closeButton.className = 'close-btn';
@@ -177,12 +181,14 @@ function showListPopup(tabData, persistTab = true) {
             resolve({ tabIndex: -1, itemIndex: -1 });
         };
 
-        const contentWrapper = document.createElement('div');
-        contentWrapper.className = 'content-wrapper';
-
         const tabContainer = document.createElement('div');
         tabContainer.className = 'tab-container';
 
+        // Append close button and tabs to header
+        header.appendChild(closeButton);
+        header.appendChild(tabContainer);
+
+        // Create scrollable list container
         const listContainer = document.createElement('div');
         listContainer.className = 'list-container';
 
@@ -204,14 +210,11 @@ function showListPopup(tabData, persistTab = true) {
 
         const activeTab = tabData[activeTabIndex];
         const displayItems = prepareDisplayItems(activeTab);
-        // Since renderList is now async, we need to handle it properly
         renderList(listContainer, activeTab, activeTabIndex, resolve, cleanupAndRemove, displayItems);
 
         // Assemble the structure
-        popup.appendChild(closeButton);
-        contentWrapper.appendChild(tabContainer);
-        contentWrapper.appendChild(listContainer);
-        popup.appendChild(contentWrapper);
+        popup.appendChild(header);
+        popup.appendChild(listContainer);
         document.body.appendChild(popup);
 
         function switchTab(index) {
@@ -306,7 +309,7 @@ function showListPopup(tabData, persistTab = true) {
 
                 if (tab.deletable && item.deleteHandler) {
                     const deleteBtn = document.createElement('span');
-                    deleteBtn.textContent = '🗑️'; // Trashcan symbol
+                    deleteBtn.textContent = '🗑️';
                     deleteBtn.title = 'delete item';
                     deleteBtn.className = 'delete-btn';
                     deleteBtn.onclick = async (e) => {
@@ -314,7 +317,7 @@ function showListPopup(tabData, persistTab = true) {
                         if (confirm(`Are you sure you want to delete "${item.label}"?`)) {
                             const success = await item.deleteHandler(item.label);
                             if (success) {
-                                cleanupAndRemove(); // Close the popup
+                                cleanupAndRemove();
                                 const newTabs = await constructTabs();
                                 showListPopup(newTabs, persistTab).then(resolve);
                             }
@@ -336,7 +339,7 @@ function showListPopup(tabData, persistTab = true) {
                     const oldLabel = item.label;
                     item.label = input.value.trim();
                     if (item.editHandler) {
-                        await item.editHandler(oldLabel, item.label); // Await editHandler
+                        await item.editHandler(oldLabel, item.label);
                     }
                     const newTextSpan = document.createElement('span');
                     newTextSpan.textContent = item.label;
@@ -349,7 +352,7 @@ function showListPopup(tabData, persistTab = true) {
                     div.removeChild(input);
                     div.className = div.className.replace(' editing', '');
                     isExiting = true;
-                    cleanupAndRemove(); // Close and reopen after edit
+                    cleanupAndRemove();
                     const newTabs = await constructTabs();
                     showListPopup(newTabs, persistTab).then(resolve);
                 } else if (!isExiting) {

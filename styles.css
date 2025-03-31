@@ -344,7 +344,8 @@ footer.expanded {
     flex: 0 0 auto;
 }
 
-#ai-output-container ul, #ai-output-container ol {
+#ai-output-container ul,
+#ai-output-container ol {
     margin-bottom: 1em;
 }
 
@@ -361,6 +362,10 @@ footer.expanded #ai-output-container {
     overflow: var(--ai-output-overflow, hidden);
     transition: max-height 0.3s ease;
     box-sizing: border-box;
+}
+
+.gone {
+    display: none !important;
 }
 
 /* Dropdown Menu Styles */
@@ -510,6 +515,7 @@ footer.expanded #ai-output-container {
     display: inline-block;
     margin-left: 10px;
     margin-bottom: 8px;
+    margin-top: 8px;
     vertical-align: middle;
 }
 
@@ -584,7 +590,6 @@ footer.expanded #ai-output-container {
 
 .note-popup {
     position: absolute;
-    /* Default, overridden by JS if needed */
     background-color: var(--popup-bg);
     color: var(--popup-text);
     padding: 10px;
@@ -648,13 +653,36 @@ footer.expanded #ai-output-container {
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--popup-bg);
-    padding: 20px;
+    padding: 5px;
     border: 1px solid var(--popup-border);
     z-index: 1000;
     width: 500px;
     max-height: 80vh;
-    overflow: hidden;
-    /* No scrolling on popup */
+    display: flex;
+    flex-direction: column;
+}
+
+.popup-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--popup-bg);
+    padding: 10px;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 5px 10px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
 }
 
 .ask-popup-textarea {
@@ -671,16 +699,13 @@ footer.expanded #ai-output-container {
 .tab-container {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
     padding-bottom: 10px;
-    /* Optional: extra spacing below tabs */
+    flex-wrap: wrap;
 }
 
 .content-wrapper {
     max-height: calc(80vh - 70px - 40px);
-    /* 80vh - tab height (70px) - padding (40px) */
     overflow-y: auto;
-    /* Only this scrolls */
 }
 
 .tab-btn {
@@ -702,11 +727,22 @@ footer.expanded #ai-output-container {
 }
 
 .list-container {
-    flex-grow: 1;
+    flex: 1;
+    /* Adjusted to flex: 1 */
+    overflow-y: auto;
+    /* Added for scrolling */
+    padding: 10px;
+    /* Added for spacing */
 }
 
 .list-items {
     margin-top: 0;
+    display: flex;
+    /* Added */
+    flex-direction: column;
+    /* Added */
+    gap: 5px;
+    /* Added */
 }
 
 .list-item {
@@ -716,19 +752,29 @@ footer.expanded #ai-output-container {
     padding: 5px;
     background-color: var(--list-item-bg);
     margin-bottom: 5px;
-    cursor: pointer;
-    user-select: none;
+    cursor: move;
+    /* Added for drag indication */
 }
 
 .list-text {
-    flex-grow: 1;
+    flex: 1;
+    /* Adjusted to flex: 1 */
     padding: 5px;
+    cursor: pointer;
+    /* Added */
 }
 
 .edit-btn {
     cursor: pointer;
     padding: 0 10px;
-    font-size: 16px;
+    margin-left: 10px;
+    /* Added */
+}
+
+.delete-btn {
+    /* Added */
+    cursor: pointer;
+    margin-left: 10px;
 }
 
 .edit-input {
@@ -737,6 +783,8 @@ footer.expanded #ai-output-container {
     background-color: var(--edit-input-bg);
     color: var(--edit-input-text);
     border: 1px solid var(--edit-input-border);
+    margin-right: 10px;
+    /* Added */
 }
 
 .list-item textarea.edit-input {
@@ -748,16 +796,11 @@ footer.expanded #ai-output-container {
     line-height: 1.4;
 }
 
-.close-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    padding: 2px 8px;
-    background-color: var(--button-bg);
-    color: var(--button-text);
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
+.list-placeholder {
+    /* Added */
+    padding: 10px;
+    color: var(--settings-info-text);
+    text-align: center;
 }
 
 /* Temporary Notification Bubble */
@@ -886,7 +929,6 @@ footer.expanded #ai-output-container {
 
     .content-wrapper {
         max-height: calc(80vh - 70px - 30px);
-        /* Adjust for smaller padding */
     }
 
     .tab-btn {

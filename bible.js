@@ -303,6 +303,20 @@ function updateMy(hasBooks) {
     } else {
         cbo.style.visibility = 'hidden';
     }
+
+    let dmi = document.getElementById('drop-menu-item-3'); // add chapter
+    if (bookSource() === 'custom') {
+        dmi.classList.remove('gone');
+    } else {
+        dmi.classList.add('gone');
+    }
+
+    dmi = document.getElementById('drop-menu-item-4'); // edit chapter
+    if (bookSource() === 'custom') {
+        dmi.classList.remove('gone');
+    } else {
+        dmi.classList.add('gone');
+    }
 }
 
 async function validateBook() {
@@ -850,6 +864,18 @@ function importChapter() {
                 alert(`Error importing chapter: ${error.message}`);
             }
         }
+    });
+}
+
+// Edit Custom Chapter
+function editChapter() {
+    // const chapterElement = document.getElementById('verse-display');
+    document.getElementById('container').classList.add('gone');
+    const chapterElement = document.body;
+    QB.editChapter(state.currentVerse.book, state.currentVerse.chapter.toString(), chapterElement, (newContent) => {
+        document.getElementById('container').classList.remove('gone');
+        refreshDisplay();
+        // chapterElement.innerHTML = newContent; // Update the DOM with new content
     });
 }
 

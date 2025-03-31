@@ -481,12 +481,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const menuConfig = {
         'Paste text': () => console.log('Option 1 selected'),
         '🗎 Add custom book': () => importBook(),
-        '⍈ Add custom chapter': () => importChapter(),
+        '⍈ Add custom chapter': () => importChapter(), // drop-menu-item-3
+        '✎ Edit custom chapter': () => editChapter(), // drop-menu-item-4
         '⚙️ Settings': () => settingsManager.openPopup()
     };
 
     // Create the menu
-    const dropdown = createDropdownMenu(menuConfig);
+    const dropdown = createDropdownMenu(menuConfig, 'drop-menu-item');
     document.body.appendChild(dropdown.element);
 
     // Button handler
@@ -510,7 +511,9 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('resize', adjustContainerMargin);
 
 // Function to create a dropdown menu
-function createDropdownMenu(menuConfig) {
+function createDropdownMenu(menuConfig, idPrefix) {
+    let dropDownMenuId = 1;
+
     // Create menu container
     const menu = document.createElement('div');
     menu.className = 'dropdown-menu hidden';
@@ -529,6 +532,7 @@ function createDropdownMenu(menuConfig) {
     // Process menu items from config
     Object.entries(menuConfig).forEach(([label, action]) => {
         const item = document.createElement('div');
+        item.id = `${idPrefix}-${dropDownMenuId++}`;
         item.className = 'dropdown-item';
         item.textContent = label;
 

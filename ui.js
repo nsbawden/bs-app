@@ -61,11 +61,11 @@ versionSelect.addEventListener('change', () => {
             break;
         default:
             state.bookSource = 'bible';
-            state.bibleVersion = state.bibleVersion || 'kjv';
+            state.bibleVersion = versionSelect.value;
             break;
     }
+    getApiSource();
     loadBooks().then(() => {
-        getApiSource();
         updateTopBarSummary();
     });
 });

@@ -4,7 +4,7 @@
 async function fetchChapter(book, chapter, version) {
     let result;
 
-    // Handle custom version first
+    // Handle custom version
     if (bookSource() === 'custom') {
         const chapterContent = await QB.loadChapter(book, chapter.toString());
         if (!chapterContent) {
@@ -298,24 +298,30 @@ function goToVerse(verse, chapter, book) {
 
 function updateMy(hasBooks) {
     const cbo = document.getElementById('custom-books-option');
-    if (hasBooks) {
-        cbo.style.visibility = 'visible';
-    } else {
-        cbo.style.visibility = 'hidden';
+    if (cbo) {
+        if (hasBooks) {
+            cbo.style.visibility = 'visible';
+        } else {
+            cbo.style.visibility = 'hidden';
+        }
     }
 
     let dmi = document.getElementById('drop-menu-item-3'); // add chapter
-    if (bookSource() === 'custom') {
-        dmi.classList.remove('gone');
-    } else {
-        dmi.classList.add('gone');
+    if (dmi) {
+        if (bookSource() === 'custom') {
+            dmi.classList.remove('gone');
+        } else {
+            dmi.classList.add('gone');
+        }
     }
 
     dmi = document.getElementById('drop-menu-item-4'); // edit chapter
-    if (bookSource() === 'custom') {
-        dmi.classList.remove('gone');
-    } else {
-        dmi.classList.add('gone');
+    if (dmi) {
+        if (bookSource() === 'custom') {
+            dmi.classList.remove('gone');
+        } else {
+            dmi.classList.add('gone');
+        }
     }
 }
 
@@ -403,36 +409,7 @@ async function updateChapters() {
     await refreshDisplay();
 }
 
-async function refreshDisplay() {
-    verseDisplay.innerHTML = '';
-    let data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
-    window.currentData = data;
-    const verseCount = data.verses.length;
-
-    // Populate verse selector
-    verseSelect.innerHTML = Array.from({ length: verseCount }, (_, i) =>
-        `<option value="${i + 1}">${i + 1}</option>`
-    ).join('');
-    verseSelect.value = state.currentVerse.verse;
-    let nextLabel = '';
-    let prevLabel = '';
-
-    if (bookSource() === 'custom') {
-        const chapterCount = QB.getChapterCount(state.currentVerse.book);
-        prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : '';
-        nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : '';
-    } else {
-        const currentBook = books.find(b => b.key === state.currentVerse.book);
-        const currentBookIndex = books.indexOf(currentBook);
-        const chapterCount = currentBook.chapters;
-        prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
-        nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
-    }
-
-    let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
-    // Always include the bookmark-list span, even if empty
-    content += `<span class="bookmark-list"></span>`;
-
+function refreshBibleVerses(content, data) {
     let notes = getNotes();
     let paragraphs = [];
     let currentParagraph = '';
@@ -445,11 +422,14 @@ async function refreshDisplay() {
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
 
-        // const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><span class="verse-text">${v.text.trim()}</span>`;
-        // currentParagraph += `<span class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</span> `;
-
-        const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><div class="verse-text">${v.text.trim()}</div>`;
-        currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        if (state.bookSource === 'custom') {
+            const vText = convertMarkdown(v.text.trim());
+            const verseText = `<div class="verse-text"><span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span>${vText}</div>`;
+            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        } else {
+            const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><div class="verse-text">${v.text.trim()}</div>`;
+            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        }
 
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
             paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
@@ -457,24 +437,104 @@ async function refreshDisplay() {
         }
     });
     content += paragraphs.join('');
+    return content;
+}
 
-    if (nextLabel) content += `<button class="nav-button" onclick="goToNext()">${nextLabel}</button>`;
+function refreshCustomVerses(content, data) {
+    // return data.text;
+    let notes = getNotes();
+    let paragraphs = [];
+    let currentParagraph = '';
+    data.verses.forEach((v, i) => {
+        const verseNum = i + 1;
+        const selected = verseNum === state.currentVerse.verse ? 'selected' : '';
+        const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNum}`;
+        const hasNote = notes[reference];
+        const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
+        const addOrEdit = hasNote ? 'edit' : 'add';
+        const hasNoteClass = hasNote ? 'has-note' : '';
 
-    verseDisplay.innerHTML = content;
-    saveState();
-    scrollToSelectedVerse();
+        const vText = convertMarkdown(v.text.trim());
+        const verseId = `<div class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</div>`;
+        const verseText = `<div class="verse-text">${vText}</div>`;
+        currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
 
-    // Populate the bookmark list after rendering
-    rebuildBookmarksList();
-
-    document.querySelectorAll('.verse-num').forEach(verseNum => {
-        verseNum.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const reference = verseNum.dataset.reference;
-            const verseSpan = verseNum.parentElement;
-            showNotePopup(reference, verseSpan);
-        });
+        if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
+            // paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
+            paragraphs.push(currentParagraph.trim());
+            currentParagraph = '';
+        }
     });
+    content += `<div>${paragraphs.join('')}</div>`;
+    return content;
+}
+
+async function refreshDisplay() {
+    // Remove fade-in class to hide immediately
+    verseDisplay.classList.remove('fade-in');
+
+
+    setTimeout(async () => {
+        let data = await fetchChapter(state.currentVerse.book, state.currentVerse.chapter, state.bibleVersion);
+        window.currentData = data;
+        const verseCount = data.verses.length;
+
+        // Populate verse selector
+        verseSelect.innerHTML = Array.from({ length: verseCount }, (_, i) =>
+            `<option value="${i + 1}">${i + 1}</option>`
+        ).join('');
+        verseSelect.value = state.currentVerse.verse;
+        
+        let nextLabel = '';
+        let prevLabel = '';
+
+        if (bookSource() === 'custom') {
+            const chapterCount = QB.getChapterCount(state.currentVerse.book);
+            prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : '';
+            nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : '';
+        } else {
+            const currentBook = books.find(b => b.key === state.currentVerse.book);
+            const currentBookIndex = books.indexOf(currentBook);
+            const chapterCount = currentBook.chapters;
+            prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
+            nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
+        }
+
+        let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';
+        content += `<span class="bookmark-list"></span>`;
+
+        switch (data.type || 'plain') {
+            case 'html':
+                content = refreshCustomVerses(content, data);
+                break;
+            default:
+                content = refreshBibleVerses(content, data);
+                break;
+        }
+
+        if (nextLabel) content += `<button class="nav-button" onclick="goToNext()">${nextLabel}</button>`;
+
+        // Update content
+        verseDisplay.innerHTML = content;
+
+        // Add fade-in class to trigger fade-in
+        verseDisplay.classList.add('fade-in');
+
+        saveState();
+        scrollToSelectedVerse();
+
+        // Populate the bookmark list after rendering
+        rebuildBookmarksList();
+
+        document.querySelectorAll('.verse-num').forEach(verseNum => {
+            verseNum.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const reference = verseNum.dataset.reference;
+                const verseSpan = verseNum.parentElement;
+                showNotePopup(reference, verseSpan);
+            });
+        });
+    }, 0);
 }
 
 function rebuildBookmarksList() {
@@ -993,7 +1053,7 @@ function convertToMarkdown(text) {
 }
 
 function showText(text) {
-    displayResult('', convertToMarkdown(text), true);    
+    displayResult('', convertToMarkdown(text), true);
 }
 
 function showBook(label, content) {

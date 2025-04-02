@@ -1,5 +1,13 @@
 // bookManager.js
 
+// Initialize Turndown
+const turndownService = new TurndownService({
+    headingStyle: 'atx',
+    bulletListMarker: '-',
+    codeBlockStyle: 'fenced',
+    linkStyle: 'inlined'
+});
+
 if (typeof idb === 'undefined') {
     throw new Error('idb library is required. Include it via <script src="https://unpkg.com/idb@7.1.1/build/umd.js"></script>');
 }
@@ -369,6 +377,7 @@ QB.parseTextVerses = function parseTextVerses(bookName, chapterNumber, text) {
     });
 
     return {
+        type: 'plain',
         reference: `${bookName} ${chapterNumber}`,
         verses: verses,
         text: text
@@ -386,6 +395,7 @@ QB.parseHTMLVerses = function parseHTMLVerses(bookName, chapterNumber, htmlText)
     const processElement = (element) => {
         let verseText = element.outerHTML.trim();
         if (verseText) {
+            verseText = turndownService.turndown(verseText);
             verses.push({
                 book_id: bookId,
                 book_name: bookName,
@@ -398,13 +408,14 @@ QB.parseHTMLVerses = function parseHTMLVerses(bookName, chapterNumber, htmlText)
     };
 
     const body = doc.body;
+    const validTags = new Set(['P', 'OL', 'UL', 'H1', 'H2', 'H3', 'H4', 'H5']);
     Array.from(body.children).forEach((element) => {
-        if (element.tagName === 'P' || element.tagName === 'OL' || element.tagName === 'UL') {
+        if (validTags.has(element.tagName)) {
             processElement(element);
         }
     });
-
     return {
+        type: 'html',
         reference: `${bookName} ${chapterNumber}`,
         verses: verses,
         text: htmlText
@@ -432,11 +443,17 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
         if (typeof TurndownService === 'undefined') {
             throw new Error('Turndown library is required. Include it via <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>');
         }
-
+        
         // Get the current chapter content (Markdown)
         const initialMarkdown = await QB.loadChapter(bookKey, chapterName) || '';
-        const initialHtml = marked.parse(initialMarkdown, { gfm: true });
+        // const markdown2 = initialMarkdown.trim().replace(/\n\s*\n\s*\n+/g, '\n\n<br>');
+        const markdown2 = initialMarkdown;
+        const initialHtml = marked.parse(markdown2, { gfm: true });
         const simplifiedHtml = initialHtml.replace(/<li><p>(.*?)<\/p>/g, '<li>$1');
+
+        console.log(initialMarkdown);
+        console.log(markdown2);
+        console.log(simplifiedHtml);
 
         // Create editor container
         const rect = domElement.getBoundingClientRect();
@@ -525,14 +542,6 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
             quill.off('text-change');
             quill.off('selection-change');
         };
-
-        // Initialize Turndown
-        const turndownService = new TurndownService({
-            headingStyle: 'atx',
-            bulletListMarker: '-',
-            codeBlockStyle: 'fenced',
-            linkStyle: 'inlined'
-        });
 
     } catch (error) {
         console.error('Error in editChapter:', error);

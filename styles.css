@@ -245,6 +245,15 @@ p {
     margin: 0 0 15px 0;
 }
 
+#verse-display {
+    opacity: 0;
+}
+
+#verse-display.fade-in {
+    opacity: 1;
+    transition: opacity 0.3s ease-in;
+}
+
 .verse {
     display: inline;
     cursor: pointer;
@@ -843,6 +852,10 @@ footer.expanded #ai-output-container {
 .ql-editor {
     background-color: var(--popup-bg);
     color: var(--popup-text);
+}
+
+.ql-editor p {
+    margin: 0 0 15px 0;
 }
 
 .ql-editor a {

@@ -422,14 +422,8 @@ function refreshBibleVerses(content, data) {
         const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
 
-        if (state.bookSource === 'custom') {
-            const vText = convertMarkdown(v.text.trim());
-            const verseText = `<div class="verse-text"><span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span>${vText}</div>`;
-            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
-        } else {
-            const verseText = `<span class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><div class="verse-text">${v.text.trim()}</div>`;
-            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
-        }
+        const verseText = `<span class="verse-note verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</span><div class="verse-text">${v.text.trim()}</div>`;
+        currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
 
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
             paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
@@ -451,11 +445,10 @@ function refreshCustomVerses(content, data) {
         const reference = `${state.currentVerse.book}/${state.currentVerse.chapter}/${verseNum}`;
         const hasNote = notes[reference];
         const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
-        const addOrEdit = hasNote ? 'edit' : 'add';
         const hasNoteClass = hasNote ? 'has-note' : '';
 
         const vText = convertMarkdown(v.text.trim());
-        const verseId = `<div class="verse-num${bookmarkedClass}" title="${addOrEdit} note" data-reference="${reference}">${verseNum}</div>`;
+        const verseId = `<div class="verse-num${bookmarkedClass} ${hasNoteClass}" data-reference="${reference}">${verseNum}</div>`;
         const verseText = `<div class="verse-text">${vText}</div>`;
         currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
 
@@ -484,7 +477,7 @@ async function refreshDisplay() {
             `<option value="${i + 1}">${i + 1}</option>`
         ).join('');
         verseSelect.value = state.currentVerse.verse;
-        
+
         let nextLabel = '';
         let prevLabel = '';
 
@@ -526,7 +519,7 @@ async function refreshDisplay() {
         // Populate the bookmark list after rendering
         rebuildBookmarksList();
 
-        document.querySelectorAll('.verse-num').forEach(verseNum => {
+        document.querySelectorAll('.verse-edit').forEach(verseNum => {
             verseNum.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const reference = verseNum.dataset.reference;

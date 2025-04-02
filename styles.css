@@ -4,6 +4,7 @@
 :root {
     /* prevents white flash on load */
     --body-bg: #000;
+    --editor-max-height: 400px;
 }
 
 /* Dark Theme (default) */
@@ -282,7 +283,8 @@ p {
     position: relative;
 }
 
-.has-note .verse-num::after {
+.has-note .verse-num::after,
+.has-note.verse-num::after {
     content: '🗎';
     color: var(--has-note-color);
     font-size: 1em;
@@ -811,82 +813,84 @@ footer.expanded #ai-output-container {
     text-align: center;
 }
 
-/* Quill Editor Styles */
-.quill-editor-container {
-    background-color: var(--popup-bg);
-    color: var(--popup-text);
+/* CKEditor Editor Styles */
+.ck.ck-editor__main>.ck-editor__editable {
+    background: var(--body-bg);
+}
+
+.ckeditor-editor-container {
+    background-color: var(--body-bg);
+    color: var(--body-text);
     border: 1px solid var(--popup-border);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
-.ql-container.ql-snow {
-    background-color: var(--popup-bg);
-    color: var(--popup-text);
-    border: none;
-    font-size: 16px;
-    /* Matches default body/verse text */
-    flex: 1;
+.ck.ck-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--body-bg);
 }
 
-.ql-toolbar.ql-snow {
+/* Toolbar */
+.ck.ck-editor__top .ck-sticky-panel__content .ck-toolbar {
     background-color: var(--top-bar-bg);
     border-bottom: 1px solid var(--popup-border);
     padding: 5px;
     display: flex;
     align-items: center;
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
-.ql-toolbar.ql-snow .ql-picker-label,
-.ql-toolbar.ql-snow .ql-button {
-    color: var(--button-text);
+/* Main content area - no scrolling here */
+.ck.ck-editor__main {
+    flex: 1;
 }
 
-.ql-toolbar.ql-snow .ql-picker-options {
-    background-color: var(--popup-bg);
-    color: var(--popup-text);
-    border: 1px solid var(--popup-border);
+/* Editable area - single scrollbar */
+.ck.ck-editor__editable_inline {
+    font-size: 16px;
+    overflow-y: scroll !important;
+    min-height: var(--editor-max-height);
+    max-height: var(--editor-max-height);
 }
 
-.ql-editor {
-    background-color: var(--popup-bg);
-    color: var(--popup-text);
-}
-
-.ql-editor p {
+.ck.ck-editor__editable_inline p {
     margin: 0 0 15px 0;
 }
 
-.ql-editor a {
+.ck.ck-editor__editable_inline a {
     color: var(--link-color);
 }
 
-.ql-editor ol {
+.ck.ck-editor__editable_inline ol {
     list-style-type: decimal;
     padding-left: 40px;
 }
 
-.ql-editor ul {
+.ck.ck-editor__editable_inline ul {
     list-style-type: disc;
     padding-left: 40px;
 }
 
-.ql-editor li {
+.ck.ck-editor__editable_inline li {
     margin-bottom: 5px;
 }
 
-.quill-button-container {
+.ckeditor-button-container {
     margin-left: auto;
     display: flex;
     align-items: center;
 }
 
-/* Override Quill default button styles for custom buttons */
-.ql-snow.ql-toolbar .quill-save-btn,
-.ql-snow.ql-toolbar .quill-cancel-btn {
+/* Custom button styles */
+.ck-toolbar .ckeditor-save-btn,
+.ck-toolbar .ckeditor-cancel-btn {
     background-color: #4CAF50;
-    /* Green for Save */
     color: #ffffff;
     border: none;
     padding: 5px 10px;
@@ -894,28 +898,19 @@ footer.expanded #ai-output-container {
     font-size: 14px;
     border-radius: 3px;
     display: inline-block;
-    float: none;
-    /* Override Quill's float */
-    height: auto;
-    /* Override fixed height */
-    width: auto;
-    /* Override fixed width */
 }
 
-.ql-snow.ql-toolbar .quill-save-btn:hover {
+.ck-toolbar .ckeditor-save-btn:hover {
     background-color: #45a049;
-    /* Darker green */
 }
 
-.ql-snow.ql-toolbar .quill-cancel-btn {
+.ck-toolbar .ckeditor-cancel-btn {
     background-color: #f44336;
-    /* Red for Cancel */
     margin-left: 5px;
 }
 
-.ql-snow.ql-toolbar .quill-cancel-btn:hover {
+.ck-toolbar .ckeditor-cancel-btn:hover {
     background-color: #da190b;
-    /* Darker red */
 }
 
 /* Temporary Notification Bubble */

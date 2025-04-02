@@ -434,8 +434,8 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
         }
 
         // Check for required libraries
-        if (typeof Quill === 'undefined') {
-            throw new Error('Quill library is required. Include it via <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>');
+        if (typeof ClassicEditor === 'undefined') {
+            throw new Error('CKEditor 5 library is required. Include it via <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>');
         }
         if (typeof marked === 'undefined') {
             throw new Error('Marked library is required. Include it via <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>');
@@ -443,10 +443,9 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
         if (typeof TurndownService === 'undefined') {
             throw new Error('Turndown library is required. Include it via <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>');
         }
-        
+
         // Get the current chapter content (Markdown)
         const initialMarkdown = await QB.loadChapter(bookKey, chapterName) || '';
-        // const markdown2 = initialMarkdown.trim().replace(/\n\s*\n\s*\n+/g, '\n\n<br>');
         const markdown2 = initialMarkdown;
         const initialHtml = marked.parse(markdown2, { gfm: true });
         const simplifiedHtml = initialHtml.replace(/<li><p>(.*?)<\/p>/g, '<li>$1');
@@ -458,70 +457,79 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
         // Create editor container
         const rect = domElement.getBoundingClientRect();
         const editorContainer = document.createElement('div');
-        editorContainer.className = 'quill-editor-container';
+        editorContainer.className = 'ckeditor-editor-container';
         editorContainer.style.position = 'absolute';
         editorContainer.style.top = `${rect.top + window.scrollY}px`;
         editorContainer.style.left = `${rect.left + window.scrollX}px`;
         editorContainer.style.width = `${rect.width}px`;
-        editorContainer.style.height = `${rect.height - 100}px`;
+        editorContainer.style.height = `${rect.height}px`;
         editorContainer.style.zIndex = '1000';
+        editorContainer.style.display = 'flex';
+        editorContainer.style.flexDirection = 'column';
         document.body.appendChild(editorContainer);
 
-        // Create Quill div
-        const quillEditor = document.createElement('div');
-        editorContainer.appendChild(quillEditor);
+        // Create CKEditor div
+        const ckEditor = document.createElement('div');
+        ckEditor.id = 'ck-editor-' + Math.random().toString(36).substring(2, 9);
+        editorContainer.appendChild(ckEditor);
 
-        // Initialize Quill with headings in toolbar
-        const quill = new Quill(quillEditor, {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }], // Heading levels 1-3, plus normal text
-                    ['bold', 'italic', 'underline'],
-                    ['link', 'blockquote', 'code-block'],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }]
+        // Initialize CKEditor 5
+        const editor = await ClassicEditor.create(ckEditor, {
+            toolbar: [
+                'heading', '|',
+                'bold', 'italic', 'underline', '|',
+                'bulletedList', 'numberedList', '|',
+                'link', 'blockquote', 'codeBlock', '|',
+                'undo', 'redo'
+            ],
+            heading: {
+                options: [
+                    { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                    { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                    { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                    { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
                 ]
             }
         });
 
-        // Set content using Delta
-        const delta = quill.clipboard.convert(simplifiedHtml);
-        quill.setContents(delta);
+        // Set initial content
+        editor.setData(simplifiedHtml);
 
-        // Add buttons to toolbar after a delay
-        setTimeout(() => {
-            const toolbar = document.body.querySelector('.ql-toolbar');
-            if (!toolbar) {
-                console.error('Toolbar not found after delay, buttons not added');
-                return;
-            }
+        // Ensure editor fits container (58 is editor top bar height)
+        document.documentElement.style.setProperty("--editor-max-height", `${parseInt(rect.height - 58)}px`);
 
+        // Add custom buttons
+        const toolbarContainer = editorContainer.querySelector('.ck-toolbar__items');
+        if (!toolbarContainer) {
+            console.error('CKEditor toolbar not found, buttons not added');
+        } else {
             const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'quill-button-container';
+            buttonContainer.className = 'ckeditor-button-container';
+            buttonContainer.style.display = 'inline-block';
+            buttonContainer.style.marginLeft = '10px';
 
             const saveButton = document.createElement('button');
             saveButton.textContent = 'Save';
-            saveButton.className = 'quill-save-btn';
+            saveButton.className = 'ckeditor-save-btn';
             saveButton.style.marginRight = '5px';
 
             const cancelButton = document.createElement('button');
             cancelButton.textContent = 'Cancel';
-            cancelButton.className = 'quill-cancel-btn';
+            cancelButton.className = 'ckeditor-cancel-btn';
 
             buttonContainer.appendChild(saveButton);
             buttonContainer.appendChild(cancelButton);
-            toolbar.appendChild(buttonContainer);
+            toolbarContainer.appendChild(buttonContainer);
 
             // Save handler
             saveButton.onclick = async () => {
-                const htmlContent = quill.root.innerHTML;
-                const markdownContent = turndownService.turndown(htmlContent);
+                const htmlContent = editor.getData();
+                const markdownContent = TurndownService().turndown(htmlContent);
                 await QB.saveChapter(bookKey, chapterName, markdownContent);
                 cleanup();
                 if (typeof saveCallback === 'function') {
                     saveCallback(markdownContent);
                 }
-                // console.log(markdownContent);
             };
 
             // Cancel handler
@@ -531,16 +539,14 @@ QB.editChapter = async function (bookKey, chapterName, domElement, saveCallback)
                     saveCallback(null);
                 }
             };
-        }, 333); // 1/3 second delay
+        }
 
-        // Cleanup
+        // Cleanup function
         const cleanup = () => {
             if (editorContainer.parentNode) {
+                editor.destroy();
                 document.body.removeChild(editorContainer);
             }
-            quill.enable(false);
-            quill.off('text-change');
-            quill.off('selection-change');
         };
 
     } catch (error) {

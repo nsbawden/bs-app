@@ -256,9 +256,12 @@ p {
 }
 
 .verse {
-    display: inline;
     cursor: pointer;
     margin-right: 5px;
+}
+
+.bible .verse {
+    display: inline;
 }
 
 .verse-num {
@@ -281,6 +284,7 @@ p {
 
 .verse-num {
     position: relative;
+    display: inline-block;
 }
 
 .has-note .verse-num::after,

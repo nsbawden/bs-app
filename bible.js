@@ -485,12 +485,16 @@ async function refreshDisplay() {
             const chapterCount = QB.getChapterCount(state.currentVerse.book);
             prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : '';
             nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : '';
+            document.getElementById('verse-display').classList.remove('bible');
+            document.getElementById('verse-display').classList.add('custom');
         } else {
             const currentBook = books.find(b => b.key === state.currentVerse.book);
             const currentBookIndex = books.indexOf(currentBook);
             const chapterCount = currentBook.chapters;
             prevLabel = state.currentVerse.chapter > 1 ? 'Previous Chapter' : (currentBookIndex > 0 ? 'Previous Book' : '');
             nextLabel = state.currentVerse.chapter < chapterCount ? 'Next Chapter' : (currentBookIndex < books.length - 1 ? 'Next Book' : '');
+            document.getElementById('verse-display').classList.remove('custom');
+            document.getElementById('verse-display').classList.add('bible');
         }
 
         let content = prevLabel ? `<button class="nav-button" onclick="goToPrevious()">${prevLabel}</button>` : '';

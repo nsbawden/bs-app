@@ -408,7 +408,7 @@ QB.parseHTMLVerses = function parseHTMLVerses(bookName, chapterNumber, htmlText)
     };
 
     const body = doc.body;
-    const validTags = new Set(['P', 'OL', 'UL', 'H1', 'H2', 'H3', 'H4', 'H5']);
+    const validTags = new Set(['P', 'OL', 'UL', 'H1', 'H2', 'H3', 'H4', 'H5', 'BLOCKQUOTE']);
     Array.from(body.children).forEach((element) => {
         if (validTags.has(element.tagName)) {
             processElement(element);

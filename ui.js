@@ -472,53 +472,75 @@ function adjustContainerMargin() {
     container.style.height = `calc(100vh - ${topBarHeight}px)`;
 }
 
+window.addEventListener('resize', adjustContainerMargin);
+
 // Run on load and resize
 window.addEventListener('DOMContentLoaded', () => {
     adjustContainerMargin();
     updateTopBarSummary();
 
-    // Menu configuration
-    const menuConfig = {
-        'Paste text': () => console.log('Option 1 selected'),
-        '🗎 Add custom book': () => importBook(),
-        '⍈ Add custom chapter': () => importChapter(), // drop-menu-item-3
-        '✎ Edit custom chapter': () => editChapter(), // drop-menu-item-4
-        '⚙️ Settings': () => settingsManager.openPopup()
-    };
+    // Updated menu configuration with object-based items
+    const menuConfig = [
+        {
+            label: 'Paste text',
+            action: () => console.log('Option 1 selected'),
+            className: 'paste-option'
+        },
+        {
+            label: '🗎 Add custom book',
+            action: () => importBook(),
+            className: 'book-option'
+        },
+        {
+            label: '⍈ Add custom chapter',
+            action: () => importChapter(),
+            className: 'add-chapter'
+        },
+        {
+            label: '✎ Edit custom chapter',
+            action: () => editChapter(),
+            className: 'edit-chapter'
+        },
+        {
+            label: '⚙️ Settings',
+            action: () => settingsManager.openPopup(),
+            className: 'settings-option'
+        }
+    ];
 
-    // Create the menu
-    const dropdown = createDropdownMenu(menuConfig, 'drop-menu-item');
+    // Create the menu with updated config
+    const dropdown = createDropdownMenu(menuConfig);
     document.body.appendChild(dropdown.element);
 
-    // Button handler
+    // Button handler (unchanged)
     const showMenuBtn = document.getElementById('show-menu');
     if (showMenuBtn) {
         showMenuBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-
-            // Position menu below the button
             const rect = showMenuBtn.getBoundingClientRect();
             const x = rect.left;
             const y = rect.bottom + window.scrollY;
-
             dropdown.show(x, y);
         });
     }
-
 });
 
-window.addEventListener('resize', adjustContainerMargin);
+function applyButtonHandlers(buttonHandlers) {
+    Object.entries(buttonHandlers).forEach(([id, handler]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('click', handler);
+        }
+    });
+}
 
-// Function to create a dropdown menu
-function createDropdownMenu(menuConfig, idPrefix) {
-    let dropDownMenuId = 1;
+// Updated function to create a dropdown menu
+function createDropdownMenu(menuConfig) {
 
-    // Create menu container
+    // Create menu container (unchanged)
     const menu = document.createElement('div');
     menu.className = 'dropdown-menu hidden';
-
-    // Apply base styling from popup variables
     menu.style.position = 'absolute';
     menu.style.backgroundColor = 'var(--popup-bg)';
     menu.style.border = '1px solid var(--popup-border)';
@@ -530,18 +552,25 @@ function createDropdownMenu(menuConfig, idPrefix) {
     menu.style.minWidth = '150px';
 
     // Process menu items from config
-    Object.entries(menuConfig).forEach(([label, action]) => {
+    menuConfig.forEach((itemConfig) => {
         const item = document.createElement('div');
-        item.id = `${idPrefix}-${dropDownMenuId++}`;
-        item.className = 'dropdown-item';
-        item.textContent = label;
+        if (itemConfig.id) {
+            item.id = itemConfig.id;
+        }
 
+        // Set base class and add custom class if provided
+        item.className = 'dropdown-item';
+        if (itemConfig.className) {
+            item.className += ` ${itemConfig.className}`;
+        }
+
+        item.textContent = itemConfig.label;
         item.style.padding = '5px 10px';
         item.style.cursor = 'pointer';
 
-        if (typeof action === 'function') {
+        if (typeof itemConfig.action === 'function') {
             item.addEventListener('click', (e) => {
-                action(e);
+                itemConfig.action(e);
                 menu.classList.add('hidden');
             });
         }
@@ -549,7 +578,7 @@ function createDropdownMenu(menuConfig, idPrefix) {
         menu.appendChild(item);
     });
 
-    // Close handler for clicking outside
+    // Close handler (unchanged)
     const closeHandler = (e) => {
         if (!menu.contains(e.target)) {
             menu.classList.add('hidden');
@@ -557,38 +586,32 @@ function createDropdownMenu(menuConfig, idPrefix) {
         }
     };
 
+    // Return object (unchanged)
     return {
         element: menu,
         show: function (x, y) {
-            // Toggle: If menu is already visible, hide it and return
             if (!menu.classList.contains('hidden')) {
-                this.hide(); // Use the hide method
+                this.hide();
                 return;
             }
 
-            // Temporarily show menu to get its dimensions
             menu.style.left = '0px';
             menu.style.top = '0px';
             menu.classList.remove('hidden');
 
-            // Calculate position with edge detection
             const menuWidth = menu.offsetWidth;
             const windowWidth = window.innerWidth;
             const rightMargin = 10;
 
-            // Adjust x position if menu would extend beyond right edge
             let adjustedX = x;
             if (x + menuWidth > windowWidth - rightMargin) {
                 adjustedX = windowWidth - menuWidth - rightMargin;
-                // Ensure it doesn't go negative
                 adjustedX = Math.max(adjustedX, rightMargin);
             }
 
-            // Set final position
             menu.style.left = `${adjustedX}px`;
             menu.style.top = `${y}px`;
 
-            // Add close handler after slight delay
             setTimeout(() => {
                 document.addEventListener('click', closeHandler);
             }, 10);

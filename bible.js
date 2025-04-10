@@ -306,23 +306,15 @@ function updateMy(hasBooks) {
         }
     }
 
-    let dmi = document.getElementById('drop-menu-item-3'); // add chapter
-    if (dmi) {
-        if (bookSource() === 'custom') {
-            dmi.classList.remove('gone');
+    const shouldShow = bookSource() === 'custom';
+    let dmi = document.querySelectorAll('.add-chapter, .edit-chapter');
+    dmi.forEach(element => {
+        if (shouldShow) {
+            element.classList.remove('gone');
         } else {
-            dmi.classList.add('gone');
+            element.classList.add('gone');
         }
-    }
-
-    dmi = document.getElementById('drop-menu-item-4'); // edit chapter
-    if (dmi) {
-        if (bookSource() === 'custom') {
-            dmi.classList.remove('gone');
-        } else {
-            dmi.classList.add('gone');
-        }
-    }
+    });
 }
 
 async function validateBook() {
@@ -978,32 +970,17 @@ function displayResult(question, answer, expand = true) {
 
 function detectMarkdown(text) {
     const markdownPatterns = {
-        headings: /^#{1,6}\s+.+/m,
-        bold: /\*\*.+?\*\*|__.+?__/g,
-        italic: /\*[^*]+\*|_[^_]+_/g,
-        lists: /^\s*([-*+]|\d+\.)\s+.+/m,
-        blockquote: /^\s*>.+/m,
-        inline_code: /`[^`]+`/g
+        headings: /^#{1,6}\s+.+/m,                  // Atx-style headings (# Heading)
+        setextH1: /.+\n={2,}$/m,                   // H1 with ======== under
+        setextH2: /.+\n-{2,}$/m,                   // H2 with -------- under
+        bold: /\*\*.+?\*\*|__.+?__/g,              // **bold** or __bold__
+        italic: /\*[^*]+\*|_[^_]+_/g,              // *italic* or _italic_
+        lists: /^\s*([-*+]|\d+\.)\s+.+/m,          // Unordered (- * +) or ordered (1.) lists
+        blockquote: /^\s*>.+/m,                    // > quote
+        inline_code: /`[^`]+`/g                    // `code`
     };
 
     return Object.values(markdownPatterns).some(regex => regex.test(text));
-}
-
-function xdetectMarkdown(text) {
-    const markdownPatterns = {
-        headings: /^#{1,6}\s+.+/m, // Matches lines that start with 1-6 '#' followed by text
-        bold: /\*\*.+?\*\*|__.+?__/g, // Matches **bold** or __bold__
-        italic: /\*[^*]+\*|_[^_]+_/g, // Matches *italic* or _italic_
-        lists: /^\s*([-*+]|\d+\.)\s+.+/m, // Matches lists (- item, * item, 1. item)
-        blockquote: /^\s*>.+/m, // Matches blockquotes starting with '>'
-        inline_code: /`[^`]+`/g // Matches inline code `code`
-    };
-
-    let detected = {};
-    for (const [key, regex] of Object.entries(markdownPatterns)) {
-        detected[key] = regex.test(text);
-    }
-    return detected;
 }
 
 function convertToMarkdown(text) {
@@ -1058,7 +1035,11 @@ function showBook(label, content) {
 }
 
 
+const buttonHandlers = {
+    'edit-chapter-button': editChapter
+};
 
 // Initialize
+applyButtonHandlers(buttonHandlers);
 loadQueryString();
 loadBooks();

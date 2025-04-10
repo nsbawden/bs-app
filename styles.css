@@ -201,13 +201,19 @@ body {
 }
 
 #show-list,
-#show-menu {
+#show-menu,
+#edit-chapter-button {
     padding: 0 10px;
+    padding-right: 0;
     font-size: 24px;
     background: none;
     border: none;
     color: var(--button-text);
     cursor: pointer;
+}
+
+#edit-chapter-button {
+    font-size: 18px;
 }
 
 #show-menu {
@@ -273,9 +279,9 @@ p {
     display: inline;
 }
 
-.verse-text>*>li {
+/* .verse-text>*>li {
     margin-bottom: 20px;
-}
+} */
 
 .verse.selected .verse-text,
 .verse.selected .verse-text * {
@@ -953,7 +959,8 @@ footer.expanded #ai-output-container {
     }
 
     #show-list,
-    #show-menu {
+    #show-menu,
+    #edit-chapter-button {
         padding: 5px 10px;
         font-size: 24px;
         background: none;

@@ -401,6 +401,10 @@ async function updateChapters() {
     await refreshDisplay();
 }
 
+function stripOuterParagraphTags(text) {
+    return text.trim().replace(/^<p(?:\s+[^>]*)?>([\s\S]*?)<\/p>$/i, '$1').trim();
+}
+
 function refreshBibleVerses(content, data) {
     let notes = getNotes();
     let paragraphs = [];
@@ -427,7 +431,6 @@ function refreshBibleVerses(content, data) {
 }
 
 function refreshCustomVerses(content, data) {
-    // return data.text;
     let notes = getNotes();
     let paragraphs = [];
     let currentParagraph = '';
@@ -439,13 +442,19 @@ function refreshCustomVerses(content, data) {
         const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
         const hasNoteClass = hasNote ? 'has-note' : '';
 
-        const vText = convertMarkdown(v.text.trim());
-        const verseId = `<div class="verse-num${bookmarkedClass} ${hasNoteClass}" data-reference="${reference}">${verseNum}</div>`;
-        const verseText = `<div class="verse-text">${vText}</div>`;
-        currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        let hText = convertMarkdown(v.text.trim());
+        let vText = stripOuterParagraphTags(hText);
+        let verseId, verseText;
+        if (vText === hText) /* if didn't have <p>...</p> */ {
+            verseId = `<div class="verse-num${bookmarkedClass} ${hasNoteClass}" data-reference="${reference}">${verseNum}</div>`;
+            verseText = `<div class="verse-text">${vText}</div>`;
+            currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        } else { /* if did have <p>...</p> */
+            verseText = `<span class="verse-note verse-num${bookmarkedClass}" data-reference="${reference}">${verseNum}</span><div class="verse-text">${vText}</div>`;
+            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        }
 
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
-            // paragraphs.push(`<p>${currentParagraph.trim()}</p>`);
             paragraphs.push(currentParagraph.trim());
             currentParagraph = '';
         }
@@ -970,7 +979,7 @@ function displayResult(question, answer, expand = true) {
 
 function detectMarkdown(text) {
     const markdownPatterns = {
-        headings: /^#{1,6}\s+.+/m,                  // Atx-style headings (# Heading)
+        headings: /^#{1,6}\s+.+/m,                 // Atx-style headings (# Heading)
         setextH1: /.+\n={2,}$/m,                   // H1 with ======== under
         setextH2: /.+\n-{2,}$/m,                   // H2 with -------- under
         bold: /\*\*.+?\*\*|__.+?__/g,              // **bold** or __bold__

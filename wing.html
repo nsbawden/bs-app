@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disc Aircraft Lift Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .slider-container {
+            margin: 15px 0;
+        }
+
+        .slider-container label {
+            display: inline-block;
+            width: 200px;
+        }
+
+        .slider-container input[type="range"] {
+            width: 300px;
+        }
+
+        .slider-container span {
+            margin-left: 10px;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        canvas {
+            display: none;
+            margin-top: 20px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Disc Aircraft Lift Simulator</h1>
+    <p>Adjust parameters to simulate lift for a disc-shaped aircraft. Lift is calculated from conventional wing lift,
+        radial air thinning (very minor effect), and fan-driven thrust. Output is in pounds.</p>
+
+    <div class="slider-container">
+        <label for="discRadius">Disc Radius (m):</label>
+        <input type="range" id="discRadius" min="2" max="20" step="0.1" value="5">
+        <span id="discRadiusValue">5</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="fanRadius">Fan Exit Point Radius (m):</label>
+        <input type="range" id="fanRadius" min="0.2" max="2" step="0.01" value="0.5">
+        <span id="fanRadiusValue">0.5</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="fanPowerHP">Fan Power (Horsepower):</label>
+        <input type="range" id="fanPowerHP" min="10" max="1000" step="1" value="10">
+        <span id="fanPowerHPValue">10</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="fanPowerWatts">Fan Power (Watts):</label>
+        <input type="range" id="fanPowerWatts" min="7457" max="745700" step="100" value="7457">
+        <span id="fanPowerWattsValue">7457</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="fanEfficiency">Fan Efficiency (%):</label>
+        <input type="range" id="fanEfficiency" min="50" max="95" step="1" value="50">
+        <span id="fanEfficiencyValue">50</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="airVelocity">Air Velocity over Disc (m/s):</label>
+        <input type="range" id="airVelocity" min="5" max="50" step="0.1" value="5">
+        <span id="airVelocityValue">5</span>
+    </div>
+
+    <div class="slider-container">
+        <label for="baffleMultiplier">Baffle Exit Velocity Multiplier:</label>
+        <input type="range" id="baffleMultiplier" min="0.5" max="2" step="0.01" value="1">
+        <span id="baffleMultiplierValue">1</span>
+    </div>
+
+    <div id="output">
+        <h3>Lift Results</h3>
+        <p>Conventional Lift: <span id="conventionalLift">0</span> lbs</p>
+        <p>Radial Thinning Lift: <span id="radialLift">0</span> lbs</p>
+        <p>Fan Thrust Lift: <span id="thrustLift">0</span> lbs</p>
+        <p><strong>Total Lift: <span id="totalLift">0</span> lbs</strong></p>
+    </div>
+
+    <canvas id="visualization" width="600" height="300"></canvas>
+
+    <script>
+        // Constants
+        const RHO = 1.225; // Air density (kg/m^3)
+        const G = 9.81; // Gravity (m/s^2)
+        const CL = 1.0; // Lift coefficient
+        const HP_TO_WATTS = 745.7; // Conversion factor
+        const N_TO_LBS = 0.224809; // Newton to pounds
+        const RADIAL_EFFICIENCY = 0.01; // 1% efficiency for radial thinning
+        const DELTA_FRACTION = 0.1; // Fraction of disc radius for effective area
+
+        // Input elements
+        const inputs = {
+            discRadius: document.getElementById('discRadius'),
+            fanRadius: document.getElementById('fanRadius'),
+            fanPowerHP: document.getElementById('fanPowerHP'),
+            fanPowerWatts: document.getElementById('fanPowerWatts'),
+            fanEfficiency: document.getElementById('fanEfficiency'),
+            airVelocity: document.getElementById('airVelocity'),
+            baffleMultiplier: document.getElementById('baffleMultiplier')
+        };
+
+        const outputs = {
+            discRadiusValue: document.getElementById('discRadiusValue'),
+            fanRadiusValue: document.getElementById('fanRadiusValue'),
+            fanPowerHPValue: document.getElementById('fanPowerHPValue'),
+            fanPowerWattsValue: document.getElementById('fanPowerWattsValue'),
+            fanEfficiencyValue: document.getElementById('fanEfficiencyValue'),
+            airVelocityValue: document.getElementById('airVelocityValue'),
+            baffleMultiplierValue: document.getElementById('baffleMultiplierValue'),
+            conventionalLift: document.getElementById('conventionalLift'),
+            radialLift: document.getElementById('radialLift'),
+            thrustLift: document.getElementById('thrustLift'),
+            totalLift: document.getElementById('totalLift')
+        };
+
+        // Update simulator
+        function updateSimulator() {
+            // Get input values
+            const discRadius = parseFloat(inputs.discRadius.value);
+            const fanRadius = parseFloat(inputs.fanRadius.value);
+            const fanPowerHP = parseFloat(inputs.fanPowerHP.value);
+            const fanPowerWatts = parseFloat(inputs.fanPowerWatts.value);
+            const fanEfficiency = parseFloat(inputs.fanEfficiency.value) / 100;
+            const airVelocity = parseFloat(inputs.airVelocity.value);
+            const baffleMultiplier = parseFloat(inputs.baffleMultiplier.value);
+
+            // Update displayed values
+            outputs.discRadiusValue.textContent = discRadius.toFixed(1);
+            outputs.fanRadiusValue.textContent = fanRadius.toFixed(2);
+            outputs.fanPowerHPValue.textContent = fanPowerHP.toFixed(0);
+            outputs.fanPowerWattsValue.textContent = fanPowerWatts.toFixed(0);
+            outputs.fanEfficiencyValue.textContent = (fanEfficiency * 100).toFixed(0);
+            outputs.airVelocityValue.textContent = airVelocity.toFixed(1);
+            outputs.baffleMultiplierValue.textContent = baffleMultiplier.toFixed(2);
+
+            // Validate fan radius
+            if (fanRadius >= discRadius) {
+                alert('Fan radius must be less than disc radius!');
+                inputs.fanRadius.value = Math.min(discRadius - 0.1, 2);
+                return;
+            }
+
+            // Use larger power input
+            const powerWatts = Math.max(fanPowerWatts, fanPowerHP * HP_TO_WATTS);
+
+            // Calculate areas
+            const discArea = Math.PI * discRadius * discRadius;
+            const fanArea = Math.PI * fanRadius * fanRadius;
+            const effectiveRadius = fanRadius + (DELTA_FRACTION * discRadius);
+            const effectiveArea = Math.PI * (effectiveRadius * effectiveRadius - fanRadius * fanRadius);
+
+            // 1. Conventional Lift: L = 0.5 * rho * v^2 * A * C_L
+            const conventionalLiftN = 0.5 * RHO * airVelocity * airVelocity * discArea * CL;
+
+            // 2. Radial Thinning: Very minor effect, use effective area near fan
+            const vFan = Math.sqrt((2 * powerWatts * fanEfficiency) / (RHO * fanArea));
+            const vEdge = vFan * (fanRadius / discRadius);
+            const deltaP = RADIAL_EFFICIENCY * 0.5 * RHO * (vFan * vFan - vEdge * vEdge);
+            const radialLiftN = Math.max(deltaP * effectiveArea, 0);
+
+            // 3. Fan Thrust: T = m_dot * v_exit
+            const mDot = RHO * fanArea * vFan;
+            const vExit = vEdge * baffleMultiplier;
+            const thrustLiftN = mDot * vExit;
+
+            // Total lift
+            const totalLiftN = conventionalLiftN + radialLiftN + thrustLiftN;
+
+            // Convert to pounds
+            const conventionalLiftLbs = conventionalLiftN * N_TO_LBS;
+            const radialLiftLbs = radialLiftN * N_TO_LBS;
+            const thrustLiftLbs = thrustLiftN * N_TO_LBS;
+            const totalLiftLbs = totalLiftN * N_TO_LBS;
+
+            // Update outputs
+            outputs.conventionalLift.textContent = conventionalLiftLbs.toFixed(2);
+            outputs.radialLift.textContent = radialLiftLbs.toFixed(2);
+            outputs.thrustLift.textContent = thrustLiftLbs.toFixed(2);
+            outputs.totalLift.textContent = totalLiftLbs.toFixed(2);
+        }
+
+        // Sync HP and Watts
+        inputs.fanPowerHP.addEventListener('input', () => {
+            const hp = parseFloat(inputs.fanPowerHP.value);
+            inputs.fanPowerWatts.value = hp * HP_TO_WATTS;
+            outputs.fanPowerWattsValue.textContent = (hp * HP_TO_WATTS).toFixed(0);
+            updateSimulator();
+        });
+
+        inputs.fanPowerWatts.addEventListener('input', () => {
+            const watts = parseFloat(inputs.fanPowerWatts.value);
+            inputs.fanPowerHP.value = watts / HP_TO_WATTS;
+            outputs.fanPowerHPValue.textContent = (watts / HP_TO_WATTS).toFixed(0);
+            updateSimulator();
+        });
+
+        // Add event listeners
+        for (let key in inputs) {
+            if (key !== 'fanPowerHP' && key !== 'fanPowerWatts') {
+                inputs[key].addEventListener('input', updateSimulator);
+            }
+        }
+
+        // Initial calculation
+        updateSimulator();
+    </script>
+</body>
+
+</html>

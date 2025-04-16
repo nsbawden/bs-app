@@ -442,16 +442,21 @@ function refreshCustomVerses(content, data) {
         const bookmarkedClass = hasBookmark(reference) ? ' bookmarked' : '';
         const hasNoteClass = hasNote ? 'has-note' : '';
 
-        let hText = convertMarkdown(v.text.trim());
-        let vText = stripOuterParagraphTags(hText);
-        let verseId, verseText;
-        if (vText === hText) /* if didn't have <p>...</p> */ {
-            verseId = `<div class="verse-num${bookmarkedClass} ${hasNoteClass}" data-reference="${reference}">${verseNum}</div>`;
-            verseText = `<div class="verse-text">${vText}</div>`;
-            currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
-        } else { /* if did have <p>...</p> */
-            verseText = `<span class="verse-note verse-num${bookmarkedClass}" data-reference="${reference}">${verseNum}</span><div class="verse-text">${vText}</div>`;
-            currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+        const hText = convertMarkdown(v.text.trim());
+
+        if (!state.showVerseNumbers) {
+            paragraphs.push(hText);
+        } else {
+            const vText = stripOuterParagraphTags(hText);
+            let verseId, verseText;
+            if (vText === hText) /* if didn't have <p>...</p> block print the line */ {
+                verseId = `<div class="verse-num${bookmarkedClass} ${hasNoteClass}" data-reference="${reference}">${verseNum}</div>`;
+                verseText = `<div class="verse-text">${vText}</div>`;
+                currentParagraph += `${verseId}<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+            } else /* if did have <p>...</p> flatten the line */ {
+                verseText = `<span class="verse-note verse-num${bookmarkedClass}" data-reference="${reference}">${verseNum}</span><div class="verse-text">${vText}</div>`;
+                currentParagraph += `<div class="verse ${selected} ${hasNoteClass}" data-verse="${verseNum}">${verseText}</div> `;
+            }
         }
 
         if ((i + 1) % 5 === 0 || i === data.verses.length - 1) {
@@ -1044,11 +1049,6 @@ function showBook(label, content) {
 }
 
 
-const buttonHandlers = {
-    'edit-chapter-button': editChapter
-};
-
 // Initialize
-applyButtonHandlers(buttonHandlers);
 loadQueryString();
 loadBooks();

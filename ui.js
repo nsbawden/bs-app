@@ -199,7 +199,7 @@ function submitAITranslate() {
 // }
 
 function constructTranslationPrompt(verseReference) {
-    return `Translate the Bible verse ${verseReference} from its original Greek to English using literal root meanings from pre-biblical Greek (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not biblical 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in regular, modern English (e.g., 'listen under' as 'listen attentively'), using natural swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations. Goal is to uncover spoken Greek BEFORE biblical translation influence.`;
+    return `Translate the Bible verse ${verseReference} from its original Greek or Hebrew to English using literal root meanings from pre-biblical Greek or Hebrew (before biblical influence). For each word, break down prefix, stem, suffix (treat compounds as units if historically recognized). List all primary pre-biblical root meanings (excluding biblical redefinitions, e.g., 'hypakouete' as 'listen under,' not biblical 'obey'), with grammatical role. For each listed sense: 1. Provide a literal translation using that root meaning, grammatically coherent. 2. Provide a readable translation preserving that root meaning in regular, modern English (e.g., 'listen under' as 'listen attentively'), using natural swaps (e.g., 'children' for 'things born'). Avoid biblical or modern bias. If idiomatic, note roots in literal version, adapt readable version to pre-biblical sense. End with literal and readable translations. Goal is to uncover spoken Greek or Hebrew BEFORE biblical translation influence.`;
 }
 
 // function constructTranslationPrompt(verseReference) {
@@ -508,9 +508,15 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
+    const buttonHandlers = {
+        'edit-chapter-button': editChapter
+    };
+
     // Create the menu with updated config
     const dropdown = createDropdownMenu(menuConfig);
     document.body.appendChild(dropdown.element);
+
+    applyButtonHandlers(buttonHandlers);
 
     // Button handler (unchanged)
     const showMenuBtn = document.getElementById('show-menu');

@@ -7,6 +7,7 @@ const defaults = {
     bibleVersion: 'asv',
     maxHistoryLength: 10,
     apiSource: 'api.bible', /* api.bible or bible-api.com */
+    showVerseNumbers: false,
     openaiSettings: {
         temperature: 1.0,
         model: 'gpt-4o-mini',

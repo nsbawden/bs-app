@@ -1,4 +1,5 @@
 // settings.js
+
 class SettingsManager {
     constructor(defaults, state, openaiSettingsRef) {
         this.defaults = defaults;
@@ -13,6 +14,12 @@ class SettingsManager {
                 setter: (val) => val || 'dark', // Default to 'dark' if invalid
                 storage: 'local',
                 apply: (val) => this.applyTheme(val) // Apply theme immediately
+            },
+            'showVerseNumbers': {
+                type: 'checkbox',
+                defaultKey: 'showVerseNumbers',
+                storage: 'state',
+                apply: () => refreshDisplay()
             },
             'max-history-length': {
                 type: 'number',
@@ -110,15 +117,30 @@ class SettingsManager {
 
             let value;
             if (config.storage === 'local') {
-                value = localStorage.getItem(id) || '';
+                value = localStorage.getItem(id);
+                // Convert string to boolean for checkboxes stored in localStorage
+                if (config.type === 'checkbox') {
+                    value = value === 'true';
+                }
             } else if (config.storage === 'state') {
                 value = this.getNestedValue(this.state, config.defaultKey);
             }
-            element.value = value !== undefined ? value : this.getNestedValue(this.defaults, config.defaultKey);
+
+            // Use default if value is undefined
+            if (value === undefined || value === null) {
+                value = this.getNestedValue(this.defaults, config.defaultKey);
+            }
+
+            // Handle checkbox vs. other input types
+            if (config.type === 'checkbox') {
+                element.checked = !!value; // Ensure boolean
+            } else {
+                element.value = value;
+            }
 
             // Apply settings that need immediate effect
             if (config.apply) {
-                config.apply(element.value);
+                config.apply(config.type === 'checkbox' ? element.checked : element.value);
             }
         });
     }
@@ -130,7 +152,13 @@ class SettingsManager {
             const element = this.getElement(id);
             if (!element) return;
 
-            let value = config.setter ? config.setter(element.value) : element.value;
+            let value;
+            if (element.tagName === 'INPUT' && element.type === 'checkbox') {
+                value = element.checked ? true : false;
+                value = config.setter ? config.setter(value) : value;            
+            } else {
+                value = config.setter ? config.setter(element.value) : element.value;            
+            }
 
             if (config.storage === 'local') {
                 if (value) {
@@ -138,6 +166,7 @@ class SettingsManager {
                     if (config.apply) config.apply(value); // Apply immediately if needed
                 }
             } else if (config.storage === 'state') {
+                if (config.apply) config.apply(value); // Apply immediately if needed
                 this.setNestedValue(this.state, config.defaultKey, value);
                 if (config.defaultKey.startsWith('openaiSettings')) {
                     this.setNestedValue(this.openaiSettings, config.defaultKey.split('.')[1], value);

@@ -25,7 +25,7 @@ body.dark-theme {
 
     /* Verse */
     --verse-num-color: #FFD700;
-    --verse-selected-bg: #4A704A;
+    --verse-selected-bg: #044b04;
     --has-note-color: #FFE5E5;
 
     /* Footer */
@@ -96,7 +96,7 @@ body.light-theme {
 
     /* Verse */
     --verse-num-color: #005FFF;
-    --verse-selected-bg: #8ABF8A;
+    --verse-selected-bg: #044b04;
     --has-note-color: #FF9999;
 
     /* Footer */
@@ -300,7 +300,8 @@ p {
 }
 
 .has-note .verse-text {
-    text-decoration: underline;
+    /* text-decoration: underline; */
+    border-bottom: .5px solid #dab717;
 }
 
 .question {
@@ -499,6 +500,10 @@ footer.expanded #ai-output-container {
 
 .setting-item input[type="number"] {
     width: 100px;
+}
+
+.setting-item input[type="checkbox"] {
+    width: 12px;
 }
 
 .setting-item .setting-info {

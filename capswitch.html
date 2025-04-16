@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Simulator: Dynamic Charge Transfer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        p span {
+            color: darkred;
+        }
+
+        input[type="number"] {
+            width: 6em;
+        }
+
+        .circuit-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        .component {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 5px;
+            min-width: 260px;
+        }
+
+        .component label,
+        .component input,
+        .component p {
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        #jsonPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        #jsonPopup textarea {
+            width: 100%;
+            height: 300px;
+            resize: none;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        #jsonPopup button {
+            margin-top: 10px;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Circuit Simulator: Dynamic Charge Transfer
+    <button onclick="calculate()">Calculate</button>
+    <button onclick="showJsonPopup()">Copy</button>
+    </h1>
+    <div class="circuit-container">
+        <!-- Battery -->
+        <div class="component">
+            <h3>Battery</h3>
+            <label>Battery Voltage (V): <input type="number" id="batteryVoltage" value="10" min="1"></label>
+            <p>Charge per Pulse: <span id="batteryChargePerPulse">0</span> C</p>
+            <p>Total Charge: <span id="batteryTotalCharge">0</span> C</p>
+            <p>Energy per Pulse: <span id="batteryEnergyPerPulse">0</span> J</p>
+            <p>Total Energy: <span id="batteryTotalEnergy">0</span> J</p>
+            <p>Power per Pulse: <span id="batteryPowerPerPulse">0</span> W</p>
+        </div>
+        <!-- Switch -->
+        <div class="component">
+            <h3>Switch</h3>
+            <label>Number of Pulses: <input type="number" id="numPulses" value="5" min="1"></label>
+            <label>Pulse Duration (ms): <input type="number" id="pulseDuration" value="1" min="0.1" step="0.1"></label>
+            <p>Pulse Off Time: <span id="pulseOffTime">0</span> ms</p>
+            <p>Optimal Pulses (Actual): <span id="optimalPulsesActual">0</span></p>
+        </div>
+        <!-- Transformer -->
+        <div class="component">
+            <h3>Transformer</h3>
+            <label>Turns Ratio: <input type="number" id="turnsRatio" value="30" min="0.1" step="0.1"></label>
+            <label>Pri Inductance (H): <input type="number" id="primaryInductanceInput" value="0.01" min="0.0001"
+                    step="0.0001"></label>
+            <label>Pri Resistance (Ω): <input type="number" id="primaryResistance" value="1" min="0" step="0.1"></label>
+            <p>Sec Inductance: <span id="secondaryInductance">0</span> H</p>
+            <label>Sec Resistance (Ω): <input type="number" id="secondaryResistance" value="10000" min="0"
+                    step="10"></label>
+            <label>Coupling Factor (k): <input type="number" id="couplingFactor" value="0.9" min="0" max="1" step="0.01"></label>
+        </div>
+        <!-- Capacitor -->
+        <div class="component">
+            <h3>Capacitor</h3>
+            <label>Capacitance (F): <input type="number" id="capacitanceInput" value="0.000003" min="0.0000001"
+                    step="0.0000001"></label>
+            <p>Final Voltage: <span id="capVoltage">0</span> V</p>
+            <p>Charge/Pulse (av): <span id="capChargePerPulse">0</span> C</p>
+            <p>Total Charge: <span id="capTotalCharge">0</span> C</p>
+            <p>Energy per Pulse (avg): <span id="capEnergyPerPulse">0</span> J</p>
+            <p>Total Energy: <span id="capTotalEnergy">0</span> J</p>
+            <p>Power per Pulse (avg): <span id="capPowerPerPulse">0</span> W</p>
+            <p>Energy Ratio (Out/In): <span id="energyRatio">0</span></p>
+        </div>
+    </div>
+
+    <div id="overlay"></div>
+    <div id="jsonPopup">
+        <h3>Simulation Results</h3>
+        <textarea id="jsonOutput" readonly></textarea>
+        <button onclick="closeJsonPopup()">Close</button>
+    </div>
+
+    <script>
+    /*
+      This model represents a pulsed flyback charging circuit that accumulates charge 
+      in a capacitor using repeated transformer collapse events. During each pulse, 
+      current flows through the transformer's primary to magnetize the core, but no 
+      energy is delivered to the capacitor at that time. When the switch turns off, 
+      the collapsing magnetic field induces a high-voltage pulse in the secondary winding.
+    
+      Due to the very high turns ratio (typically 100:1), the secondary generates a 
+      large voltage spike relative to the capacitor's voltage. The model assumes this 
+      spike is capable of pushing substantial charge into the capacitor during the 
+      brief flyback window. It does not enforce conservation of energy or ampere-turns; 
+      instead, it uses idealized principles of component behavior to model charge 
+      accumulation.
+    
+      The model treats the secondary as capable of sourcing nearly the same charge 
+      for each pulse, regardless of the capacitor's increasing voltage. The earth ground 
+      is assumed to supply the necessary charge, and the transformer's high-voltage 
+      flyback event is assumed to have sufficient potential to inject that charge 
+      into the capacitor with minimal loss.
+    
+      This method is useful for exploring unconventional charging mechanisms, 
+      such as those that rely on high-voltage impulses and earth-ground coupling, 
+      without being constrained by conventional energy conservation laws or mutual 
+      inductance limits. It is especially useful for analyzing systems that attempt 
+      to harvest or accumulate energy in a non-traditional way.
+    */
+
+        // Load saved values from local storage or set defaults
+        const inputMappings = {
+            batteryVoltage: 'batteryVoltage',
+            numPulses: 'numPulses',
+            pulseDuration: 'pulseDuration',
+            turnsRatio: 'turnsRatio',
+            primaryInductance: 'primaryInductanceInput',
+            capacitance: 'capacitanceInput',
+            couplingFactor: 'couplingFactor',
+            secondaryResistance: 'secondaryResistance',
+            primaryResistance: 'primaryResistance'
+        };
+
+        const defaultValues = {
+            batteryVoltage: '10',
+            numPulses: '5',
+            pulseDuration: '1',
+            turnsRatio: '30',
+            primaryInductance: '0.01',
+            capacitance: '0.000003',
+            couplingFactor: '0.9',
+            secondaryResistance: '10000',
+            primaryResistance: '1'
+        };
+
+        function loadSavedValues() {
+            for (const [key, id] of Object.entries(inputMappings)) {
+                const input = document.getElementById(id);
+                const saved = localStorage.getItem(key);
+                input.value = saved && saved !== '' ? saved : defaultValues[key];
+            }
+        }
+
+        function saveValues() {
+            for (const [key, id] of Object.entries(inputMappings)) {
+                const value = document.getElementById(id).value;
+                localStorage.setItem(key, value);
+            }
+        }
+
+        // Show JSON popup with current inputs and outputs
+        function showJsonPopup() {
+            const result = {
+                inputs: {
+                    batteryVoltage: parseFloat(document.getElementById('batteryVoltage').value),
+                    numPulses: parseInt(document.getElementById('numPulses').value),
+                    pulseDuration: parseFloat(document.getElementById('pulseDuration').value),
+                    turnsRatio: parseFloat(document.getElementById('turnsRatio').value),
+                    primaryInductance: parseFloat(document.getElementById('primaryInductanceInput').value),
+                    capacitance: parseFloat(document.getElementById('capacitanceInput').value),
+                    couplingFactor: parseFloat(document.getElementById('couplingFactor').value),
+                    secondaryResistance: parseFloat(document.getElementById('secondaryResistance').value),
+                    primaryResistance: parseFloat(document.getElementById('primaryResistance').value)
+                },
+                outputs: {
+                    battery: {
+                        chargePerPulse: parseFloat(document.getElementById('batteryChargePerPulse').textContent),
+                        totalCharge: parseFloat(document.getElementById('batteryTotalCharge').textContent),
+                        energyPerPulse: parseFloat(document.getElementById('batteryEnergyPerPulse').textContent),
+                        totalEnergy: parseFloat(document.getElementById('batteryTotalEnergy').textContent),
+                        powerPerPulse: parseFloat(document.getElementById('batteryPowerPerPulse').textContent)
+                    },
+                    switch: {
+                        pulseOffTime: parseFloat(document.getElementById('pulseOffTime').textContent) / 1000,
+                        optimalPulsesActual: parseInt(document.getElementById('optimalPulsesActual').textContent)
+                    },
+                    transformer: {
+                        secondaryInductance: parseFloat(document.getElementById('secondaryInductance').textContent)
+                    },
+                    capacitor: {
+                        finalVoltage: parseFloat(document.getElementById('capVoltage').textContent),
+                        chargePerPulseAvg: parseFloat(document.getElementById('capChargePerPulse').textContent),
+                        totalCharge: parseFloat(document.getElementById('capTotalCharge').textContent),
+                        energyPerPulseAvg: parseFloat(document.getElementById('capEnergyPerPulse').textContent),
+                        totalEnergy: parseFloat(document.getElementById('capTotalEnergy').textContent),
+                        powerPerPulseAvg: parseFloat(document.getElementById('capPowerPerPulse').textContent),
+                        energyRatio: parseFloat(document.getElementById('energyRatio').textContent)
+                    }
+                }
+            };
+
+            const jsonString = JSON.stringify(result, null, 2);
+            document.getElementById('jsonOutput').value = jsonString;
+            document.getElementById('jsonPopup').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        // Close JSON popup
+        function closeJsonPopup() {
+            document.getElementById('jsonPopup').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function calculate() {
+            // Save current input values
+            saveValues();
+
+            // Inputs
+            const Lp = parseFloat(document.getElementById('primaryInductanceInput').value); // Primary inductance (H)
+            const C = parseFloat(document.getElementById('capacitanceInput').value); // Capacitance (F)
+            const V_diode = 0.7; // Diode voltage drop (V)
+            const t_pulse = parseFloat(document.getElementById('pulseDuration').value) * 0.001; // Pulse duration (s)
+            const Vb = parseFloat(document.getElementById('batteryVoltage').value);
+            const N = parseFloat(document.getElementById('turnsRatio').value);
+            const n = parseInt(document.getElementById('numPulses').value);
+            const k = parseFloat(document.getElementById('couplingFactor').value); // Coupling factor
+            const Rs = parseFloat(document.getElementById('secondaryResistance').value); // Secondary resistance (Ω)
+            const Rp = parseFloat(document.getElementById('primaryResistance').value); // Primary resistance (Ω)
+
+            // Battery calculations with primary resistance
+            const tau = Lp / Rp; // RL time constant
+            const I_max = (Vb / Rp) * (1 - Math.exp(-t_pulse / tau)); // Peak primary current
+            const Q_pulse_battery = 0.5 * I_max * t_pulse; // Charge per pulse (approximate triangular pulse)
+            const E_pulse_battery = 0.5 * Lp * I_max * I_max; // Energy per pulse
+            const E_total_battery = n * E_pulse_battery;
+            const P_pulse_battery = E_pulse_battery / t_pulse;
+            const Q_total_battery = n * Q_pulse_battery;
+
+            // Transformer calculations
+            const Ls = N * N * Lp; // Secondary inductance
+            const V_sec = Vb * N; // Secondary voltage
+
+            // Capacitor calculations for user-specified n
+            let V_cap = 0;
+            let E_total_cap = 0;
+            let E_pulse_cap_sum = 0;
+            let Q_total_cap = 0;
+            let Q_pulse_cap_sum = 0;
+            let total_t_off = 0;
+            let pulses_delivered = 0;
+            for (let i = 0; i < n; i++) {
+                const V_before = V_cap;
+                const V_eff = V_sec - V_cap - V_diode;
+                if (V_eff <= 0) break;
+                const charge_fraction = Math.min(1, V_eff / V_sec);
+                const t_off = (Math.PI / 2) * Math.sqrt(Ls * C); // Time for full discharge (quarter cycle)
+                const damping_factor = Math.exp(-Rs * t_off / Ls); // Resistive damping
+                const Q_pulse_cap = k * Q_pulse_battery * charge_fraction * damping_factor; // Apply coupling and resistance
+                V_cap += Q_pulse_cap / C;
+                const V_avg = (V_before + V_cap) / 2;
+                const E_pulse_cap = Q_pulse_cap * V_avg;
+                E_pulse_cap_sum += E_pulse_cap;
+                Q_pulse_cap_sum += Q_pulse_cap;
+                Q_total_cap += Q_pulse_cap;
+                E_total_cap = 0.5 * C * V_cap * V_cap;
+                total_t_off += t_off;
+                pulses_delivered++;
+            }
+            const Q_pulse_cap_avg = pulses_delivered > 0 ? Q_pulse_cap_sum / pulses_delivered : 0;
+            const E_pulse_cap_avg = pulses_delivered > 0 ? E_pulse_cap_sum / pulses_delivered : 0;
+            const P_pulse_cap_avg = E_pulse_cap_avg / t_pulse;
+            const t_off_avg = pulses_delivered > 0 ? total_t_off / pulses_delivered : 0;
+            const energy_ratio = E_total_battery > 0 ? E_total_cap / E_total_battery : 0;
+
+            // Calculate optimal pulses (actual)
+            let max_energy_ratio = 0;
+            let n_opt_actual = 0;
+            for (let test_n = 1; test_n <= 1000; test_n++) {
+                let test_V_cap = 0;
+                let test_Q_total_cap = 0;
+                for (let i = 0; i < test_n; i++) {
+                    const test_V_eff = V_sec - test_V_cap - V_diode;
+                    if (test_V_eff <= 0) break;
+                    const test_charge_fraction = Math.min(1, test_V_eff / V_sec);
+                    const test_t_off = (Math.PI / 2) * Math.sqrt(Ls * C);
+                    const test_damping_factor = Math.exp(-Rs * test_t_off / Ls);
+                    const test_Q_pulse_cap = k * Q_pulse_battery * test_charge_fraction * test_damping_factor;
+                    test_V_cap += test_Q_pulse_cap / C;
+                    test_Q_total_cap += test_Q_pulse_cap;
+                }
+                const test_E_cap = 0.5 * C * test_V_cap * test_V_cap;
+                const test_E_total_battery = test_n * E_pulse_battery;
+                const test_energy_ratio = test_E_total_battery > 0 ? test_E_cap / test_E_total_battery : 0;
+                if (test_energy_ratio > max_energy_ratio) {
+                    max_energy_ratio = test_energy_ratio;
+                    n_opt_actual = test_n;
+                }
+            }
+
+            // Update outputs
+            document.getElementById('batteryChargePerPulse').textContent = Q_pulse_battery.toExponential(2);
+            document.getElementById('batteryTotalCharge').textContent = Q_total_battery.toExponential(2);
+            document.getElementById('batteryEnergyPerPulse').textContent = E_pulse_battery.toFixed(6);
+            document.getElementById('batteryTotalEnergy').textContent = E_total_battery.toFixed(6);
+            document.getElementById('batteryPowerPerPulse').textContent = P_pulse_battery.toFixed(2);
+            document.getElementById('primaryInductanceInput').value = Lp.toFixed(4);
+            document.getElementById('secondaryInductance').textContent = Ls.toFixed(2);
+            document.getElementById('pulseOffTime').textContent = (t_off_avg * 1000).toPrecision(4);
+            document.getElementById('capacitanceInput').value = C.toExponential(2);
+            document.getElementById('capVoltage').textContent = V_cap.toFixed(2);
+            document.getElementById('capChargePerPulse').textContent = Q_pulse_cap_avg.toExponential(2);
+            document.getElementById('capTotalCharge').textContent = Q_total_cap.toExponential(2);
+            document.getElementById('capEnergyPerPulse').textContent = E_pulse_cap_avg.toFixed(6);
+            document.getElementById('capTotalEnergy').textContent = E_total_cap.toFixed(6);
+            document.getElementById('capPowerPerPulse').textContent = P_pulse_cap_avg.toFixed(2);
+            document.getElementById('energyRatio').textContent = energy_ratio.toFixed(2);
+            document.getElementById('optimalPulsesActual').textContent = n_opt_actual;
+        }
+
+        // Add Enter key event listeners to input fields
+        const inputs = [
+            document.getElementById('batteryVoltage'),
+            document.getElementById('numPulses'),
+            document.getElementById('pulseDuration'),
+            document.getElementById('turnsRatio'),
+            document.getElementById('primaryInductanceInput'),
+            document.getElementById('capacitanceInput'),
+            document.getElementById('couplingFactor'),
+            document.getElementById('secondaryResistance'),
+            document.getElementById('primaryResistance')
+        ];
+        inputs.forEach(input => {
+            input.addEventListener('keypress', function (event) {
+                if (event.keyCode === 13 || event.key === 'Enter') {
+                    calculate();
+                }
+            });
+        });
+
+        // Load saved values and perform initial calculation
+        loadSavedValues();
+        calculate();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Simulator: Dynamic Charge Transfer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        p span {
+            color: darkred;
+        }
+
+        input[type="number"] {
+            width: 6em;
+        }
+
+        .circuit-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        .component {
+            display: flex;
+            flex-direction: column;
+            align-items: left;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 5px;
+            min-width: 260px;
+        }
+
+        .component label,
+        .component input,
+        .component p {
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        #jsonPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        #jsonPopup textarea {
+            width: 100%;
+            height: 300px;
+            resize: none;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        #jsonPopup button {
+            margin-top: 10px;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #graphCanvas {
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Circuit Simulator: Dynamic Charge Transfer
+        <button onclick="calculate()">Calculate</button>
+        <button onclick="showJsonPopup()">Copy</button>
+        <button onclick="plotGraphs()">Graph</button>
+    </h1>
+    <div class="circuit-container">
+        <!-- Battery -->
+        <div class="component">
+            <h3>Battery</h3>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="batteryVoltage"> Battery Voltage (V):
+                <input type="number" id="batteryVoltage" value="10" min="1">
+            </label>
+            <p>Charge per Pulse: <span id="batteryChargePerPulse">0</span> C</p>
+            <p>Total Charge: <span id="batteryTotalCharge">0</span> C</p>
+            <p>Energy per Pulse: <span id="batteryEnergyPerPulse">0</span> J</p>
+            <p>Total Energy: <span id="batteryTotalEnergy">0</span> J</p>
+            <p>Power per Pulse: <span id="batteryPowerPerPulse">0</span> W</p>
+        </div>
+        <!-- Switch -->
+        <div class="component">
+            <h3>Switch</h3>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="numPulses"> Number of Pulses:
+                <input type="number" id="numPulses" value="5" min="1">
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="pulseDuration"> Pulse Duration (ms):
+                <input type="number" id="pulseDuration" value="1" min="0.1" step="0.1">
+            </label>
+            <p>Pulse Off Time: <span id="pulseOffTime">0</span> ms</p>
+            <p>Optimal Pulses (Actual): <span id="optimalPulsesActual">0</span></p>
+        </div>
+        <!-- Transformer -->
+        <div class="component">
+            <h3>Transformer</h3>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="turnsRatio"> Turns Ratio:
+                <input type="number" id="turnsRatio" value="30" min="0.1" step="0.1">
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="primaryInductance"> Pri Inductance (H):
+                <input type="number" id="primaryInductanceInput" value="0.01" min="0.0001" step="0.0001">
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="primaryResistance"> Pri Resistance (Ω):
+                <input type="number" id="primaryResistance" value="1" min="0" step="0.1">
+            </label>
+            <p>Sec Inductance: <span id="secondaryInductance">0</span> H</p>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="secondaryResistance"> Sec Resistance (Ω):
+                <input type="number" id="secondaryResistance" value="10000" min="0" step="10">
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="couplingFactor"> Coupling Factor (k):
+                <input type="number" id="couplingFactor" value="0.9" min="0" max="1" step="0.01">
+            </label>
+        </div>
+        <!-- Capacitor -->
+        <div class="component">
+            <h3>Capacitor</h3>
+            <label class="checkbox-label">
+                <input type="checkbox" class="graph-checkbox" data-key="capacitance"> Capacitance (F):
+                <input type="number" id="capacitanceInput" value="0.000003" min="0.0000001" step="0.0000001">
+            </label>
+            <p>Final Voltage: <span id="capVoltage">0</span> V</p>
+            <p>Charge/Pulse (av): <span id="capChargePerPulse">0</span> C</p>
+            <p>Total Charge: <span id="capTotalCharge">0</span> C</p>
+            <p>Energy per Pulse (avg): <span id="capEnergyPerPulse">0</span> J</p>
+            <p>Total Energy: <span id="capTotalEnergy">0</span> J</p>
+            <p>Power per Pulse (avg): <span id="capPowerPerPulse">0</span> W</p>
+            <p>Energy Ratio (Out/In): <span id="energyRatio">0</span></p>
+        </div>
+    </div>
+    <canvas id="graphCanvas" width="800" height="400"></canvas>
+    <div id="overlay"></div>
+    <div id="jsonPopup">
+        <h3>Simulation Results</h3>
+        <textarea id="jsonOutput" readonly></textarea>
+        <button onclick="closeJsonPopup()">Close</button>
+    </div>
+
+    <script src="capswitch.js"></script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circuit Simulator: Dynamic Charge Transfer</title>
+    <title>Dynamic Charge Transfer Simulator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,8 +17,10 @@
             opacity: 0;
         }
 
-        p span {
-            color: #ff6b6b;
+        h3 {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 5px;
         }
 
         input[type="number"] {
@@ -26,10 +28,20 @@
             background-color: #2d2d2d;
             color: #e0e0e0;
             border: 1px solid #555;
+            text-align: right;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         input[type="checkbox"] {
             accent-color: #888;
+            margin-right: 5px;
         }
 
         .circuit-container {
@@ -43,18 +55,35 @@
         .component {
             display: flex;
             flex-direction: column;
-            align-items: left;
             border: 1px solid #555;
             background-color: #1f1f1f;
-            padding: 10px;
             margin: 5px;
-            min-width: 260px;
         }
 
-        .component label,
-        .component input,
-        .component p {
-            margin: 5px 0;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 2px 2px;
+            vertical-align: middle;
+        }
+
+        td.checkbox {
+            width: 24px;
+        }
+
+        td.value {
+            text-align: right;
+        }
+
+        td.units {
+            white-space: nowrap;
+        }
+
+        tr.image-row td {
+            padding: 5px 0;
         }
 
         button {
@@ -119,9 +148,20 @@
             background-color: #121212;
         }
 
-        .checkbox-label {
-            display: flex;
-            align-items: center;
+        .fade-in {
+            opacity: 1;
+            transition: opacity 0.3s ease-in;
+        }
+
+        p,
+        label {
+            color: rgb(154, 154, 154);
+            white-space: nowrap;
+        }
+
+        p span,
+        label span {
+            color: white;
         }
 
         .charge-label {
@@ -136,15 +176,14 @@
             color: skyblue;
         }
 
-        .fade-in {
-            opacity: 1;
-            transition: opacity 0.3s ease-in;
+        .ratio-label {
+            color: rgb(1, 197, 1);
         }
     </style>
 </head>
 
 <body class="fade-in">
-    <h1>Circuit Simulator: Dynamic Charge Transfer
+    <h1>Dynamic Charge Transfer Simulator
         <button onclick="calculate()">Calculate</button>
         <button onclick="copyJson()">Copy</button>
     </h1>
@@ -152,70 +191,180 @@
         <!-- Battery -->
         <div class="component">
             <h3>Battery</h3>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="batteryVoltage"> Battery Voltage (V):
-                <input type="number" id="batteryVoltage" value="10" min="1">
-            </label>
-            <p>Charge per Pulse: <span id="batteryChargePerPulse" class="charge-label">0</span> C</p>
-            <p>Total Charge: <span id="batteryTotalCharge" class="charge-label">0</span> C</p>
-            <p>Energy per Pulse: <span id="batteryEnergyPerPulse" class="energy-label">0</span> J</p>
-            <p>Total Energy: <span id="batteryTotalEnergy" class="energy-label">0</span> J</p>
-            <p>Power per Pulse: <span id="batteryPowerPerPulse" class="watt-label">0</span> W</p>
+            <table>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="batteryVoltage"></td>
+                    <td><label>Battery Voltage</label></td>
+                    <td class="value"><input type="number" id="batteryVoltage" value="10" min="1"></td>
+                    <td class="units">V</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Charge per Pulse</label></td>
+                    <td class="value"><span id="batteryChargePerPulse" class="charge-label">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Total Charge</label></td>
+                    <td class="value"><span id="batteryTotalCharge" class="charge-label">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Energy per Pulse</label></td>
+                    <td class="value"><span id="batteryEnergyPerPulse" class="energy-label">0</span></td>
+                    <td class="units energy-label">J</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Total Energy</label></td>
+                    <td class="value"><span id="batteryTotalEnergy" class="energy-label">0</span></td>
+                    <td class="units energy-label">J</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Transient Pulse Power</label></td>
+                    <td class="value"><span id="batteryPowerPerPulse" class="watt-label">0</span></td>
+                    <td class="units watt-label">W</td>
+                </tr>
+            </table>
         </div>
         <!-- Switch -->
         <div class="component">
             <h3>Switch</h3>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="numPulses"> Number of Pulses:
-                <input type="number" id="numPulses" value="5" min="1">
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="pulseDuration"> Pulse Duration (s):
-                <input type="number" id="pulseDuration" value="1" min="0.1" step="0.1">
-            </label>
-            <p>Pulse Off Time: <span id="pulseOffTime">0</span> s</p>
-            <p>Optimal Pulses: <span id="optimalPulsesActual">0</span></p>
-            <p><img src="circuit.png" widt="100"></p>
+            <table>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="numPulses"></td>
+                    <td><label>Number of Pulses</label></td>
+                    <td class="value"><input type="number" id="numPulses" value="5" min="1"></td>
+                    <td class="units"></td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="pulseDuration"></td>
+                    <td><label>Pulse Duration</label></td>
+                    <td class="value"><input type="number" id="pulseDuration" value="1" min="0.1" step="0.1"></td>
+                    <td class="units">s</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Pulse Off Time</label></td>
+                    <td class="value"><span id="pulseOffTime">0</span></td>
+                    <td class="units">s</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Optimal Pulses</label></td>
+                    <td class="value"><span id="optimalPulsesActual">0</span></td>
+                    <td class="units"></td>
+                </tr>
+                <tr class="image-row">
+                    <td colspan="4" style="text-align: center"><img src="circuit.png" width="90%"></td>
+                </tr>
+            </table>
         </div>
         <!-- Transformer -->
         <div class="component">
             <h3>Transformer</h3>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="turnsRatio"> Turns Ratio:
-                <input type="number" id="turnsRatio" value="30" min="0.1" step="0.1">
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="primaryInductance"> Pri Inductance (H):
-                <input type="number" id="primaryInductanceInput" value="0.01" min="0.0001" step="0.0001">
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="primaryResistance"> Pri Resistance (Ω):
-                <input type="number" id="primaryResistance" value="1" min="0" step="0.1">
-            </label>
-            <p>Sec Inductance: <span id="secondaryInductance">0</span> H</p>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="secondaryResistance"> Sec Resistance (Ω):
-                <input type="number" id="secondaryResistance" value="10000" min="0" step="10">
-            </label>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="couplingFactor"> Coupling Factor (k):
-                <input type="number" id="couplingFactor" value="0.9" min="0" max="1" step="0.01">
-            </label>
+            <table>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="turnsRatio"></td>
+                    <td><label>Turns Ratio</label></td>
+                    <td class="value"><input type="number" id="turnsRatio" value="30" min="0.1" step="0.1"></td>
+                    <td class="units"></td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="primaryInductance">
+                    </td>
+                    <td><label>Pri Inductance</label></td>
+                    <td class="value"><input type="number" id="primaryInductanceInput" value="0.01" min="0.0001"
+                            step="0.0001"></td>
+                    <td class="units">H</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="primaryResistance">
+                    </td>
+                    <td><label>Pri Resistance</label></td>
+                    <td class="value"><input type="number" id="primaryResistance" value="1" min="0" step="0.1"></td>
+                    <td class="units">Ω</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Sec Inductance</label></td>
+                    <td class="value"><span id="secondaryInductance">0</span></td>
+                    <td class="units">H</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="secondaryResistance">
+                    </td>
+                    <td><label>Sec Resistance</label></td>
+                    <td class="value"><input type="number" id="secondaryResistance" value="10000" min="0" step="10">
+                    </td>
+                    <td class="units">Ω</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="couplingFactor"></td>
+                    <td><label>Coupling Factor</label></td>
+                    <td class="value"><input type="number" id="couplingFactor" value="0.9" min="0" max="1" step="0.01">
+                    </td>
+                    <td class="units">k</td>
+                </tr>
+            </table>
         </div>
         <!-- Capacitor -->
         <div class="component">
             <h3>Capacitor</h3>
-            <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="capacitance"> Capacitance (F):
-                <input type="number" id="capacitanceInput" value="0.000003" min="0.0000001" step="0.0000001">
-            </label>
-            <p>Final Voltage: <span id="capVoltage">0</span> V</p>
-            <p>Charge/Pulse (av): <span id="capChargePerPulse" class="charge-label">0</span> C</p>
-            <p>Total Charge: <span id="capTotalCharge" class="charge-label">0</span> C</p>
-            <p>Energy per Pulse (avg): <span id="capEnergyPerPulse" class="energy-label">0</span> J</p>
-            <p>Total Energy: <span id="capTotalEnergy" class="energy-label">0</span> J</p>
-            <p>Power per Pulse (avg): <span id="capPowerPerPulse" class="watt-label">0</span> W</p>
-            <p>Energy Ratio (Out/In): <span id="energyRatio">0</span></p>
+            <table>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="capacitance"></td>
+                    <td><label>Capacitance</label></td>
+                    <td class="value"><input type="number" id="capacitanceInput" value="0.000003" min="0.0000001"
+                            step="0.0000001"></td>
+                    <td class="units">F</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Final Voltage</label></td>
+                    <td class="value"><span id="capVoltage">0</span></td>
+                    <td class="units">V</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Charge/Pulse</label></td>
+                    <td class="value"><span id="capChargePerPulse" class="charge-label">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Total Charge</label></td>
+                    <td class="value"><span id="capTotalCharge" class="charge-label">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Energy per Pulse</label></td>
+                    <td class="value"><span id="capEnergyPerPulse" class="energy-label">0</span></td>
+                    <td class="units energy-label">J</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Total Energy</label></td>
+                    <td class="value"><span id="capTotalEnergy" class="energy-label">0</span></td>
+                    <td class="units energy-label">J</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Transient Pulse Power</label></td>
+                    <td class="value"><span id="capPowerPerPulse" class="watt-label">0</span></td>
+                    <td class="units watt-label">W</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Energy Ratio (OU)</label></td>
+                    <td class="value"><span id="energyRatio" class="ratio-label">0</span></td>
+                    <td class="units ratio-label"></td>
+                </tr>
+            </table>
         </div>
     </div>
     <div id="graphContainer"></div>

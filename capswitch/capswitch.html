@@ -8,18 +8,28 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: rgb(31, 31, 31);
+            color: #e0e0e0;
             margin: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            opacity: 0;
         }
 
         p span {
-            color: darkred;
+            color: #ff6b6b;
         }
 
         input[type="number"] {
             width: 6em;
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #888;
         }
 
         .circuit-container {
@@ -34,7 +44,8 @@
             display: flex;
             flex-direction: column;
             align-items: left;
-            border: 1px solid #ccc;
+            border: 1px solid #555;
+            background-color: #1f1f1f;
             padding: 10px;
             margin: 5px;
             min-width: 260px;
@@ -50,6 +61,14 @@
             padding: 10px 20px;
             font-size: 16px;
             margin: 5px;
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
         }
 
         #jsonPopup {
@@ -58,10 +77,11 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
-            border: 1px solid #ccc;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #777;
             padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
             z-index: 1000;
             max-width: 600px;
             width: 90%;
@@ -73,6 +93,9 @@
             resize: none;
             font-family: monospace;
             font-size: 14px;
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            border: 1px solid #555;
         }
 
         #jsonPopup button {
@@ -86,27 +109,44 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
             z-index: 999;
         }
 
         #graphCanvas {
-            border: 1px solid #ccc;
+            border: 1px solid #555;
             margin-top: 20px;
+            background-color: #121212;
         }
 
         .checkbox-label {
             display: flex;
             align-items: center;
         }
+
+        .charge-label {
+            color: tan;
+        }
+
+        .energy-label {
+            color: gold;
+        }
+
+        .watt-label {
+            color: skyblue;
+        }
+
+        .fade-in {
+            opacity: 1;
+            transition: opacity 0.3s ease-in;
+        }
     </style>
 </head>
 
-<body>
+<body class="fade-in">
     <h1>Circuit Simulator: Dynamic Charge Transfer
         <button onclick="calculate()">Calculate</button>
-        <button onclick="showJsonPopup()">Copy</button>
-        <button onclick="plotGraphs()">Graph</button>
+        <button onclick="copyJson()">Copy</button>
     </h1>
     <div class="circuit-container">
         <!-- Battery -->
@@ -116,11 +156,11 @@
                 <input type="checkbox" class="graph-checkbox" data-key="batteryVoltage"> Battery Voltage (V):
                 <input type="number" id="batteryVoltage" value="10" min="1">
             </label>
-            <p>Charge per Pulse: <span id="batteryChargePerPulse">0</span> C</p>
-            <p>Total Charge: <span id="batteryTotalCharge">0</span> C</p>
-            <p>Energy per Pulse: <span id="batteryEnergyPerPulse">0</span> J</p>
-            <p>Total Energy: <span id="batteryTotalEnergy">0</span> J</p>
-            <p>Power per Pulse: <span id="batteryPowerPerPulse">0</span> W</p>
+            <p>Charge per Pulse: <span id="batteryChargePerPulse" class="charge-label">0</span> C</p>
+            <p>Total Charge: <span id="batteryTotalCharge" class="charge-label">0</span> C</p>
+            <p>Energy per Pulse: <span id="batteryEnergyPerPulse" class="energy-label">0</span> J</p>
+            <p>Total Energy: <span id="batteryTotalEnergy" class="energy-label">0</span> J</p>
+            <p>Power per Pulse: <span id="batteryPowerPerPulse" class="watt-label">0</span> W</p>
         </div>
         <!-- Switch -->
         <div class="component">
@@ -130,11 +170,12 @@
                 <input type="number" id="numPulses" value="5" min="1">
             </label>
             <label class="checkbox-label">
-                <input type="checkbox" class="graph-checkbox" data-key="pulseDuration"> Pulse Duration (ms):
+                <input type="checkbox" class="graph-checkbox" data-key="pulseDuration"> Pulse Duration (s):
                 <input type="number" id="pulseDuration" value="1" min="0.1" step="0.1">
             </label>
-            <p>Pulse Off Time: <span id="pulseOffTime">0</span> ms</p>
-            <p>Optimal Pulses (Actual): <span id="optimalPulsesActual">0</span></p>
+            <p>Pulse Off Time: <span id="pulseOffTime">0</span> s</p>
+            <p>Optimal Pulses: <span id="optimalPulsesActual">0</span></p>
+            <p><img src="circuit.png" widt="100"></p>
         </div>
         <!-- Transformer -->
         <div class="component">
@@ -169,24 +210,20 @@
                 <input type="number" id="capacitanceInput" value="0.000003" min="0.0000001" step="0.0000001">
             </label>
             <p>Final Voltage: <span id="capVoltage">0</span> V</p>
-            <p>Charge/Pulse (av): <span id="capChargePerPulse">0</span> C</p>
-            <p>Total Charge: <span id="capTotalCharge">0</span> C</p>
-            <p>Energy per Pulse (avg): <span id="capEnergyPerPulse">0</span> J</p>
-            <p>Total Energy: <span id="capTotalEnergy">0</span> J</p>
-            <p>Power per Pulse (avg): <span id="capPowerPerPulse">0</span> W</p>
+            <p>Charge/Pulse (av): <span id="capChargePerPulse" class="charge-label">0</span> C</p>
+            <p>Total Charge: <span id="capTotalCharge" class="charge-label">0</span> C</p>
+            <p>Energy per Pulse (avg): <span id="capEnergyPerPulse" class="energy-label">0</span> J</p>
+            <p>Total Energy: <span id="capTotalEnergy" class="energy-label">0</span> J</p>
+            <p>Power per Pulse (avg): <span id="capPowerPerPulse" class="watt-label">0</span> W</p>
             <p>Energy Ratio (Out/In): <span id="energyRatio">0</span></p>
         </div>
     </div>
-    <canvas id="graphCanvas" width="800" height="400"></canvas>
+    <div id="graphContainer"></div>
     <div id="overlay"></div>
-    <div id="jsonPopup">
-        <h3>Simulation Results</h3>
-        <textarea id="jsonOutput" readonly></textarea>
-        <button onclick="closeJsonPopup()">Close</button>
-    </div>
 
-    <script src="capswitch.js"></script>
     <script src="capgraph.js"></script>
+    <script src="capswitchxtra.js"></script>
+    <script src="capswitch.js"></script>
 </body>
 
 </html>

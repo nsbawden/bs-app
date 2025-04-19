@@ -1,88 +1,146 @@
-// Plot graphs on canvas
-function plotGraphs() {
-    const canvas = document.getElementById('graphCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function calculateOptimalPulses({ key = 'numPulses', min = 1, max = 1000, step = 1 }) {
+    const values = computeGraph({ key, min, max, step });
+    let maxY = 0;
+    let optimal = 0;
+    values.forEach(({ x, y }) => {
+        if (y > maxY) {
+            maxY = y;
+            optimal = x;
+        }
+    });
+    return optimal;
+}
 
-    const checkboxes = document.querySelectorAll('.graph-checkbox:checked');
-    if (checkboxes.length === 0) {
-        ctx.font = '16px Arial';
-        ctx.fillText('Select parameters to graph', 10, 20);
-        return;
+function computeGraph({ key, min, max, step }) {
+    const baseParams = getParams();
+    const values = [];
+
+    for (let val = min; val <= max; val += step) {
+        const params = { ...baseParams, [key]: val };
+        const result = simulateCircuit(params);
+        values.push({ x: val, y: result.capacitor.energy_ratio });
     }
 
-    const colors = ['blue', 'red', 'green', 'purple', 'orange', 'cyan'];
-    let allValues = [];
-    
-    checkboxes.forEach((checkbox, index) => {
-        const key = checkbox.getAttribute('data-key');
-        const input = document.getElementById(inputMappings[key]);
-        const current = parseFloat(input.value);
-        const min = current / 10;
-        const max = current * 10;
-        const steps = 100;
-        const step = (max - min) / steps;
-        const values = computeGraph(key, min, max, step);
-        debugger;
-        allValues.push({ key, values, color: colors[index % colors.length] });
-    });
+    return values;
+}
 
-    // Find global min/max for scaling
-    let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
-    allValues.forEach(({ values }) => {
+function plotGraph(container, values, min, max, step, xLabel, yLabel, color, title) {
+
+    const wrapper = document.createElement('div');
+    wrapper.style.marginBottom = '30px';
+    container.appendChild(wrapper);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 300;
+    canvas.style.display = 'block';
+    wrapper.appendChild(canvas);
+
+    let slider;
+    if (step !== 0) {
+        slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = 0;
+        slider.max = 100;
+        slider.value = 50;
+        slider.style.width = '600px';
+        wrapper.appendChild(slider);
+    }
+
+    function draw(values) {
+
+        let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+        let peakX = -Infinity, peakY = -Infinity;
+
         values.forEach(({ x, y }) => {
             xMin = Math.min(xMin, x);
             xMax = Math.max(xMax, x);
             yMin = Math.min(yMin, y);
             yMax = Math.max(yMax, y);
+            if (y > peakY) {
+                peakY = y;
+                peakX = x;
+            }
         });
-    });
 
-    // Add padding to y-axis
-    const yPadding = (yMax - yMin) * 0.1;
-    yMin -= yPadding;
-    yMax += yPadding;
+        const yPadding = (yMax - yMin) * 0.1;
+        yMin -= yPadding;
+        yMax += yPadding;
 
-    // Draw axes
-    const margin = 50;
-    const graphWidth = canvas.width - 2 * margin;
-    const graphHeight = canvas.height - 2 * margin;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const margin = 50;
+        const graphWidth = canvas.width - 2 * margin;
+        const graphHeight = canvas.height - 2 * margin;
 
-    ctx.beginPath();
-    ctx.moveTo(margin, margin);
-    ctx.lineTo(margin, canvas.height - margin);
-    ctx.lineTo(canvas.width - margin, canvas.height - margin);
-    ctx.stroke();
+        ctx.fillStyle = 'rgb(31, 31, 31)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw labels
-    ctx.font = '12px Arial';
-    ctx.fillText('Energy Ratio', 10, margin - 10);
-    ctx.fillText('Parameter Value', canvas.width - margin, canvas.height - margin + 20);
-
-    // Draw ticks and labels
-    const xTicks = 10;
-    const yTicks = 10;
-    for (let i = 0; i <= xTicks; i++) {
-        const x = margin + (i / xTicks) * graphWidth;
-        const xVal = xMin + (i / xTicks) * (xMax - xMin);
+        ctx.strokeStyle = '#aaa';
         ctx.beginPath();
-        ctx.moveTo(x, canvas.height - margin);
-        ctx.lineTo(x, canvas.height - margin + 5);
+        ctx.moveTo(margin, margin);
+        ctx.lineTo(margin, canvas.height - margin);
+        ctx.lineTo(canvas.width - margin, canvas.height - margin);
         ctx.stroke();
-        ctx.fillText(xVal.toFixed(2), x - 10, canvas.height - margin + 15);
-    }
-    for (let i = 0; i <= yTicks; i++) {
-        const y = canvas.height - margin - (i / yTicks) * graphHeight;
-        const yVal = yMin + (i / yTicks) * (yMax - yMin);
-        ctx.beginPath();
-        ctx.moveTo(margin - 5, y);
-        ctx.lineTo(margin, y);
-        ctx.stroke();
-        ctx.fillText(yVal.toFixed(2), margin - 40, y + 5);
-    }
 
-    // Plot data
-    allValues.forEach(({ key, values, color }) => {
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(`${yLabel} (peak ${smartFormat(peakX, 2)}, ${smartFormat(peakY, 2)})`, 0, 15);
+        ctx.fillText(xLabel, (canvas.width / 2) - margin, canvas.height - 10);
+        ctx.fillText(title, margin, margin - 10);
+
+        const xTicks = 10;
+        const yTicks = 10;
+
+        for (let i = 0; i <= xTicks; i++) {
+            const x = margin + (i / xTicks) * graphWidth;
+            const xVal = xMin + (i / xTicks) * (xMax - xMin);
+
+            ctx.strokeStyle = '#aaa';
+            ctx.beginPath();
+            ctx.moveTo(x, canvas.height - margin);
+            ctx.lineTo(x, canvas.height - margin + 5);
+            ctx.stroke();
+
+            ctx.fillText(smartFormat(xVal, 2), x - 10, canvas.height - margin + 15);
+
+            ctx.strokeStyle = '#444';
+            ctx.beginPath();
+            ctx.moveTo(x, margin);
+            ctx.lineTo(x, canvas.height - margin);
+            ctx.stroke();
+        }
+
+        for (let i = 0; i <= yTicks; i++) {
+            const y = canvas.height - margin - (i / yTicks) * graphHeight;
+            const yVal = yMin + (i / yTicks) * (yMax - yMin);
+
+            ctx.strokeStyle = '#aaa';
+            ctx.beginPath();
+            ctx.moveTo(margin - 5, y);
+            ctx.lineTo(margin, y);
+            ctx.stroke();
+
+            ctx.fillText(smartFormat(yVal, 2), margin - 45, y + 4);
+
+            ctx.strokeStyle = '#444';
+            ctx.beginPath();
+            ctx.moveTo(margin, y);
+            ctx.lineTo(canvas.width - margin, y);
+            ctx.stroke();
+        }
+
+        if (yMin < 0 && yMax > 0) {
+            const yZero = canvas.height - margin - ((0 - yMin) / (yMax - yMin)) * graphHeight;
+            ctx.strokeStyle = '#bbb';
+            ctx.setLineDash([1, 4]);
+            ctx.beginPath();
+            ctx.moveTo(margin, yZero);
+            ctx.lineTo(canvas.width - margin, yZero);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
         ctx.beginPath();
         ctx.strokeStyle = color;
         values.forEach(({ x, y }, i) => {
@@ -92,59 +150,69 @@ function plotGraphs() {
             else ctx.lineTo(px, py);
         });
         ctx.stroke();
+    }
 
-        // Add legend
-        ctx.fillStyle = color;
-        ctx.fillText(key, canvas.width - margin + 10, margin + 20 * allValues.indexOf({ key, values, color }));
+    draw(values);
+
+    canvas.addEventListener('click', () => {
+        blink();
+        const graphData = { title, xLabel, yLabel, color, values };
+        const json = JSON.stringify(graphData, null, 2);
+        navigator.clipboard.writeText(json)
+            .then(() => console.log('Graph data copied to clipboard'))
+            .catch(err => console.error('Failed to copy graph data:', err));
     });
+
+    if (slider) {
+        slider.addEventListener('input', () => {
+            const percent = (slider.value - 50) / 50; // range from -1 to 1
+            const scale = Math.pow(2, percent); // exponential for better control
+            const center = (min + max) / 2;
+            const range = (max - min) * scale / 2;
+            const newMin = center - range;
+            const newMax = center + range;
+            const newValues = computeGraph({ key: xLabel, min: newMin, max: newMax, step: step });
+            draw(newValues);
+        });
+    }
+
 }
 
-function showJsonPopup() {
-    const result = {
-        inputs: {
-            batteryVoltage: parseFloat(document.getElementById('batteryVoltage').value),
-            numPulses: parseInt(document.getElementById('numPulses').value),
-            pulseDuration: parseFloat(document.getElementById('pulseDuration').value),
-            turnsRatio: parseFloat(document.getElementById('turnsRatio').value),
-            primaryInductance: parseFloat(document.getElementById('primaryInductanceInput').value),
-            capacitance: parseFloat(document.getElementById('capacitanceInput').value),
-            couplingFactor: parseFloat(document.getElementById('couplingFactor').value),
-            secondaryResistance: parseFloat(document.getElementById('secondaryResistance').value),
-            primaryResistance: parseFloat(document.getElementById('primaryResistance').value)
-        },
-        outputs: {
-            battery: {
-                chargePerPulse: parseFloat(document.getElementById('batteryChargePerPulse').textContent),
-                totalCharge: parseFloat(document.getElementById('batteryTotalCharge').textContent),
-                energyPerPulse: parseFloat(document.getElementById('batteryEnergyPerPulse').textContent),
-                totalEnergy: parseFloat(document.getElementById('batteryTotalEnergy').textContent),
-                powerPerPulse: parseFloat(document.getElementById('batteryPowerPerPulse').textContent)
-            },
-            switch: {
-                pulseOffTime: parseFloat(document.getElementById('pulseOffTime').textContent) / 1000,
-                optimalPulsesActual: parseInt(document.getElementById('optimalPulsesActual').textContent)
-            },
-            transformer: {
-                secondaryInductance: parseFloat(document.getElementById('secondaryInductance').textContent)
-            },
-            capacitor: {
-                finalVoltage: parseFloat(document.getElementById('capVoltage').textContent),
-                chargePerPulseAvg: parseFloat(document.getElementById('capChargePerPulse').textContent),
-                totalCharge: parseFloat(document.getElementById('capTotalCharge').textContent),
-                energyPerPulseAvg: parseFloat(document.getElementById('capEnergyPerPulse').textContent),
-                totalEnergy: parseFloat(document.getElementById('capTotalEnergy').textContent),
-                powerPerPulseAvg: parseFloat(document.getElementById('capPowerPerPulse').textContent),
-                energyRatio: parseFloat(document.getElementById('energyRatio').textContent)
-            }
+function plotGraphs(result) {
+    const container = document.getElementById('graphContainer');
+    const checkboxes = document.querySelectorAll('.graph-checkbox:checked');
+    if (checkboxes.length === 0) return;
+
+    const colors = ['orange', 'cyan', 'blue', 'red', 'green', 'purple'];
+
+    checkboxes.forEach((checkbox, index) => {
+        const key = checkbox.getAttribute('data-key');
+        const input = document.getElementById(inputMappings[key]);
+        let current = parseFloat(input.value);
+        let min, max;
+        switch (key) {
+            case 'pulseDuration':
+            case 'capacitance':
+                min = current / 4;
+                max = current * 4;
+                break;
+            default:
+                min = current / 10;
+                max = current * 10;
+                break;
         }
-    };
-    const jsonString = JSON.stringify(result, null, 2);
-    document.getElementById('jsonOutput').value = jsonString;
-    document.getElementById('jsonPopup').style.display = 'block';
-    document.getElementById('overlay').style.display = 'block';
-}
+        const steps = 500;
+        const step = (max - min) / steps;
+        const values = computeGraph({ key, min, max, step });
 
-function closeJsonPopup() {
-    document.getElementById('jsonPopup').style.display = 'none';
-    document.getElementById('overlay').style.display = 'none';
+        plotGraph(
+            container,
+            values,
+            min, max, step,
+            key,
+            'Energy Ratio',
+            colors[index % colors.length],
+            `${key} vs Energy Ratio`
+        );
+    });
 }

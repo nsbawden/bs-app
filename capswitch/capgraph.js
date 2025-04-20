@@ -18,7 +18,7 @@ function computeGraph({ key, min, max, step }) {
     for (let val = min; val <= max; val += step) {
         const params = { ...baseParams, [key]: val };
         const result = simulateCircuit(params);
-        values.push({ x: val, y: result.capacitor.energy_ratio });
+        values.push({ x: val, y: result.energyRatio });
     }
 
     return values;
@@ -297,7 +297,7 @@ function plotGraphs(result) {
 
     checkboxes.forEach((checkbox, index) => {
         const key = checkbox.getAttribute('data-key');
-        const input = document.getElementById(inputMappings[key]);
+        const input = document.getElementById(key);
         let current = parseFloat(input.value);
         let min, max;
         switch (key) {

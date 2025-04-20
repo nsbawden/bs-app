@@ -201,31 +201,31 @@
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Charge per Pulse</label></td>
-                    <td class="value"><span id="batteryChargePerPulse" class="charge-label">0</span></td>
+                    <td class="value"><span id="batteryChargePerPulse" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Charge</label></td>
-                    <td class="value"><span id="batteryTotalCharge" class="charge-label">0</span></td>
+                    <td class="value"><span id="batteryTotalCharge" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Energy per Pulse</label></td>
-                    <td class="value"><span id="batteryEnergyPerPulse" class="energy-label">0</span></td>
+                    <td class="value"><span id="batteryEnergyPerPulse" class="energy-label output-value">0</span></td>
                     <td class="units energy-label">J</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Energy</label></td>
-                    <td class="value"><span id="batteryTotalEnergy" class="energy-label">0</span></td>
+                    <td class="value"><span id="batteryTotalEnergy" class="energy-label output-value">0</span></td>
                     <td class="units energy-label">J</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Transient Pulse Power</label></td>
-                    <td class="value"><span id="batteryPowerPerPulse" class="watt-label">0</span></td>
+                    <td class="value"><span id="batteryPowerPerPulse" class="watt-label output-value">0</span></td>
                     <td class="units watt-label">W</td>
                 </tr>
             </table>
@@ -243,19 +243,20 @@
                 <tr>
                     <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="pulseDuration"></td>
                     <td><label>Pulse Duration</label></td>
-                    <td class="value"><input type="number" id="pulseDuration" value="1" min="0.1" step="0.1"></td>
+                    <td class="value"><input type="number" id="pulseDuration" value="0.0025" min="0.0001" step="0.0001">
+                    </td>
                     <td class="units">s</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Pulse Off Time</label></td>
-                    <td class="value"><span id="pulseOffTime">0</span></td>
+                    <td class="value"><span id="pulseOffTime" class="output-value">0</span></td>
                     <td class="units">s</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Optimal Pulses</label></td>
-                    <td class="value"><span id="optimalPulsesActual">0</span></td>
+                    <td class="value"><span id="optimalPulsesActual" class="output-value">0</span></td>
                     <td class="units"></td>
                 </tr>
                 <tr class="image-row">
@@ -277,7 +278,7 @@
                     <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="primaryInductance">
                     </td>
                     <td><label>Pri Inductance</label></td>
-                    <td class="value"><input type="number" id="primaryInductanceInput" value="0.01" min="0.0001"
+                    <td class="value"><input type="number" id="primaryInductance" value="0.01" min="0.0001"
                             step="0.0001"></td>
                     <td class="units">H</td>
                 </tr>
@@ -291,7 +292,7 @@
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Sec Inductance</label></td>
-                    <td class="value"><span id="secondaryInductance">0</span></td>
+                    <td class="value"><span id="secondaryInductance" class="output-value">0</span></td>
                     <td class="units">H</td>
                 </tr>
                 <tr>
@@ -318,50 +319,50 @@
                 <tr>
                     <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="capacitance"></td>
                     <td><label>Capacitance</label></td>
-                    <td class="value"><input type="number" id="capacitanceInput" value="0.000003" min="0.0000001"
+                    <td class="value"><input type="number" id="capacitance" value="0.000003" min="0.0000001"
                             step="0.0000001"></td>
                     <td class="units">F</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Final Voltage</label></td>
-                    <td class="value"><span id="capVoltage">0</span></td>
+                    <td class="value"><span id="capVoltage" class="output-value">0</span></td>
                     <td class="units">V</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Charge/Pulse</label></td>
-                    <td class="value"><span id="capChargePerPulse" class="charge-label">0</span></td>
+                    <td class="value"><span id="capChargePerPulse" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Charge</label></td>
-                    <td class="value"><span id="capTotalCharge" class="charge-label">0</span></td>
+                    <td class="value"><span id="capTotalCharge" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Energy per Pulse</label></td>
-                    <td class="value"><span id="capEnergyPerPulse" class="energy-label">0</span></td>
+                    <td class="value"><span id="capEnergyPerPulse" class="energy-label output-value">0</span></td>
                     <td class="units energy-label">J</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Energy</label></td>
-                    <td class="value"><span id="capTotalEnergy" class="energy-label">0</span></td>
+                    <td class="value"><span id="capTotalEnergy" class="energy-label output-value">0</span></td>
                     <td class="units energy-label">J</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Transient Pulse Power</label></td>
-                    <td class="value"><span id="capPowerPerPulse" class="watt-label">0</span></td>
+                    <td class="value"><span id="capPowerPerPulse" class="watt-label output-value">0</span></td>
                     <td class="units watt-label">W</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Energy Ratio (OU)</label></td>
-                    <td class="value"><span id="energyRatio" class="ratio-label">0</span></td>
+                    <td class="value"><span id="energyRatio" class="ratio-label output-value">0</span></td>
                     <td class="units ratio-label"></td>
                 </tr>
             </table>

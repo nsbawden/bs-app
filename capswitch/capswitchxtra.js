@@ -6,8 +6,8 @@ function copyJson() {
             numPulses: parseInt(document.getElementById('numPulses').value),
             pulseDuration: parseFloat(document.getElementById('pulseDuration').value),
             turnsRatio: parseFloat(document.getElementById('turnsRatio').value),
-            primaryInductance: parseFloat(document.getElementById('primaryInductanceInput').value),
-            capacitance: parseFloat(document.getElementById('capacitanceInput').value),
+            primaryInductance: parseFloat(document.getElementById('primaryInductance').value),
+            capacitance: parseFloat(document.getElementById('capacitance').value),
             couplingFactor: parseFloat(document.getElementById('couplingFactor').value),
             secondaryResistance: parseFloat(document.getElementById('secondaryResistance').value),
             primaryResistance: parseFloat(document.getElementById('primaryResistance').value)

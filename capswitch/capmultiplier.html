@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="prefix" content="DCTS">
+    <meta name="prefix" content="VMTS">
     <title>Dynamic Charge Transfer Simulator</title>
     <style>
         body {
@@ -265,64 +265,23 @@
                 </tr>
             </table>
         </div>
-        <!-- Transformer -->
+        <!-- Multiplier -->
         <div class="component">
-            <h3>Transformer</h3>
+            <h3>Multiplier</h3>
             <table>
                 <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="turnsRatio"></td>
-                    <td><label>Turns Ratio</label></td>
-                    <td class="value"><input type="number" id="turnsRatio" value="30" min="0.1" step="0.1"></td>
-                    <td class="units"></td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="primaryInductance">
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="multiplierCapacitance">
                     </td>
-                    <td><label>Pri Inductance</label></td>
-                    <td class="value"><input type="number" id="primaryInductance" value="0.01" min="0.0001"
-                            step="0.0001"></td>
-                    <td class="units">H</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="primaryResistance">
-                    </td>
-                    <td><label>Pri Resistance</label></td>
-                    <td class="value"><input type="number" id="primaryResistance" value="1" min="0" step="0.1"></td>
-                    <td class="units">Ω</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Sec Inductance</label></td>
-                    <td class="value"><span id="secondaryInductance" class="output-value">0</span></td>
-                    <td class="units">H</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="secondaryResistance">
-                    </td>
-                    <td><label>Sec Resistance</label></td>
-                    <td class="value"><input type="number" id="secondaryResistance" value="10000" min="0" step="10">
-                    </td>
-                    <td class="units">Ω</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="couplingFactor"></td>
-                    <td><label>Coupling Factor</label></td>
-                    <td class="value"><input type="number" id="couplingFactor" value="0.9" min="0" max="1" step="0.01">
-                    </td>
-                    <td class="units">k</td>
-                </tr>
-            </table>
-        </div>
-        <!-- Capacitor -->
-        <div class="component">
-            <h3>Capacitor</h3>
-            <table>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="capacitance"></td>
-                    <td><label>Capacitance</label></td>
-                    <td class="value"><input type="number" id="capacitance" value="0.000003" min="0.0000001"
+                    <td><label>Capacitance per Stage</label></td>
+                    <td class="value"><input type="number" id="multiplierCapacitance" value="0.000003" min="0.0000001"
                             step="0.0000001"></td>
                     <td class="units">F</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="numStages"></td>
+                    <td><label>Number of Stages</label></td>
+                    <td class="value"><input type="number" id="numStages" value="4" min="1" step="1"></td>
+                    <td class="units"></td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
@@ -332,7 +291,7 @@
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
-                    <td><label>Charge/Pulse</label></td>
+                    <td><label>Charge per Pulse</label></td>
                     <td class="value"><span id="capChargePerPulse" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>

@@ -28,7 +28,15 @@ function copyJson() {
 }
 
 function blink() {
+    blinkStart();
+    blinkEnd();
+}
+
+function blinkStart() {
     document.body.classList.remove('fade-in');
+}
+
+function blinkEnd() {
     setTimeout(() => {
         document.body.classList.add('fade-in');
     }, 0);

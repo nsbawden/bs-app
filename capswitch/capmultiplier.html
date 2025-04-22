@@ -200,6 +200,24 @@
                     <td class="units">V</td>
                 </tr>
                 <tr>
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="inputResistance"></td>
+                    <td><label>Input Resistance</label></td>
+                    <td class="value"><input type="number" id="inputResistance" value="50" min="0.01"></td>
+                    <td class="units">Ω</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Actual Input Voltage</label></td>
+                    <td class="value"><span id="actualInputVoltage" class="charge-label output-value">0</span></td>
+                    <td class="units charge-label">V</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Charge per pulse</label></td>
+                    <td class="value"><span id="batteryEnergyPerPulseAvg" class="charge-label output-value">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Charge</label></td>
                     <td class="value"><span id="batteryTotalCharge" class="charge-label output-value">0</span></td>
@@ -237,7 +255,7 @@
                     <td class="units"></td>
                 </tr>
                 <tr class="image-row">
-                    <td colspan="4" style="text-align: center"><img src="circuit.png" width="90%"></td>
+                    <td colspan="4" style="text-align: center"><img src="cwmult.webp" width="90%"></td>
                 </tr>
             </table>
         </div>
@@ -264,6 +282,12 @@
                     <td><label>Total Capacitance</label></td>
                     <td class="value"><span id="totalCapacitance" class="output-value">0</span></td>
                     <td class="units">F</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Ideal Voltage</label></td>
+                    <td class="value"><span id="idealFinalVoltage" class="output-value">0</span></td>
+                    <td class="units">V</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>

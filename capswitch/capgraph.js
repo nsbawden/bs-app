@@ -67,6 +67,7 @@ function plotGraph(config) {
     let currentValues = values;
 
     function drawGraphCanvas(values) {
+        const count = values.length;
         let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
         let peakX = -Infinity, peakY = -Infinity;
 
@@ -81,10 +82,21 @@ function plotGraph(config) {
             }
         });
 
+        // Ensure a minimum y-range if yMin equals yMax
+        if (yMin === yMax) {
+            if (yMin === 0) {
+                yMin = -0.1; // Arbitrary small range for zero
+                yMax = 0.1;
+            } else {
+                const offset = Math.abs(yMin) * 0.1 || 0.1; // 10% of value or 0.1 if near zero
+                yMin -= offset;
+                yMax += offset;
+            }
+        }
+
         const yPadding = (yMax - yMin) * 0.1;
         yMin -= yPadding;
         yMax += yPadding;
-
         const ctx = bgCanvas.getContext('2d');
         ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
         ctx.fillStyle = 'rgb(31, 31, 31)';
@@ -177,6 +189,7 @@ function plotGraph(config) {
             ctx.setLineDash([]);
         }
 
+        // Draw the line
         ctx.beginPath();
         ctx.strokeStyle = color;
         values.forEach(({ x, y }, i) => {
@@ -186,6 +199,18 @@ function plotGraph(config) {
             else ctx.lineTo(px, py);
         });
         ctx.stroke();
+
+        // Draw white dots at each plotted value
+        if (count < 50) {
+            ctx.fillStyle = 'white';
+            values.forEach(({ x, y }) => {
+                const px = marginLeft + ((x - xMin) / (xMax - xMin)) * graphWidth;
+                const py = bgCanvas.height - marginBottom - ((y - yMin) / (yMax - yMin)) * graphHeight;
+                ctx.beginPath();
+                ctx.arc(px, py, 2, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
     }
 
     function drawMousingCanvas(cursorX, values) {

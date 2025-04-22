@@ -24,7 +24,7 @@ const MODELS = {
             batteryVoltage: '10',
             numPulses: '5',
             pulseDuration: '0.0025',
-            multiplierCapacitance: '0.000003',
+            capacitancePerStage: '0.000003',
             numStages: '4'
         },
         calculateOptimalPulses: VMTS_calculateOptimalPulses
@@ -222,81 +222,68 @@ function VMTS_getParams() {
 /*
  * VMTS_simulateCircuit models a Cockcroft-Walton voltage multiplier circuit driven by an H-bridge
  * producing a square wave from a DC battery voltage. The circuit consists of `numStages` stages,
- * each with a charging and doubling capacitor (both `multiplierCapacitance`, typically 3 µF),
- * and diodes with a voltage drop of 0.7 V. The model simulates the incremental voltage buildup
+ * each with a charging and doubling capacitor. The model simulates the incremental voltage buildup
  * across capacitors over `numPulses` pulses, each with duration `pulseDuration`.
  *
- * The maximum output voltage is calculated as:
- *   V_max = 2 * numStages * batteryVoltage - 2 * numStages * V_diode
- * For 4 stages and 10 V input, V_max = 74.4 V.
- *
- * Key components:
- * - Capacitor Voltages: Tracks `chargeVoltages` and `doubleVoltages` arrays for each stage's
- *   charging and doubling capacitors, initialized at 0 V.
- * - Charging Rate: Uses a time constant τ = numStages * C * R_eff (R_eff = 25 Ω) and
- *   α = 1 - exp(-pulseDuration / τ) to model the fraction of target voltage reached per pulse.
- * - Voltage Update: Each pulse updates capacitor voltages toward their targets:
- *   - Charging capacitor: Targets (stage 0: batteryVoltage; else: previous doubleVoltage) - V_diode.
- *   - Doubling capacitor: Targets chargeVoltage + (stage 0: batteryVoltage; else: previous doubleVoltage) - V_diode.
- * - Output Voltage: `capVoltage` is the sum of `doubleVoltages`, capped at V_max.
- * - Charge and Energy: Tracks charge transferred per pulse (`totalChargeThisPulse`) to compute
- *   `batteryTotalEnergy` (batteryVoltage * charge) and `capTotalEnergy` (sum of 0.5 * C * V^2
- *   for all capacitors). The `energyRatio` is capTotalEnergy / batteryTotalEnergy.
- *
- * The model reaches ~90% of V_max in 5–6 pulses and 74.4 V in ~9–10 pulses for 4 stages,
- * matching typical Cockcroft-Walton behavior. The simulation assumes no load and ideal
- * diodes except for the fixed voltage drop.
  */
 function VMTS_simulateCircuit(params) {
-    const { batteryVoltage, numPulses, pulseDuration, multiplierCapacitance, numStages } = params;
-    const V_diode = 0.7;
-    const maxPossibleVoltage = 2 * numStages * batteryVoltage - 2 * numStages * V_diode;
-    const effectiveR = 25; // Adjusted for faster buildup
-    const C_charge = multiplierCapacitance;
-    const C_double = multiplierCapacitance;
-    const tau = numStages * C_charge * effectiveR;
-    const alpha = 1 - Math.exp(-pulseDuration / tau);
+    const {
+        batteryVoltage,
+        numPulses,
+        capacitancePerStage,
+        numStages,
+        pulseDuration,
+        diodeDrop = 0.4 // forward voltage drop per diode
+    } = params;
 
-    const chargeVoltages = new Array(numStages).fill(0);
-    const doubleVoltages = new Array(numStages).fill(0);
-    let capVoltage = 0;
-    let capTotalCharge = 0;
+    const capVoltages = [];
+    let capVoltage = 0; // initial voltage on input capacitor
+    let batteryTotalCharge = 0;
     let batteryTotalEnergy = 0;
-    const capVoltages = [0];
+
+    const diodeDropPerStage = 2 * diodeDrop; // 2 diodes per stage (one per half-cycle)
+    const effectiveVoltagePerStage = batteryVoltage - diodeDropPerStage;
+    const effectiveVoltageTotal = numStages * effectiveVoltagePerStage;
 
     for (let i = 0; i < numPulses; i++) {
-        let totalChargeThisPulse = 0;
-        for (let stage = 0; stage < numStages; stage++) {
-            const V_charge_before = chargeVoltages[stage];
-            const target_charge = (stage === 0 ? batteryVoltage : doubleVoltages[stage - 1]) - V_diode;
-            const deltaV_charge = alpha * (target_charge - V_charge_before);
-            chargeVoltages[stage] += deltaV_charge;
-            totalChargeThisPulse += C_charge * deltaV_charge;
+        // Voltage across the input capacitor in this pulse
+        const deltaV = Math.max(effectiveVoltagePerStage - capVoltage, 0);
 
-            const V_double_before = doubleVoltages[stage];
-            const target_double = chargeVoltages[stage] + (stage === 0 ? batteryVoltage : doubleVoltages[stage - 1]) - V_diode;
-            const deltaV_double = alpha * (target_double - V_double_before);
-            doubleVoltages[stage] += deltaV_double;
-            totalChargeThisPulse += C_double * deltaV_double;
-        }
+        // Charge drawn from battery this pulse
+        const deltaQ = capacitancePerStage * deltaV;
 
-        capVoltage = doubleVoltages.reduce((sum, v) => sum + v, 0);
-        if (capVoltage > maxPossibleVoltage) capVoltage = maxPossibleVoltage;
-        capVoltages.push(capVoltage);
+        // Energy drawn this pulse
+        const deltaE = batteryVoltage * deltaQ;
 
-        const batteryChargePerPulse = totalChargeThisPulse;
-        batteryTotalEnergy += batteryVoltage * batteryChargePerPulse;
-        capTotalCharge += totalChargeThisPulse;
+        // Update input capacitor voltage
+        capVoltage += deltaV;
+
+        // Save cumulative charge and energy
+        batteryTotalCharge += deltaQ;
+        batteryTotalEnergy += deltaE;
+
+        // Total output voltage from CW multiplier
+        const idealMax = 2 * numStages * effectiveVoltagePerStage;
+        const outputVoltage = idealMax * (1 - Math.exp(-i / numStages));
+        capVoltages.push(outputVoltage);
     }
 
-    const capTotalEnergy = chargeVoltages.reduce((sum, v) => sum + 0.5 * C_charge * v * v, 0) +
-        doubleVoltages.reduce((sum, v) => sum + 0.5 * C_double * v * v, 0);
-    const energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
+    const capVoltageFinal = capVoltages.at(-1);
+    const totalCapacitance = capacitancePerStage / numStages;
+    const capTotalCharge = totalCapacitance * capVoltageFinal;
+    const capTotalEnergy = 0.5 * totalCapacitance * capVoltageFinal ** 2;
+    const energyRatio = capTotalEnergy / batteryTotalEnergy;
+
+    const batteryEnergyPerPulseAvg = batteryTotalEnergy / numPulses;
+    const batteryPowerPerPulseAvg = batteryEnergyPerPulseAvg / pulseDuration;
 
     return {
-        batteryTotalCharge: capTotalCharge,
+        batteryTotalCharge,
         batteryTotalEnergy,
-        capVoltage,
+        batteryEnergyPerPulseAvg,
+        batteryPowerPerPulseAvg,
+        totalCapacitance,
+        capVoltage: capVoltageFinal,
         capTotalCharge,
         capTotalEnergy,
         energyRatio,
@@ -304,12 +291,12 @@ function VMTS_simulateCircuit(params) {
     };
 }
 
+
 function VMTS_calculateOptimalPulses({ key = 'numPulses', min = 1, max = 20, step = 1 }) {
     const values = computeGraph({ key, min, max, step });
     let maxY = 0;
     let optimal = 0;
     values.forEach(({ x, y }) => {
-        console.log(`numPulses=${x}, energyRatio=${y.toFixed(3)}`);
         if (y > maxY) {
             maxY = y;
             optimal = x;

@@ -1,6 +1,8 @@
 // capgraph.js
 
 function computeGraph({ key, min, max, step }) {
+    window.plotting = true;
+
     const baseParams = getParams();
     const values = [];
 
@@ -10,6 +12,7 @@ function computeGraph({ key, min, max, step }) {
         values.push({ x: val, y: result.energyRatio });
     }
 
+    window.plotting = false;
     return values;
 }
 
@@ -201,7 +204,7 @@ function plotGraph(config) {
         ctx.stroke();
 
         // Draw white dots at each plotted value
-        if (count < 50) {
+        if (count < 75) {
             ctx.fillStyle = 'white';
             values.forEach(({ x, y }) => {
                 const px = marginLeft + ((x - xMin) / (xMax - xMin)) * graphWidth;

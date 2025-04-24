@@ -9,6 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            font-size: 10.5pt;
             background-color: rgb(31, 31, 31);
             color: #e0e0e0;
             margin: 20px;
@@ -225,7 +226,7 @@
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
-                    <td><label>Transient Pulse Power</label></td>
+                    <td><label>Transient Pulse Pwr</label></td>
                     <td class="value"><span id="batteryPowerPerPulse" class="watt-label output-value">0</span></td>
                     <td class="units watt-label">W</td>
                 </tr>
@@ -356,7 +357,7 @@
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
-                    <td><label>Transient Pulse Power</label></td>
+                    <td><label>Transient Pulse Pwr</label></td>
                     <td class="value"><span id="capPowerPerPulse" class="watt-label output-value">0</span></td>
                     <td class="units watt-label">W</td>
                 </tr>
@@ -468,7 +469,6 @@
                 let maxY = 0;
                 let optimal = 0;
                 values.forEach(({ x, y }) => {
-                    console.log(`numPulses=${x}, energyRatio=${y.toFixed(3)}`);
                     if (y > maxY) {
                         maxY = y;
                         optimal = x;

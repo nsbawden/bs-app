@@ -366,10 +366,10 @@
             <h3>Output</h3>
             <table>
                 <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="outputCapacitance">
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="outResistance">
                     </td>
                     <td><label>Output Capacitor</label></td>
-                    <td class="value"><input type="number" id="outputCapacitance" value="0.01"></td>
+                    <td class="value"><input type="number" id="outResistance" value="0.01"></td>
                     <td class="units">F</td>
                 </tr>
                 <tr>
@@ -427,7 +427,7 @@
                 numPulses: inputNumPulses,
                 pulseDuration,
                 inputResistance,
-                outputCapacitance,
+                outResistance,
                 diodeDrop = 0.4
             } = params;
 
@@ -525,9 +525,9 @@
             const batteryPowerPerPulseAvg = pulseDuration > 0 ? batteryChargePerPulseAvg / pulseDuration : 0;
 
             // Calculate output values
-            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + outputCapacitance);
-            const outCharge = outputCapacitance * outVoltage;
-            const outEnergy = 0.5 * outCharge ** 2 / outputCapacitance;
+            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + outResistance);
+            const outCharge = outResistance * outVoltage;
+            const outEnergy = 0.5 * outCharge ** 2 / outResistance;
             const outEnergyRatio = batteryTotalEnergy > 0 ? outEnergy / batteryTotalEnergy : 0;
 
             return {

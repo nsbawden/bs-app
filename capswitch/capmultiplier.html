@@ -243,6 +243,18 @@
                     <td class="value"><span id="batteryTotalEnergy" class="energy-label output-value">0</span></td>
                     <td class="units energy-label">J</td>
                 </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Charge Time</label></td>
+                    <td class="value"><span id="tCharge" class="output-value">0</span></td>
+                    <td class="units">s</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Watts Charging</label></td>
+                    <td class="value"><span id="batteryWattRate" class="watt-label output-value">0</span></td>
+                    <td class="units watt-label">W</td>
+                </tr>
             </table>
         </div>
         <!-- Switch -->
@@ -256,18 +268,20 @@
                     <td class="units"></td>
                 </tr>
                 <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="pulseDuration"></td>
-                    <td><label>Pulse Duration</label></td>
-                    <td class="value"><input type="number" id="pulseDuration" value="0.0025" min="0.0001" step="0.0001">
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="cycleDuration"></td>
+                    <td><label>Cycle Duration</label></td>
+                    <td class="value"><input type="number" id="cycleDuration" value="0.0025" min="0.0001" step="0.0001">
                     </td>
                     <td class="units">s</td>
                 </tr>
+                <!--
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Optimal Pulses</label></td>
                     <td class="value"><span id="optimalPulsesActual" class="output-value">0</span></td>
                     <td class="units"></td>
                 </tr>
+                -->
                 <tr class="image-row">
                     <td colspan="4" style="text-align: center"><img src="cwmult.webp" width="90%"></td>
                 </tr>
@@ -366,11 +380,11 @@
             <h3>Output</h3>
             <table>
                 <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="outputCapacitance">
+                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="outResistance">
                     </td>
-                    <td><label>Output Capacitor</label></td>
-                    <td class="value"><input type="number" id="outputCapacitance" value="0.01"></td>
-                    <td class="units">F</td>
+                    <td><label>Output Resistor</label></td>
+                    <td class="value"><input type="number" id="outResistance"></td>
+                    <td class="units">Ω</td>
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
@@ -396,6 +410,18 @@
                     <td class="value"><span id="outEnergyRatio" class="ratio-label output-value">0</span></td>
                     <td class="units ratio-label"></td>
                 </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Discharge Time</label></td>
+                    <td class="value"><span id="tDischarge" class="output-value">0</span></td>
+                    <td class="units">s</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Watts Discharging</label></td>
+                    <td class="value"><span id="outPower" class="watt-label output-value">0</span></td>
+                    <td class="units watt-label">W</td>
+                </tr>
             </table>
         </div>
     </div>
@@ -404,6 +430,8 @@
     <div id="overlay"></div>
 
     <script>
+        const pulseMultiplier = 15;
+
         function VMTS_getParams() {
             const params = {};
             for (const id of inputIds) {
@@ -425,9 +453,9 @@
                 inputCapacitor,
                 numStages: inputNumStages,
                 numPulses: inputNumPulses,
-                pulseDuration,
+                cycleDuration,
                 inputResistance,
-                outputCapacitance,
+                outResistance,
                 diodeDrop = 0.4
             } = params;
 
@@ -439,9 +467,14 @@
 
             // Round and validate inputs requiring whole numbers
             const numStages = Math.max(Math.round(inputNumStages), 1);
-            const numPulses = Math.max(Math.round(inputNumPulses), 1);
+            let numPulses = Math.max(Math.round(inputNumPulses), 1);
+
+            if (window.plotting) {
+                numPulses = Math.round(numStages * pulseMultiplier);
+            }
 
             const resistance = Math.max(inputResistance, 0.01);
+            const pulseDuration = cycleDuration / 2;
 
             if (!Number.isInteger(numStages) || numStages < 1) {
                 throw new Error(`Invalid numStages: ${inputNumStages} (rounded to ${numStages}). Must be a positive integer.`);
@@ -452,7 +485,7 @@
 
             const RC = resistance * inputCapacitor;
             const actualInputVoltage = batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - diodeDrop;
-            const seriesCapacitance = (inputCapacitor * 2) / numStages;
+            let seriesCapacitance = (inputCapacitor * 2) / numStages;
             const totalCapacitance1x = 2 * inputCapacitor * numStages;
 
             const idealFinalVoltage = multiplierOutputVoltage(actualInputVoltage, numStages);
@@ -473,7 +506,7 @@
             for (let i = 0; i <= numPulses; i++) {
                 if (i < numPulses) {
                     // Things to do for each pulse
-                    batteryTotalCharge += inputCapacitor * actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
+                    // batteryTotalCharge += inputCapacitor * actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
                 }
                 // Things to do for each pulse + one more pulse
                 capVoltages.push(capFinalVoltage * (1 - Math.exp(-i / tau)));
@@ -482,10 +515,16 @@
             capTotalCharge1x = ((totalCapacitance1x - inputCapacitor) * capVoltage1x) + (inputCapacitor * capVoltage1x5);
             capTotalEnergy1x = (0.5 * capTotalCharge1x ** 2) / totalCapacitance1x;
 
-            capTotalCharge = seriesCapacitance * capFinalVoltage;
+            // capTotalCharge = seriesCapacitance * capFinalVoltage;
+            capTotalCharge = capTotalCharge1x;
 
-            capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
-            // capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
+            seriesCapacitance = capTotalCharge / capFinalVoltage;
+
+            // capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
+            capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
+            
+            // batteryTotalEnergy = capTotalEnergy1x;
+            batteryTotalCharge = capTotalCharge1x;
             
             const way = 1;
 
@@ -514,8 +553,6 @@
                     break;
             }
 
-            // batteryTotalEnergy = capTotalEnergy1x;
-
             energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
 
             const batteryTotalEnergy1x = capTotalEnergy1x;
@@ -524,10 +561,15 @@
             const batteryChargePerPulseAvg = batteryTotalCharge / numPulses; // Adjusted for average charge
             const batteryPowerPerPulseAvg = pulseDuration > 0 ? batteryChargePerPulseAvg / pulseDuration : 0;
 
+            const batteryWattRate = batteryTotalEnergy / (cycleDuration * numPulses);
+
             // Calculate output values
-            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + outputCapacitance);
-            const outCharge = outputCapacitance * outVoltage;
-            const outEnergy = 0.5 * outCharge ** 2 / outputCapacitance;
+            const tCharge = cycleDuration * numPulses;
+            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + outResistance);
+            const outCharge = capTotalCharge;
+            const tDischarge = 5 * outResistance * seriesCapacitance;
+            const outEnergy = (outCharge ** 2) / (2 * seriesCapacitance);
+            const outPower = outEnergy / tDischarge;
             const outEnergyRatio = batteryTotalEnergy > 0 ? outEnergy / batteryTotalEnergy : 0;
 
             return {
@@ -536,6 +578,7 @@
                 batteryTotalEnergy1x,
                 batteryChargePerPulseAvg,
                 batteryPowerPerPulseAvg,
+                batteryWattRate,
                 seriesCapacitance,
                 totalCapacitance1x,
                 idealFinalVoltage,
@@ -552,6 +595,9 @@
                 outEnergy,
                 outCharge,
                 outEnergyRatio,
+                tCharge,
+                tDischarge,
+                outPower,
                 capVoltages
             };
         }
@@ -572,7 +618,7 @@
         function VMTS_adjustValues() {
             let el1 = document.getElementById('numStages');
             let el2 = document.getElementById('numPulses');
-            el2.value = el1.value * 12.5;
+            el2.value = el1.value * pulseMultiplier;
 
         }
     </script>

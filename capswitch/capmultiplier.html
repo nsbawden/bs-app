@@ -88,7 +88,7 @@
             padding: 5px 0;
         }
 
-        tr.toverline {
+        tr.overline {
             border-top: 1px solid #444;
         }
 
@@ -229,14 +229,6 @@
                     <td class="value"><span id="batteryTotalCharge" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
                 </tr>
-                <!--
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Energy 1x</label></td>
-                    <td class="value"><span id="batteryTotalEnergy1x" class="energy-label output-value">0</span></td>
-                    <td class="units energy-label">J</td>
-                </tr>
-                -->
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Total Energy</label></td>
@@ -274,14 +266,6 @@
                     </td>
                     <td class="units">s</td>
                 </tr>
-                <!--
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Optimal Pulses</label></td>
-                    <td class="value"><span id="optimalPulsesActual" class="output-value">0</span></td>
-                    <td class="units"></td>
-                </tr>
-                -->
                 <tr class="image-row">
                     <td colspan="4" style="text-align: center"><img src="cwmult.webp" width="90%"></td>
                 </tr>
@@ -305,14 +289,6 @@
                     <td class="value"><input type="number" id="numStages" value="4" min="1" step="1"></td>
                     <td class="units"></td>
                 </tr>
-                <!--
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Ideal Voltage</label></td>
-                    <td class="value"><span id="idealFinalVoltage" class="output-value">0</span></td>
-                    <td class="units">V</td>
-                </tr>
-                -->
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Voltage / Cap</label></td>
@@ -325,7 +301,7 @@
                     <td class="value"><span id="capVoltage" class="output-value">0</span></td>
                     <td class="units">V</td>
                 </tr>
-                <tr class="toverline">
+                <tr class="overline">
                     <td class="checkbox"></td>
                     <td><label>Total Capacitance 1x</label></td>
                     <td class="value"><span id="totalCapacitance1x" class="output-value">0</span></td>
@@ -349,7 +325,7 @@
                     <td class="value"><span id="energyRatio1x" class="ratio-label output-value">0</span></td>
                     <td class="units ratio-label"></td>
                 </tr>
-                <tr class="toverline">
+                <tr class="overline">
                     <td class="checkbox"></td>
                     <td><label>Total Capacitance</label></td>
                     <td class="value"><span id="seriesCapacitance" class="output-value">0</span></td>
@@ -485,16 +461,13 @@
 
             const RC = resistance * inputCapacitor;
             const actualInputVoltage = batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - diodeDrop;
-            let seriesCapacitance = (inputCapacitor * 2) / numStages;
             const totalCapacitance1x = 2 * inputCapacitor * numStages;
 
-            const idealFinalVoltage = multiplierOutputVoltage(actualInputVoltage, numStages);
-            const capFinalVoltage = idealFinalVoltage;
+            const capFinalVoltage = multiplierOutputVoltage(actualInputVoltage, numStages);
 
             const capVoltage1x = capFinalVoltage / numStages;
-            const capVoltage1x5 = capVoltage1x / 2;
 
-            let batteryTotalCharge = 0, batteryTotalEnergy, voltagePerCap,
+            let batteryTotalCharge = 0, batteryTotalEnergy,
                 capTotalCharge, capTotalEnergy, emergyRatio,
                 capTotalCharge1x, capTotalEnergy1x, energyRatio1x;
 
@@ -512,51 +485,29 @@
                 capVoltages.push(capFinalVoltage * (1 - Math.exp(-i / tau)));
             }
 
-            capTotalCharge1x = ((totalCapacitance1x - inputCapacitor) * capVoltage1x) + (inputCapacitor * capVoltage1x5);
+            // This is the heart of the entire calculation upon which all is based.
+            // It is the total charge of each individual capacitor by cap value and voltage across it.
+            // All assumes this charge is conserved throught the system.
+            // Conservation of charge, not conservaton of energy.
+            // One capacitor always has 1/2 the voltage of all the others by measurement.
+            capTotalCharge1x = ((totalCapacitance1x - inputCapacitor) * capVoltage1x) + (inputCapacitor * capVoltage1x / 2);
+ 
             capTotalEnergy1x = (0.5 * capTotalCharge1x ** 2) / totalCapacitance1x;
 
-            // capTotalCharge = seriesCapacitance * capFinalVoltage;
             capTotalCharge = capTotalCharge1x;
 
-            seriesCapacitance = capTotalCharge / capFinalVoltage;
+            // Dynamically compute series capacitance of multiplier
+            const seriesCapacitance = capTotalCharge / capFinalVoltage;
 
             // capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
             capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
             
-            // batteryTotalEnergy = capTotalEnergy1x;
             batteryTotalCharge = capTotalCharge1x;
+            batteryTotalEnergy = batteryTotalCharge * batteryVoltage;
             
-            const way = 1;
-
-            switch (way) {
-                case 1: // Uses total capacitance
-                    batteryTotalEnergy = batteryTotalCharge * batteryVoltage;
-                    voltagePerCap = capVoltage1x;
-
-                    // capTotalCharge = batteryTotalCharge; // same as input charge
-
-                    break;
-
-                case 2: // Sums individual capacitors (all)
-                    batteryTotalEnergy = batteryTotalCharge * batteryVoltage;
-                    voltagePerCap = actualInputVoltage;
-                    capTotalCharge = batteryTotalCharge;
-                    capTotalEnergy = 2 * numStages * (0.5 * inputCapacitor * actualInputVoltage ** 2);
-                    break;
-
-                case 3: // Sums individual capacitors (all) with some * 2 voltage
-                    batteryTotalEnergy = batteryTotalCharge * batteryVoltage;
-                    voltagePerCap = actualInputVoltage * 2;
-                    capTotalCharge = batteryTotalCharge;
-                    capTotalEnergy = 0.5 * inputCapacitor * actualInputVoltage ** 2;
-                    capTotalEnergy += (numStages - 1) * (0.5 * inputCapacitor * (voltagePerCap * 2) ** 2);
-                    break;
-            }
-
             energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
 
-            const batteryTotalEnergy1x = capTotalEnergy1x;
-            energyRatio1x = batteryTotalEnergy1x > 0 ? capTotalEnergy1x / batteryTotalEnergy1x : 0;
+            energyRatio1x = batteryTotalEnergy > 0 ? capTotalEnergy1x / batteryTotalEnergy : 0;
 
             const batteryChargePerPulseAvg = batteryTotalCharge / numPulses; // Adjusted for average charge
             const batteryPowerPerPulseAvg = pulseDuration > 0 ? batteryChargePerPulseAvg / pulseDuration : 0;
@@ -575,13 +526,11 @@
             return {
                 batteryTotalCharge,
                 batteryTotalEnergy,
-                batteryTotalEnergy1x,
                 batteryChargePerPulseAvg,
                 batteryPowerPerPulseAvg,
                 batteryWattRate,
                 seriesCapacitance,
                 totalCapacitance1x,
-                idealFinalVoltage,
                 capVoltage: capFinalVoltage,
                 capVoltage1x,
                 capTotalCharge1x,

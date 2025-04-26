@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="prefix" content="VMTS">
     <title>Dynamic Charge Transfer Simulator</title>
+    <!-- Load MathJax from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -225,6 +227,12 @@
                 </tr>
                 <tr>
                     <td class="checkbox"></td>
+                    <td><label>Calculated Charge</label></td>
+                    <td class="value"><span id="batteryCalculatedCharge" class="charge-label output-value">0</span></td>
+                    <td class="units charge-label">C</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
                     <td><label>Total Charge</label></td>
                     <td class="value"><span id="batteryTotalCharge" class="charge-label output-value">0</span></td>
                     <td class="units charge-label">C</td>
@@ -266,6 +274,18 @@
                     </td>
                     <td class="units">s</td>
                 </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Min Cycle Duration</label></td>
+                    <td class="value"><span id="minCycleDuration" class="output-value">0</span></td>
+                    <td class="units">s</td>
+                </tr>
+                <tr>
+                    <td class="checkbox"></td>
+                    <td><label>Max Frequency</label></td>
+                    <td class="value"><span id="maxFrequency" class="output-value">0</span></td>
+                    <td class="units">hz</td>
+                </tr>
                 <tr class="image-row">
                     <td colspan="4" style="text-align: center"><img src="cwmult.webp" width="90%"></td>
                 </tr>
@@ -298,7 +318,7 @@
                 <tr>
                     <td class="checkbox"></td>
                     <td><label>Final Voltage</label></td>
-                    <td class="value"><span id="capVoltage" class="output-value">0</span></td>
+                    <td class="value"><span id="capFinalVoltage" class="output-value">0</span></td>
                     <td class="units">V</td>
                 </tr>
                 <tr class="overline">
@@ -406,7 +426,6 @@
     <div id="overlay"></div>
 
     <script>
-        const pulseMultiplier = 15;
 
         function VMTS_getParams() {
             const params = {};
@@ -424,62 +443,45 @@
          * across capacitors over `numPulses` pulses, each with duration `pulseDuration`.
          */
         function VMTS_simulateCircuit(params) {
-            const {
-                batteryVoltage,
-                inputCapacitor,
-                numStages: inputNumStages,
-                numPulses: inputNumPulses,
-                cycleDuration,
-                inputResistance,
-                outResistance,
-                diodeDrop = 0.4
-            } = params;
+            const p = params;
+
+            const diodeDrop = 0.49;
 
             function multiplierOutputVoltage(vin, stages) {
-                // From https://areacalculators.com/cockcroft-walton-multiplier-calculator/
-                // return 2 * stages * vin / Math.PI;
-                return stages * vin;
+                return 2 * stages * vin * 0.9; // 0.9 accounts for real losses
             }
 
             // Round and validate inputs requiring whole numbers
-            const numStages = Math.max(Math.round(inputNumStages), 1);
-            let numPulses = Math.max(Math.round(inputNumPulses), 1);
+            p.numStages = Math.max(Math.round(p.numStages), 1);
+            p.numPulses = Math.max(Math.round(p.numPulses), 1);
+
+            const resistance = Math.max(p.inputResistance, 0.01);
+            const pulseDuration = p.cycleDuration / 2;
+
+            const RC = resistance * p.inputCapacitor;
+            const actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
+            const totalCapacitance1x = 2 * p.inputCapacitor * p.numStages;
 
             if (window.plotting) {
-                numPulses = Math.round(numStages * pulseMultiplier);
+                p.numPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
             }
+            
+            const capFinalVoltage = multiplierOutputVoltage(actualInputVoltage, p.numStages);
+            const capVoltage1x = capFinalVoltage / p.numStages;
 
-            const resistance = Math.max(inputResistance, 0.01);
-            const pulseDuration = cycleDuration / 2;
-
-            if (!Number.isInteger(numStages) || numStages < 1) {
-                throw new Error(`Invalid numStages: ${inputNumStages} (rounded to ${numStages}). Must be a positive integer.`);
-            }
-            if (!Number.isInteger(numPulses) || numPulses < 1) {
-                throw new Error(`Invalid numPulses: ${inputNumPulses} (rounded to ${numPulses}). Must be a non-negative integer.`);
-            }
-
-            const RC = resistance * inputCapacitor;
-            const actualInputVoltage = batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - diodeDrop;
-            const totalCapacitance1x = 2 * inputCapacitor * numStages;
-
-            const capFinalVoltage = multiplierOutputVoltage(actualInputVoltage, numStages);
-
-            const capVoltage1x = capFinalVoltage / numStages;
-
-            let batteryTotalCharge = 0, batteryTotalEnergy,
+            let batteryCalculatedCharge = 0, batteryTotalCharge, batteryTotalEnergy,
                 capTotalCharge, capTotalEnergy, emergyRatio,
                 capTotalCharge1x, capTotalEnergy1x, energyRatio1x;
 
             // Accumulate values over pulses
-            const tau = numPulses / 5; // Time constant 5
-            const portionPerPulse = 1 / 3;
+            const tau = p.numPulses / 5; // Time constant 5
+            const portionPerPulse =  1 / Math.PHI;
             const capVoltages = [];
 
-            for (let i = 0; i <= numPulses; i++) {
-                if (i < numPulses) {
+            for (let i = 0; i <= p.numPulses; i++) {
+                if (i < p.numPulses) {
                     // Things to do for each pulse
-                    // batteryTotalCharge += inputCapacitor * actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
+                    batteryCalculatedCharge += p.inputCapacitor * actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
                 }
                 // Things to do for each pulse + one more pulse
                 capVoltages.push(capFinalVoltage * (1 - Math.exp(-i / tau)));
@@ -487,51 +489,55 @@
 
             // This is the heart of the entire calculation upon which all is based.
             // It is the total charge of each individual capacitor by cap value and voltage across it.
-            // All assumes this charge is conserved throught the system.
-            // Conservation of charge, not conservaton of energy.
+            // All assumes this charge is conserved through the system.
+            // Conservation of charge, not conservation of energy.
             // One capacitor always has 1/2 the voltage of all the others by measurement.
-            capTotalCharge1x = ((totalCapacitance1x - inputCapacitor) * capVoltage1x) + (inputCapacitor * capVoltage1x / 2);
- 
+            // capTotalCharge1x = ((totalCapacitance1x - p.inputCapacitor) * capVoltage1x) + (p.inputCapacitor * capVoltage1x / 2);
+            capTotalCharge1x = (totalCapacitance1x * capVoltage1x);
+
             capTotalEnergy1x = (0.5 * capTotalCharge1x ** 2) / totalCapacitance1x;
 
             capTotalCharge = capTotalCharge1x;
 
             // Dynamically compute series capacitance of multiplier
-            const seriesCapacitance = capTotalCharge / capFinalVoltage;
+            const seriesCapacitance = 0.5 * capTotalCharge / capFinalVoltage;
 
             // capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
             capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
-            
-            batteryTotalCharge = capTotalCharge1x;
-            batteryTotalEnergy = batteryTotalCharge * batteryVoltage;
-            
-            energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
 
+            batteryTotalCharge = capTotalCharge1x;
+            batteryTotalEnergy = batteryTotalCharge * p.batteryVoltage;
+
+            energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
             energyRatio1x = batteryTotalEnergy > 0 ? capTotalEnergy1x / batteryTotalEnergy : 0;
 
-            const batteryChargePerPulseAvg = batteryTotalCharge / numPulses; // Adjusted for average charge
+            const batteryChargePerPulseAvg = batteryTotalCharge / p.numPulses; // Adjusted for average charge
             const batteryPowerPerPulseAvg = pulseDuration > 0 ? batteryChargePerPulseAvg / pulseDuration : 0;
 
-            const batteryWattRate = batteryTotalEnergy / (cycleDuration * numPulses);
+            const batteryWattRate = batteryTotalEnergy / (p.cycleDuration * p.numPulses);
+
+            const stageFillFactor = 15.5; // Empirical, accounts for stage-to-stage propagation
+            const minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
+            const maxFrequency = 1 / minCycleDuration;
 
             // Calculate output values
-            const tCharge = cycleDuration * numPulses;
-            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + outResistance);
+            const tCharge = p.cycleDuration * p.numPulses;
+            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + p.outResistance);
             const outCharge = capTotalCharge;
-            const tDischarge = 5 * outResistance * seriesCapacitance;
+            const tDischarge = 5 * p.outResistance * seriesCapacitance;
             const outEnergy = (outCharge ** 2) / (2 * seriesCapacitance);
             const outPower = outEnergy / tDischarge;
             const outEnergyRatio = batteryTotalEnergy > 0 ? outEnergy / batteryTotalEnergy : 0;
 
             return {
+                batteryCalculatedCharge,
                 batteryTotalCharge,
                 batteryTotalEnergy,
                 batteryChargePerPulseAvg,
-                batteryPowerPerPulseAvg,
                 batteryWattRate,
                 seriesCapacitance,
                 totalCapacitance1x,
-                capVoltage: capFinalVoltage,
+                capFinalVoltage,
                 capVoltage1x,
                 capTotalCharge1x,
                 capTotalEnergy1x,
@@ -540,6 +546,8 @@
                 capTotalEnergy,
                 energyRatio,
                 actualInputVoltage,
+                minCycleDuration,
+                maxFrequency,
                 outVoltage,
                 outEnergy,
                 outCharge,
@@ -564,17 +572,29 @@
             return optimal;
         }
 
-        function VMTS_adjustValues() {
-            let el1 = document.getElementById('numStages');
-            let el2 = document.getElementById('numPulses');
-            el2.value = el1.value * pulseMultiplier;
+    function VMTS_adjustValues() {
+        const el = document.getElementById('numPulses');
+        const numStages = parseFloat(document.getElementById('numStages').value);
+        const inputCapacitor = parseFloat(document.getElementById('inputCapacitor').value);
+        const inputResistance = parseFloat(document.getElementById('inputResistance').value);
 
-        }
+        // Adjust numPulses based on exponential model and apply the scaling factor of 100000
+        el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
+    }
+
+    function calcNumPulses(numStages, inputCapacitor, inputResistance) {
+        // Experimentally determined on a 0.001 F capacitor
+        // with 1 stage requiring 15 pulses (4 stages = 60 pulse) etc.
+        const pulseMultiplier = 15000 * 0.001; // 15 pulses per stage
+        return Math.round(numStages * pulseMultiplier);
+    }
+
     </script>
 
     <script src="capgraph.js"></script>
     <script src="capswitchxtra.js"></script>
     <script src="capswitch.js"></script>
+
 </body>
 
 </html>

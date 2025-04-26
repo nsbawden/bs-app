@@ -1,4 +1,5 @@
 const prefix = document.querySelector('meta[name="prefix"]').content;
+Math.PHI = (1 + Math.sqrt(5)) / 2;
 
 const MODELS = {
     DCTS: {
@@ -152,10 +153,17 @@ function calculate() {
         saveValues();
         const params = getParams();
         const result = simulateCircuit(params);
-        result.optimalPulsesActual = calculateOptimalPulses(params);
+        if (document.getElementById('optimalPulsesActual')) {
+            result.optimalPulsesActual = calculateOptimalPulses(params);
+        }
+        capVoltages = result.capVoltages;
+        delete result.capVoltages;
 
         // Load page variables with output values
-        for (const id of outputIds.concat(inputIds)) {
+        const ids = Object.keys(result);
+        const combined = [...new Set([...ids, ...outputIds, ...inputIds])];
+
+        for (const id of combined) {
             const element = document.getElementById(id);
             if (!element) {
                 console.warn(`Element with ID ${id} not found`);
@@ -184,7 +192,7 @@ function calculate() {
         const container = document.getElementById('graphContainer');
         if (container) container.innerHTML = '';
 
-        const capVoltageValues = result.capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
+        const capVoltageValues = capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
         plotGraph({
             container,
             values: capVoltageValues,

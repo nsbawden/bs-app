@@ -1,47 +1,134 @@
 const prefix = document.querySelector('meta[name="prefix"]').content;
 Math.PHI = (1 + Math.sqrt(5)) / 2;
 
-const MODELS = {
-    DCTS: {
-        defaultValues: {
-            batteryVoltage: '10',
-            numPulses: '5',
-            pulseDuration: '0.0025',
-            turnsRatio: '100',
-            primaryInductance: '0.01',
-            capacitance: '0.0000011',
-            couplingFactor: '0.9',
-            secondaryResistance: '10000',
-            primaryResistance: '1'
+function buildCircuitTable(jsonObj) {
+    // Map units to label classes
+    const getLabelClass = (units) => {
+        switch (units) {
+            case "C": return "charge-label";
+            case "J": return "energy-label";
+            case "W": return "watt-label";
+            case "": return "ratio-label";
+            default: return "";
         }
-    },
-    VMTS: {
-        defaultValues: {
-            batteryVoltage: '10',
-            numPulses: '5',
-            pulseDuration: '0.0025',
-            inputCapacitor: '0.000003',
-            numStages: '4'
-        }
-    }
-};
+    };
 
-function getModel() {
-    return MODELS[prefix] ?? {};
+    let html = '';
+    window.params = {};
+
+    Object.entries(jsonObj.components).forEach(([_, component]) => {
+        html += `
+            <div class="component">
+            <h3>${component.name}</h3>
+            <table>
+            `;
+
+        Object.keys(component.properties).forEach(key => {
+            const row = component.properties[key];
+            if (row.image) {
+                html += `
+                <tr class="image-row">
+                    <td colspan="4" style="text-align: center">
+                    <img src="${row.image}" width="90%">
+                    </td>
+                </tr>
+                `;
+            } else {
+                window.params[key] = row;
+                html += `<tr${row.class ? ` class="${row.class}"` : ''}>`;
+
+                // Checkbox cell
+                html += '<td class="checkbox">';
+                if (row.direction === 'input') {
+                    html += `<input type="checkbox" class="graph-checkbox" data-key="${key}">`;
+                }
+                html += '</td>';
+
+                // Label cell
+                html += `<td><label>${row.label}</label></td>`;
+
+                // Value cell
+                html += '<td class="value">';
+                if (row.direction === 'input') {
+                    html += `<input type="number" id="${key}"`;
+                    if (row.value !== undefined) html += ` value="${row.value}"`;
+                    if (row.min !== undefined) html += ` min="${row.min}"`;
+                    if (row.step !== undefined) html += ` step="${row.step}"`;
+                    if (row.max !== undefined) html += ` max="${row.max}"`;
+                    html += '>';
+                } else {
+                    const labelClass = getLabelClass(row.units);
+                    const classes = ['output-value'];
+                    if (labelClass) classes.push(labelClass);
+                    html += `<span id="${key}" class="${classes.join(' ')}">${row.value || 0}</span>`;
+                }
+                html += '</td>';
+
+                // Units cell
+                html += '<td class="units';
+                const labelClass = getLabelClass(row.units);
+                if (labelClass) html += ` ${labelClass}`;
+                html += `">${row.units || ''}</td>`;
+
+                html += '</tr>';
+            }
+        });
+
+        html += `
+            </table>
+            </div>
+            `;
+    });
+
+    const el = document.getElementById('circuitContainer');
+    el.innerHTML = html;
 }
 
-const inputIds = Array.from(document.querySelectorAll('input[type=number]'))
-    .map(input => {
-        input.setAttribute('title', input.id);
-        return input.id;
-    });
-const outputIds = Array.from(document.querySelectorAll('.output-value'))
-    .map(el => {
-        el.setAttribute('title', el.id);
-        return el.id;
-    });
-const checkboxKeys = Array.from(document.querySelectorAll('input[type=checkbox].graph-checkbox')).map(input => input.dataset.key);
+if (typeof window.circuitComponents === 'object') {
+    buildCircuitTable(window.circuitComponents);
+}
 
+// No longer used
+// const MODELS = {
+//     DCTS: {
+//         defaultValues: {
+//             batteryVoltage: '10',
+//             numPulses: '5',
+//             pulseDuration: '0.0025',
+//             turnsRatio: '100',
+//             primaryInductance: '0.01',
+//             capacitance: '0.0000011',
+//             couplingFactor: '0.9',
+//             secondaryResistance: '10000',
+//             primaryResistance: '1'
+//         }
+//     },
+//     VMTS: {
+//         defaultValues: {
+//             batteryVoltage: '10',
+//             numPulses: '5',
+//             pulseDuration: '0.0025',
+//             inputCapacitor: '0.000003',
+//             numStages: '4'
+//         }
+//     }
+// };
+
+setTimeout(() => {
+    window.inputIds = Array.from(document.querySelectorAll('input[type=number]'))
+        .map(input => {
+            input.setAttribute('title', input.id);
+            return input.id;
+        });
+    window.outputIds = Array.from(document.querySelectorAll('.output-value'))
+        .map(el => {
+            el.setAttribute('title', el.id);
+            return el.id;
+        });
+    window.checkboxKeys = Array.from(document.querySelectorAll('input[type=checkbox].graph-checkbox')).map(input => input.dataset.key);
+    loadSavedValues();
+    calculate();
+}, 0);
 
 
 function toCleanPrecision(value, sigDigits) {
@@ -61,14 +148,12 @@ function smartFormat(value, pre = 4) {
 }
 
 function getParams() {
-    // const params = getModel().getParams?.() ?? {};
-    switch (prefix) {
-        case 'DCTS':
-            return DCTS_getParams();
-        case 'VMTS':
-            return VMTS_getParams();
+    const params = {};
+    for (const id of inputIds) {
+        const value = document.getElementById(id)?.value;
+        params[id] = value ? parseFloat(value) : NaN;
     }
-    return {};
+    return params;
 }
 
 function simulateCircuit(params) {
@@ -102,7 +187,6 @@ function adjustValues() {
 }
 
 function loadSavedValues() {
-    const model = getModel();
     const savedInputValues = localStorage.getItem(`${prefix}_inputValues`);
     const inputValues = savedInputValues ? JSON.parse(savedInputValues) : {};
     for (const id of inputIds) {
@@ -114,9 +198,9 @@ function loadSavedValues() {
                 inputValues[id] = Math.max(inputValues[id] ?? 0, 0.01);
                 break;
         }
-        input.value = inputValues[id] !== undefined
+        input.value = inputValues[id] !== undefined && inputValues[id] !== ''
             ? inputValues[id]
-            : model.defaultValues?.[id] ?? '';
+            : window.params[id]?.default ?? '';
     }
 
     const savedCheckboxStates = localStorage.getItem(`${prefix}_checkboxStates`);
@@ -153,6 +237,7 @@ function calculate() {
         saveValues();
         const params = getParams();
         const result = simulateCircuit(params);
+
         if (document.getElementById('optimalPulsesActual')) {
             result.optimalPulsesActual = calculateOptimalPulses(params);
         }
@@ -193,18 +278,20 @@ function calculate() {
         if (container) container.innerHTML = '';
 
         const capVoltageValues = capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
-        plotGraph({
-            container,
-            values: capVoltageValues,
-            min: 0,
-            max: 0,
-            step: 0,
-            xLabel: 'Pulse Number',
-            yLabel: 'Output Voltage (V)',
-            color: 'gold',
-            title: 'Output Voltage vs Pulse Number'
-        });
-        plotGraphs(result);
+        if (window.noGraphs !== true) {
+            plotGraph({
+                container,
+                values: capVoltageValues,
+                min: 0,
+                max: 0,
+                step: 0,
+                xLabel: 'Pulse Number',
+                yLabel: 'Output Voltage (V)',
+                color: 'gold',
+                title: 'Output Voltage vs Pulse Number'
+            });
+            plotGraphs(result);
+        }
         blinkEnd();
     });
 }
@@ -229,5 +316,3 @@ function calcC1(C2, V1, V2) {
     return (C2 * V2) / (V1 - V2);
 }
 
-loadSavedValues();
-calculate();

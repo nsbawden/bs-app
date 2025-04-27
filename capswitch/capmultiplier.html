@@ -48,7 +48,7 @@
             margin-right: 5px;
         }
 
-        .circuit-container {
+        #circuitContainer {
             display: flex;
             justify-content: space-between;
             width: 100%;
@@ -195,247 +195,72 @@
         <button onclick="calculate()">Calculate</button>
         <button onclick="copyJson()">Copy</button>
     </h1>
-    <div class="circuit-container">
-        <!-- Battery -->
-        <div class="component">
-            <h3>Battery</h3>
-            <table>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="batteryVoltage"></td>
-                    <td><label>Battery Voltage</label></td>
-                    <td class="value"><input type="number" id="batteryVoltage" value="10" min="1"></td>
-                    <td class="units">V</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="inputResistance"></td>
-                    <td><label>Input Resistance</label></td>
-                    <td class="value"><input type="number" id="inputResistance" value="50" min="0.01"></td>
-                    <td class="units">Ω</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Actual Input Voltage</label></td>
-                    <td class="value"><span id="actualInputVoltage" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">V</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Charge per pulse</label></td>
-                    <td class="value"><span id="batteryChargePerPulseAvg" class="charge-label output-value">0</span>
-                    </td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Calculated Charge</label></td>
-                    <td class="value"><span id="batteryCalculatedCharge" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Charge</label></td>
-                    <td class="value"><span id="batteryTotalCharge" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Energy</label></td>
-                    <td class="value"><span id="batteryTotalEnergy" class="energy-label output-value">0</span></td>
-                    <td class="units energy-label">J</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Charge Time</label></td>
-                    <td class="value"><span id="tCharge" class="output-value">0</span></td>
-                    <td class="units">s</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Watts Charging</label></td>
-                    <td class="value"><span id="batteryWattRate" class="watt-label output-value">0</span></td>
-                    <td class="units watt-label">W</td>
-                </tr>
-            </table>
-        </div>
-        <!-- Switch -->
-        <div class="component">
-            <h3>Switch</h3>
-            <table>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="numPulses"></td>
-                    <td><label>Number of Pulses</label></td>
-                    <td class="value"><input type="number" id="numPulses" value="5" min="1"></td>
-                    <td class="units"></td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="cycleDuration"></td>
-                    <td><label>Cycle Duration</label></td>
-                    <td class="value"><input type="number" id="cycleDuration" value="0.0025" min="0.0001" step="0.0001">
-                    </td>
-                    <td class="units">s</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Min Cycle Duration</label></td>
-                    <td class="value"><span id="minCycleDuration" class="output-value">0</span></td>
-                    <td class="units">s</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Max Frequency</label></td>
-                    <td class="value"><span id="maxFrequency" class="output-value">0</span></td>
-                    <td class="units">hz</td>
-                </tr>
-                <tr class="image-row">
-                    <td colspan="4" style="text-align: center"><img src="cwmult.webp" width="90%"></td>
-                </tr>
-            </table>
-        </div>
-        <!-- Multiplier -->
-        <div class="component">
-            <h3>Multiplier</h3>
-            <table>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="inputCapacitor">
-                    </td>
-                    <td><label>Capacitance / Stage</label></td>
-                    <td class="value"><input type="number" id="inputCapacitor" value="0.000003" min="0.0000001"
-                            step="0.0000001"></td>
-                    <td class="units">F</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="numStages"></td>
-                    <td><label>Number of Stages</label></td>
-                    <td class="value"><input type="number" id="numStages" value="4" min="1" step="1"></td>
-                    <td class="units"></td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Voltage / Cap</label></td>
-                    <td class="value"><span id="capVoltage1x" class="output-value">0</span></td>
-                    <td class="units">V</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Final Voltage</label></td>
-                    <td class="value"><span id="capFinalVoltage" class="output-value">0</span></td>
-                    <td class="units">V</td>
-                </tr>
-                <tr class="overline">
-                    <td class="checkbox"></td>
-                    <td><label>Total Capacitance 1x</label></td>
-                    <td class="value"><span id="totalCapacitance1x" class="output-value">0</span></td>
-                    <td class="units">F</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Charge 1x</label></td>
-                    <td class="value"><span id="capTotalCharge1x" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Energy 1x</label></td>
-                    <td class="value"><span id="capTotalEnergy1x" class="energy-label output-value">0</span></td>
-                    <td class="units energy-label">J</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Energy Ratio 1x</label></td>
-                    <td class="value"><span id="energyRatio1x" class="ratio-label output-value">0</span></td>
-                    <td class="units ratio-label"></td>
-                </tr>
-                <tr class="overline">
-                    <td class="checkbox"></td>
-                    <td><label>Total Capacitance</label></td>
-                    <td class="value"><span id="seriesCapacitance" class="output-value">0</span></td>
-                    <td class="units">F</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Charge</label></td>
-                    <td class="value"><span id="capTotalCharge" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Energy</label></td>
-                    <td class="value"><span id="capTotalEnergy" class="energy-label output-value">0</span></td>
-                    <td class="units energy-label">J</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Energy Ratio (OU)</label></td>
-                    <td class="value"><span id="energyRatio" class="ratio-label output-value">0</span></td>
-                    <td class="units ratio-label"></td>
-                </tr>
-            </table>
-        </div>
-        <!-- Output -->
-        <div class="component">
-            <h3>Output</h3>
-            <table>
-                <tr>
-                    <td class="checkbox"><input type="checkbox" class="graph-checkbox" data-key="outResistance">
-                    </td>
-                    <td><label>Output Resistor</label></td>
-                    <td class="value"><input type="number" id="outResistance"></td>
-                    <td class="units">Ω</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Final Voltage</label></td>
-                    <td class="value"><span id="outVoltage" class="output-value">0</span></td>
-                    <td class="units">V</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Charge</label></td>
-                    <td class="value"><span id="outCharge" class="charge-label output-value">0</span></td>
-                    <td class="units charge-label">C</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Total Energy</label></td>
-                    <td class="value"><span id="outEnergy" class="energy-label output-value">0</span></td>
-                    <td class="units energy-label">J</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Energy Ratio (OU)</label></td>
-                    <td class="value"><span id="outEnergyRatio" class="ratio-label output-value">0</span></td>
-                    <td class="units ratio-label"></td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Discharge Time</label></td>
-                    <td class="value"><span id="tDischarge" class="output-value">0</span></td>
-                    <td class="units">s</td>
-                </tr>
-                <tr>
-                    <td class="checkbox"></td>
-                    <td><label>Watts Discharging</label></td>
-                    <td class="value"><span id="outPower" class="watt-label output-value">0</span></td>
-                    <td class="units watt-label">W</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-    </div>
+    <div id="circuitContainer"></div>
     <div id="graphContainer"></div>
     <div id="overlay"></div>
 
     <script>
-
-        function VMTS_getParams() {
-            const params = {};
-            for (const id of inputIds) {
-                const value = document.getElementById(id)?.value;
-                params[id] = value ? parseFloat(value) : NaN;
+        window.circuitComponents = {
+            components: {
+                Battery: {
+                    name: "Battery",
+                    properties: {
+                        batteryVoltage: { label: "Battery Voltage", units: "V", direction: "input", default: 10 },
+                        inputResistance: { label: "Input Resistance", units: "Ω", direction: "input", default: 50 },
+                        actualInputVoltage: { label: "Actual Input Voltage", units: "V", direction: "output" },
+                        batteryChargePerPulseAvg: { label: "Charge per pulse", units: "C", direction: "output" },
+                        batteryCalculatedCharge: { label: "Calculated Charge", units: "C", direction: "output" },
+                        batteryTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
+                        batteryTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
+                        tCharge: { label: "Charge Time", units: "s", direction: "output" },
+                        batteryWattRate: { label: "Watts Charging", units: "W", direction: "output" }
+                    }
+                },
+                Switch: {
+                    name: "Switch",
+                    properties: {
+                        numPulses: { label: "Number of Pulses", units: "", direction: "input" },
+                        cycleDuration: { label: "Cycle Duration", units: "s", direction: "input", default: 0.527 },
+                        minCycleDuration: { label: "Min Cycle Duration", units: "s", direction: "output" },
+                        maxFrequency: { label: "Max Frequency", units: "hz", direction: "output" },
+                        image: { image: "cwmult.webp" }
+                    }
+                },
+                Multiplier: {
+                    name: "Multiplier",
+                    properties: {
+                        inputCapacitor: { label: "Capacitance / Stage", units: "F", direction: "input", default: 0.00068 },
+                        numStages: { label: "Number of Stages", units: "", direction: "input", default: 4 },
+                        capVoltage1x: { label: "Voltage / Cap", units: "V", direction: "output" },
+                        capFinalVoltage: { label: "Final Voltage", units: "V", direction: "output" },
+                        totalCapacitance1x: { label: "Total Capacitance 1x", units: "F", direction: "output", class: "overline" },
+                        capTotalCharge1x: { label: "Total Charge 1x", units: "C", direction: "output" },
+                        capTotalEnergy1x: { label: "Total Energy 1x", units: "J", direction: "output" },
+                        energyRatio1x: { label: "Energy Ratio 1x", units: "", direction: "output" },
+                        seriesCapacitance: { label: "Series Capacitance", units: "F", direction: "output", class: "overline" },
+                        capTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
+                        capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
+                        energyRatio: { label: "Energy Ratio (OU)", units: "", direction: "output" }
+                    }
+                },
+                Output: {
+                    name: "Output",
+                    properties: {
+                        outResistance: { label: "Output Resistor", units: "Ω", direction: "input", default: 100 },
+                        outVoltage: { label: "Final Voltage", units: "V", direction: "output" },
+                        outCharge: { label: "Total Charge", units: "C", direction: "output" },
+                        outEnergy: { label: "Total Energy", units: "J", direction: "output" },
+                        outEnergyRatio: { label: "Energy Ratio (OU)", units: "", direction: "output" },
+                        tDischarge: { label: "Discharge Time", units: "s", direction: "output" },
+                        outPower: { label: "Watts Discharging", units: "W", direction: "output" }
+                    }
+                }
             }
-            return params;
-        }
+        };
+    </script>
 
+    <script>
+        window.noGraphs = false;
         /*
          * VMTS_simulateCircuit models a Cockcroft-Walton voltage multiplier circuit driven by an H-bridge
          * producing a square wave from a DC battery voltage. The circuit consists of `numStages` stages,
@@ -446,12 +271,10 @@
             const p = params;
 
             const diodeDrop = 0.49;
+            const efficiency = 1;       // Applied to max voltage
+            const seriesK = 0.4244;        // Applied to series capacitance
 
-            function multiplierOutputVoltage(vin, stages) {
-                return 2 * stages * vin * 0.9; // 0.9 accounts for real losses
-            }
-
-            // Round and validate inputs requiring whole numbers
+            // Round inputs requiring whole numbers
             p.numStages = Math.max(Math.round(p.numStages), 1);
             p.numPulses = Math.max(Math.round(p.numPulses), 1);
 
@@ -465,8 +288,8 @@
             if (window.plotting) {
                 p.numPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
             }
-            
-            const capFinalVoltage = multiplierOutputVoltage(actualInputVoltage, p.numStages);
+
+            const capFinalVoltage = 2 * p.numStages * actualInputVoltage * efficiency;
             const capVoltage1x = capFinalVoltage / p.numStages;
 
             let batteryCalculatedCharge = 0, batteryTotalCharge, batteryTotalEnergy,
@@ -475,7 +298,7 @@
 
             // Accumulate values over pulses
             const tau = p.numPulses / 5; // Time constant 5
-            const portionPerPulse =  1 / Math.PHI;
+            const portionPerPulse = 1 / Math.PHI;
             const capVoltages = [];
 
             for (let i = 0; i <= p.numPulses; i++) {
@@ -492,18 +315,17 @@
             // All assumes this charge is conserved through the system.
             // Conservation of charge, not conservation of energy.
             // One capacitor always has 1/2 the voltage of all the others by measurement.
-            // capTotalCharge1x = ((totalCapacitance1x - p.inputCapacitor) * capVoltage1x) + (p.inputCapacitor * capVoltage1x / 2);
-            capTotalCharge1x = (totalCapacitance1x * capVoltage1x);
+            capTotalCharge1x = totalCapacitance1x * capVoltage1x;
 
             capTotalEnergy1x = (0.5 * capTotalCharge1x ** 2) / totalCapacitance1x;
 
             capTotalCharge = capTotalCharge1x;
 
             // Dynamically compute series capacitance of multiplier
-            const seriesCapacitance = 0.5 * capTotalCharge / capFinalVoltage;
+            const seriesCapacitance = seriesK * capTotalCharge / capFinalVoltage;
 
-            // capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
-            capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
+            capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
+            //capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
 
             batteryTotalCharge = capTotalCharge1x;
             batteryTotalEnergy = batteryTotalCharge * p.batteryVoltage;
@@ -525,10 +347,34 @@
             const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + p.outResistance);
             const outCharge = capTotalCharge;
             const tDischarge = 5 * p.outResistance * seriesCapacitance;
-            const outEnergy = (outCharge ** 2) / (2 * seriesCapacitance);
+            const outEnergy = capTotalEnergy;
             const outPower = outEnergy / tDischarge;
             const outEnergyRatio = batteryTotalEnergy > 0 ? outEnergy / batteryTotalEnergy : 0;
 
+            if (noGraphs) {   
+                // Additional values for research
+                var seriesCapacitance1x = ((p.inputCapacitor * 2) / p.numStages);
+                var seriesCapacitanceByCharge = capTotalCharge / capFinalVoltage;
+
+                var capTotalEnergyBy1x = (0.5 * capTotalCharge ** 2) / seriesCapacitance1x;
+                var capTotalEnergyBy1xv = 0.5 * capFinalVoltage ** 2 * seriesCapacitance1x;
+                var energyRatioBy1x = capTotalEnergyBy1x / batteryTotalEnergy;
+                
+                var capTotalEnergyByCharge = (0.5 * capTotalCharge ** 2) / seriesCapacitanceByCharge;
+                var capTotalEnergyByChargev = 0.5 * capFinalVoltage ** 2 * seriesCapacitanceByCharge;
+                var energyRatioByCharge = capTotalEnergyByCharge / batteryTotalEnergy;
+                
+                console.log(`seriesCapacitance1x = ${seriesCapacitance1x}`);
+                console.log(`capTotalEnergyBy1x = ${capTotalEnergyBy1x}`);
+                console.log(`capTotalEnergyBy1xv = ${capTotalEnergyBy1xv}`);
+                console.log(`energyRatioBy1x = ${energyRatioBy1x}`);
+
+                console.log(`seriesCapacitanceByCharge = ${seriesCapacitanceByCharge}`);
+                console.log(`capTotalEnergyByCharge = ${capTotalEnergyByCharge}`);
+                console.log(`capTotalEnergyByChargev = ${capTotalEnergyByChargev}`);
+                console.log(`energyRatioByCharge = ${energyRatioByCharge}`);
+            }
+            
             return {
                 batteryCalculatedCharge,
                 batteryTotalCharge,
@@ -572,22 +418,22 @@
             return optimal;
         }
 
-    function VMTS_adjustValues() {
-        const el = document.getElementById('numPulses');
-        const numStages = parseFloat(document.getElementById('numStages').value);
-        const inputCapacitor = parseFloat(document.getElementById('inputCapacitor').value);
-        const inputResistance = parseFloat(document.getElementById('inputResistance').value);
+        function VMTS_adjustValues() {
+            const el = document.getElementById('numPulses');
+            const numStages = parseFloat(document.getElementById('numStages').value);
+            const inputCapacitor = parseFloat(document.getElementById('inputCapacitor').value);
+            const inputResistance = parseFloat(document.getElementById('inputResistance').value);
 
-        // Adjust numPulses based on exponential model and apply the scaling factor of 100000
-        el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
-    }
+            // Adjust numPulses based on exponential model and apply the scaling factor of 100000
+            el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
+        }
 
-    function calcNumPulses(numStages, inputCapacitor, inputResistance) {
-        // Experimentally determined on a 0.001 F capacitor
-        // with 1 stage requiring 15 pulses (4 stages = 60 pulse) etc.
-        const pulseMultiplier = 15000 * 0.001; // 15 pulses per stage
-        return Math.round(numStages * pulseMultiplier);
-    }
+        function calcNumPulses(numStages, inputCapacitor, inputResistance) {
+            // Experimentally determined on a 0.001 F capacitor
+            // with 1 stage requiring 15 pulses (4 stages = 60 pulse) etc.
+            const pulseMultiplier = 15000 * 0.001; // 15 pulses per stage
+            return Math.round(numStages * pulseMultiplier);
+        }
 
     </script>
 

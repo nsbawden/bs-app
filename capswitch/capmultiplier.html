@@ -172,20 +172,44 @@
             color: white;
         }
 
+        .volt-label {
+            color: yellow;
+        }
+
         .charge-label {
             color: tan;
         }
 
+        .ohm-label {
+            color: lawngreen;
+        }
+
         .energy-label {
-            color: gold;
+            color: goldenrod;
         }
 
         .watt-label {
             color: skyblue;
         }
 
+        .time-label {
+            color: pink;
+        }
+
+        .hz-label {
+            color: coral;
+        }
+
         .ratio-label {
             color: rgb(1, 197, 1);
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .italic {
+            font-style: italic;
         }
     </style>
 </head>
@@ -223,7 +247,12 @@
                         cycleDuration: { label: "Cycle Duration", units: "s", direction: "input", default: 0.527 },
                         minCycleDuration: { label: "Min Cycle Duration", units: "s", direction: "output" },
                         maxFrequency: { label: "Max Frequency", units: "hz", direction: "output" },
-                        image: { image: "cwmult.webp" }
+                        image: { image: "cwmult.webp" },
+                        label: { text: "Discharge C1 into C2"},
+                        v1: { label: "Voltage C1", units: "V", direction: "input", checkbox: false },
+                        v2: { label: "Voltage C2", units: "V", direction: "input", checkbox: false },
+                        c2: { label: "Value C2", units: "F", direction: "input", default: 0.01, checkbox: false },
+                        c1: { label: "Calculated C1", units: "F", direction: "output" }
                     }
                 },
                 Multiplier: {
@@ -240,17 +269,20 @@
                         seriesCapacitance: { label: "Series Capacitance", units: "F", direction: "output", class: "overline" },
                         capTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
                         capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        energyRatio: { label: "Energy Ratio (OU)", units: "", direction: "output" }
+                        energyRatio: { label: "Energy Ratio", units: "", direction: "output" },
+                        seriesCapacitanceByCharge: { label: "Series Cap (TC)", units: "F", direction: "output", class: 'overline italic' },
+                        capTotalEnergyByCharge: { label: "Total Energy (TC)", units: "J", direction: "output", class: 'italic' },
+                        energyRatioByCharge: { label: "Energy Ratio (TC)", units: "", direction: "output", class: 'italic' }
                     }
                 },
                 Output: {
                     name: "Output",
                     properties: {
-                        outResistance: { label: "Output Resistor", units: "Ω", direction: "input", default: 100 },
+                        outResistance: { label: "Output Resistor", units: "Ω", direction: "input", default: 100, checkbox: false },
                         outVoltage: { label: "Final Voltage", units: "V", direction: "output" },
                         outCharge: { label: "Total Charge", units: "C", direction: "output" },
                         outEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        outEnergyRatio: { label: "Energy Ratio (OU)", units: "", direction: "output" },
+                        outEnergyRatio: { label: "Energy Ratio", units: "", direction: "output" },
                         tDischarge: { label: "Discharge Time", units: "s", direction: "output" },
                         outPower: { label: "Watts Discharging", units: "W", direction: "output" }
                     }
@@ -260,7 +292,6 @@
     </script>
 
     <script>
-        window.noGraphs = false;
         /*
          * VMTS_simulateCircuit models a Cockcroft-Walton voltage multiplier circuit driven by an H-bridge
          * producing a square wave from a DC battery voltage. The circuit consists of `numStages` stages,
@@ -269,10 +300,11 @@
          */
         function VMTS_simulateCircuit(params) {
             const p = params;
+            const o = {}; // All outputs and intermediates go here
 
             const diodeDrop = 0.49;
-            const efficiency = 1;       // Applied to max voltage
-            const seriesK = 0.4244;        // Applied to series capacitance
+            const efficiency = 0.9; // Applied to max voltage
+            const seriesK = 0.385; // Applied to series capacitance
 
             // Round inputs requiring whole numbers
             p.numStages = Math.max(Math.round(p.numStages), 1);
@@ -282,127 +314,85 @@
             const pulseDuration = p.cycleDuration / 2;
 
             const RC = resistance * p.inputCapacitor;
-            const actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
-            const totalCapacitance1x = 2 * p.inputCapacitor * p.numStages;
+            o.actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
+            o.totalCapacitance1x = 2 * p.inputCapacitor * p.numStages;
 
             if (window.plotting) {
                 p.numPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
             }
 
-            const capFinalVoltage = 2 * p.numStages * actualInputVoltage * efficiency;
-            const capVoltage1x = capFinalVoltage / p.numStages;
+            o.capFinalVoltage = 2 * p.numStages * o.actualInputVoltage * efficiency;
+            o.capVoltage1x = o.capFinalVoltage / p.numStages;
 
-            let batteryCalculatedCharge = 0, batteryTotalCharge, batteryTotalEnergy,
-                capTotalCharge, capTotalEnergy, emergyRatio,
-                capTotalCharge1x, capTotalEnergy1x, energyRatio1x;
+            o.batteryCalculatedCharge = 0;
+            o.capTotalCharge = 0;
+            o.capTotalEnergy = 0;
+            o.capTotalCharge1x = 0;
+            o.capTotalEnergy1x = 0;
+            o.energyRatio = 0;
+            o.energyRatio1x = 0;
+            o.capVoltages = [];
 
             // Accumulate values over pulses
             const tau = p.numPulses / 5; // Time constant 5
             const portionPerPulse = 1 / Math.PHI;
-            const capVoltages = [];
 
             for (let i = 0; i <= p.numPulses; i++) {
                 if (i < p.numPulses) {
-                    // Things to do for each pulse
-                    batteryCalculatedCharge += p.inputCapacitor * actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
+                    o.batteryCalculatedCharge += p.inputCapacitor * o.actualInputVoltage * portionPerPulse * Math.exp(-i / tau);
                 }
-                // Things to do for each pulse + one more pulse
-                capVoltages.push(capFinalVoltage * (1 - Math.exp(-i / tau)));
+                o.capVoltages.push(o.capFinalVoltage * (1 - Math.exp(-i / tau)));
             }
 
-            // This is the heart of the entire calculation upon which all is based.
-            // It is the total charge of each individual capacitor by cap value and voltage across it.
-            // All assumes this charge is conserved through the system.
-            // Conservation of charge, not conservation of energy.
-            // One capacitor always has 1/2 the voltage of all the others by measurement.
-            capTotalCharge1x = totalCapacitance1x * capVoltage1x;
+            // Core calculations based on conservation of charge
+            o.capTotalCharge1x = o.totalCapacitance1x * o.capVoltage1x;
+            o.capTotalEnergy1x = (0.5 * o.capTotalCharge1x ** 2) / o.totalCapacitance1x;
+            o.capTotalCharge = o.capTotalCharge1x;
 
-            capTotalEnergy1x = (0.5 * capTotalCharge1x ** 2) / totalCapacitance1x;
+            o.seriesCapacitance = seriesK * o.capTotalCharge / o.capFinalVoltage;
+            o.capTotalEnergy = 0.5 * o.seriesCapacitance * o.capFinalVoltage ** 2; // by voltage
 
-            capTotalCharge = capTotalCharge1x;
+            o.batteryTotalCharge = o.capTotalCharge1x;
+            o.batteryTotalEnergy = o.batteryTotalCharge * p.batteryVoltage;
 
-            // Dynamically compute series capacitance of multiplier
-            const seriesCapacitance = seriesK * capTotalCharge / capFinalVoltage;
+            o.energyRatio = o.batteryTotalEnergy > 0 ? o.capTotalEnergy / o.batteryTotalEnergy : 0;
+            o.energyRatio1x = o.batteryTotalEnergy > 0 ? o.capTotalEnergy1x / o.batteryTotalEnergy : 0;
 
-            capTotalEnergy = 0.5 * seriesCapacitance * capFinalVoltage ** 2; // by voltage
-            //capTotalEnergy = (0.5 * capTotalCharge ** 2) / seriesCapacitance; // by charge
+            o.batteryChargePerPulseAvg = o.batteryTotalCharge / p.numPulses;
+            o.batteryPowerPerPulseAvg = pulseDuration > 0 ? o.batteryChargePerPulseAvg / pulseDuration : 0;
+            o.batteryWattRate = o.batteryTotalEnergy / (p.cycleDuration * p.numPulses);
 
-            batteryTotalCharge = capTotalCharge1x;
-            batteryTotalEnergy = batteryTotalCharge * p.batteryVoltage;
+            const stageFillFactor = 15.5; // Empirical
+            o.minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
+            o.maxFrequency = 1 / o.minCycleDuration;
 
-            energyRatio = batteryTotalEnergy > 0 ? capTotalEnergy / batteryTotalEnergy : 0;
-            energyRatio1x = batteryTotalEnergy > 0 ? capTotalEnergy1x / batteryTotalEnergy : 0;
+            // Output load calculations
+            o.tCharge = p.cycleDuration * p.numPulses * 2; // 
+            o.outVoltage = (o.seriesCapacitance * o.capFinalVoltage) / (o.seriesCapacitance + p.outResistance);
+            o.outCharge = o.capTotalCharge;
+            o.tDischarge = 5 * p.outResistance * o.seriesCapacitance;
+            o.outEnergy = o.capTotalEnergy;
+            o.outPower = o.outEnergy / o.tDischarge;
+            o.outEnergyRatio = o.batteryTotalEnergy > 0 ? o.outEnergy / o.batteryTotalEnergy : 0;
 
-            const batteryChargePerPulseAvg = batteryTotalCharge / p.numPulses; // Adjusted for average charge
-            const batteryPowerPerPulseAvg = pulseDuration > 0 ? batteryChargePerPulseAvg / pulseDuration : 0;
+            // Discharge cap C1 to C2 calculations
+            o.c1 = calcC1(p.c2, p.v1, p.v2);
 
-            const batteryWattRate = batteryTotalEnergy / (p.cycleDuration * p.numPulses);
+            if (p.primary) {
+                // Additional debug and research values
+                o.seriesCapacitance1x = (p.inputCapacitor * 2) / p.numStages;
+                o.seriesCapacitanceByCharge = o.capTotalCharge / o.capFinalVoltage;
 
-            const stageFillFactor = 15.5; // Empirical, accounts for stage-to-stage propagation
-            const minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
-            const maxFrequency = 1 / minCycleDuration;
+                o.capTotalEnergyBy1x = (0.5 * o.capTotalCharge ** 2) / o.seriesCapacitance1x;
+                o.capTotalEnergyBy1xv = 0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitance1x;
+                o.energyRatioBy1x = o.capTotalEnergyBy1x / o.batteryTotalEnergy;
 
-            // Calculate output values
-            const tCharge = p.cycleDuration * p.numPulses;
-            const outVoltage = (seriesCapacitance * capFinalVoltage) / (seriesCapacitance + p.outResistance);
-            const outCharge = capTotalCharge;
-            const tDischarge = 5 * p.outResistance * seriesCapacitance;
-            const outEnergy = capTotalEnergy;
-            const outPower = outEnergy / tDischarge;
-            const outEnergyRatio = batteryTotalEnergy > 0 ? outEnergy / batteryTotalEnergy : 0;
-
-            if (noGraphs) {   
-                // Additional values for research
-                var seriesCapacitance1x = ((p.inputCapacitor * 2) / p.numStages);
-                var seriesCapacitanceByCharge = capTotalCharge / capFinalVoltage;
-
-                var capTotalEnergyBy1x = (0.5 * capTotalCharge ** 2) / seriesCapacitance1x;
-                var capTotalEnergyBy1xv = 0.5 * capFinalVoltage ** 2 * seriesCapacitance1x;
-                var energyRatioBy1x = capTotalEnergyBy1x / batteryTotalEnergy;
-                
-                var capTotalEnergyByCharge = (0.5 * capTotalCharge ** 2) / seriesCapacitanceByCharge;
-                var capTotalEnergyByChargev = 0.5 * capFinalVoltage ** 2 * seriesCapacitanceByCharge;
-                var energyRatioByCharge = capTotalEnergyByCharge / batteryTotalEnergy;
-                
-                console.log(`seriesCapacitance1x = ${seriesCapacitance1x}`);
-                console.log(`capTotalEnergyBy1x = ${capTotalEnergyBy1x}`);
-                console.log(`capTotalEnergyBy1xv = ${capTotalEnergyBy1xv}`);
-                console.log(`energyRatioBy1x = ${energyRatioBy1x}`);
-
-                console.log(`seriesCapacitanceByCharge = ${seriesCapacitanceByCharge}`);
-                console.log(`capTotalEnergyByCharge = ${capTotalEnergyByCharge}`);
-                console.log(`capTotalEnergyByChargev = ${capTotalEnergyByChargev}`);
-                console.log(`energyRatioByCharge = ${energyRatioByCharge}`);
+                o.capTotalEnergyByCharge = (0.5 * o.capTotalCharge ** 2) / o.seriesCapacitanceByCharge;
+                o.capTotalEnergyByChargev = 0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitanceByCharge;
+                o.energyRatioByCharge = o.capTotalEnergyByCharge / o.batteryTotalEnergy;
             }
-            
-            return {
-                batteryCalculatedCharge,
-                batteryTotalCharge,
-                batteryTotalEnergy,
-                batteryChargePerPulseAvg,
-                batteryWattRate,
-                seriesCapacitance,
-                totalCapacitance1x,
-                capFinalVoltage,
-                capVoltage1x,
-                capTotalCharge1x,
-                capTotalEnergy1x,
-                energyRatio1x,
-                capTotalCharge,
-                capTotalEnergy,
-                energyRatio,
-                actualInputVoltage,
-                minCycleDuration,
-                maxFrequency,
-                outVoltage,
-                outEnergy,
-                outCharge,
-                outEnergyRatio,
-                tCharge,
-                tDischarge,
-                outPower,
-                capVoltages
-            };
+
+            return o;
         }
 
         function VMTS_calculateOptimalPulses({ key = 'numPulses', min = 1, max = 1000, step = 1 }) {

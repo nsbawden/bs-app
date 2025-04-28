@@ -2,93 +2,90 @@ const prefix = document.querySelector('meta[name="prefix"]').content;
 Math.PHI = (1 + Math.sqrt(5)) / 2;
 
 function buildCircuitTable(jsonObj) {
+    let html = '';
+    window.params = {};
+
     // Map units to label classes
     const getLabelClass = (units) => {
-        switch (units) {
+        switch (units.toUpperCase()) {
+            case "V": return "volt-label";
+            case "Ω": return "ohm-label";
             case "C": return "charge-label";
             case "J": return "energy-label";
             case "W": return "watt-label";
+            case "S": return "time-label";
+            case "HZ": return "hz-label";
             case "": return "ratio-label";
             default: return "";
         }
     };
 
-    let html = '';
-    window.params = {};
+    const createInputField = (key, row) => {
+        const valueAttrs = [
+            row.value !== undefined && `value="${row.value}"`,
+            row.min !== undefined && `min="${row.min}"`,
+            row.step !== undefined && `step="${row.step}"`,
+            row.max !== undefined && `max="${row.max}"`
+        ].filter(Boolean).join(' ');
+
+        return `<input type="number" id="${key}" ${valueAttrs}>`;
+    };
+
+    const createLabelCell = (row) => {
+        return `<td><label>${row.label}</label></td>`;
+    };
+
+    const createUnitsCell = (row) => {
+        const labelClass = getLabelClass(row.units);
+        return `<td class="units ${labelClass || ''}">${row.units || ''}</td>`;
+    };
 
     Object.entries(jsonObj.components).forEach(([_, component]) => {
-        html += `
-            <div class="component">
-            <h3>${component.name}</h3>
-            <table>
-            `;
+        html += `<div class="component">
+                    <h3>${component.name}</h3>
+                    <table>`;
 
         Object.keys(component.properties).forEach(key => {
             const row = component.properties[key];
             if (row.image) {
-                html += `
-                <tr class="image-row">
-                    <td colspan="4" style="text-align: center">
-                    <img src="${row.image}" width="90%">
-                    </td>
-                </tr>
-                `;
+                html += `<tr class="image-row">
+                            <td colspan="4" style="text-align: center">
+                                <img src="${row.image}" width="90%">
+                            </td>
+                          </tr>`;
+            } else if (key === 'label') {
+                html += `<tr class="label-row">
+                            <td colspan="4" style="text-align: center">${row.text}</td>
+                          </tr>`;
+
             } else {
                 window.params[key] = row;
-                html += `<tr${row.class ? ` class="${row.class}"` : ''}>`;
-
-                // Checkbox cell
-                html += '<td class="checkbox">';
-                if (row.direction === 'input') {
-                    html += `<input type="checkbox" class="graph-checkbox" data-key="${key}">`;
-                }
-                html += '</td>';
-
-                // Label cell
-                html += `<td><label>${row.label}</label></td>`;
-
-                // Value cell
-                html += '<td class="value">';
-                if (row.direction === 'input') {
-                    html += `<input type="number" id="${key}"`;
-                    if (row.value !== undefined) html += ` value="${row.value}"`;
-                    if (row.min !== undefined) html += ` min="${row.min}"`;
-                    if (row.step !== undefined) html += ` step="${row.step}"`;
-                    if (row.max !== undefined) html += ` max="${row.max}"`;
-                    html += '>';
-                } else {
-                    const labelClass = getLabelClass(row.units);
-                    const classes = ['output-value'];
-                    if (labelClass) classes.push(labelClass);
-                    html += `<span id="${key}" class="${classes.join(' ')}">${row.value || 0}</span>`;
-                }
-                html += '</td>';
-
-                // Units cell
-                html += '<td class="units';
-                const labelClass = getLabelClass(row.units);
-                if (labelClass) html += ` ${labelClass}`;
-                html += `">${row.units || ''}</td>`;
-
-                html += '</tr>';
+                html += `<tr${row.class ? ` class="${row.class}"` : ''}>
+                            <td class="checkbox">
+                                ${row.direction === 'input' && row.checkbox !== false ? `<input type="checkbox" class="graph-checkbox" data-key="${key}">` : ''}
+                            </td>
+                            ${createLabelCell(row)}
+                            <td class="value">
+                                ${row.direction === 'input' ? createInputField(key, row) : `<span id="${key}" class="output-value ${getLabelClass(row.units)}">${row.value || 0}</span>`}
+                            </td>
+                            ${createUnitsCell(row)}
+                        </tr>`;
             }
         });
 
-        html += `
-            </table>
-            </div>
-            `;
+        html += `</table></div>`;
     });
 
     const el = document.getElementById('circuitContainer');
     el.innerHTML = html;
 }
 
+
 if (typeof window.circuitComponents === 'object') {
     buildCircuitTable(window.circuitComponents);
 }
 
-// No longer used
+// No longer used, just for reference if lost
 // const MODELS = {
 //     DCTS: {
 //         defaultValues: {
@@ -106,10 +103,11 @@ if (typeof window.circuitComponents === 'object') {
 //     VMTS: {
 //         defaultValues: {
 //             batteryVoltage: '10',
-//             numPulses: '5',
-//             pulseDuration: '0.0025',
-//             inputCapacitor: '0.000003',
-//             numStages: '4'
+//             numPulses: '50',
+//             pulseDuration: '0.527',
+//             inputCapacitor: '0.00068',
+//             numStages: '4',
+//             outputResistance: '100'
 //         }
 //     }
 // };
@@ -230,68 +228,101 @@ function saveValues() {
     localStorage.setItem(`${prefix}_checkboxStates`, JSON.stringify(checkboxStates));
 }
 
+function xpageOutput(o) {
+    console.log('-----------------------------------------------------------------------');
+
+    // Check for outputIds with no corresponding entry in o
+    const ids = window.outputIds.sort();
+    for (const id of ids) {
+        if (o[id] === undefined) {
+            console.warn(`No value found for ID '${id}' in result`);
+        }
+    }
+
+    // Iterate through own keys of o
+    for (const key of Object.keys(o)) {
+        const value = o[key];
+        if (Number.isNaN(value)) {
+            console.warn(`Value for key '${key}' is NaN`);
+        } else {
+            const el = document.getElementById(key);
+            if (el && window.outputIds.includes(key)) {
+                el.textContent = smartFormat(value);
+                if (typeof value === 'number') {
+                    console.log(`${key} = ${value}`);
+                }
+            } else if (typeof value === 'number') {
+                console.log(`${key} = ${value}`);
+            }
+        }
+    }
+}
+
+function pageOutput(o) {
+    // Convert outputIds to a Set for O(1) lookups
+    const outputIdsSet = new Set(window.outputIds);
+
+    // Check for outputIds with no corresponding entry in o
+    for (const id of window.outputIds) {
+        if (o[id] === undefined) {
+            console.warn(`No value found for ID '${id}' in result`);
+        }
+    }
+
+    // Iterate through sorted keys of o
+    for (const key of Object.keys(o)) {
+        const value = o[key];
+        if (Number.isNaN(value)) {
+            console.warn(`Value for key '${key}' is NaN`);
+        } else {
+            const el = document.getElementById(key);
+            if (el && outputIdsSet.has(key)) {
+                el.textContent = smartFormat(value);
+                // if (typeof value === 'number') {
+                //     console.log(`  ${key} = ${smartFormat(value)}`);
+                // }
+            } else if (typeof value === 'number') {
+                console.log(`* ${key} = ${smartFormat(value)}`);
+            }
+        }
+    }
+}
+
 function calculate() {
+    console.clear();
     blinkStart();
     setTimeout(() => {
         adjustValues();
         saveValues();
         const params = getParams();
+        params.primary = true; // differentiate between primary and graphing runs
         const result = simulateCircuit(params);
 
         if (document.getElementById('optimalPulsesActual')) {
             result.optimalPulsesActual = calculateOptimalPulses(params);
         }
+
+        pageOutput(result);
+
         capVoltages = result.capVoltages;
         delete result.capVoltages;
-
-        // Load page variables with output values
-        const ids = Object.keys(result);
-        const combined = [...new Set([...ids, ...outputIds, ...inputIds])];
-
-        for (const id of combined) {
-            const element = document.getElementById(id);
-            if (!element) {
-                console.warn(`Element with ID ${id} not found`);
-                continue;
-            }
-
-            if (!(id in result) && !(id in params)) {
-                console.warn(`No value found for ID '${id}' in result or params`);
-                continue;
-            }
-
-            const value = result[id] ?? params[id];
-            if (isNaN(value)) {
-                console.warn(`Value for ID '${id}' is NaN`);
-                continue;
-            }
-
-            const formattedValue = smartFormat(value);
-            if (element.tagName === 'INPUT') {
-                element.value = formattedValue;
-            } else {
-                element.textContent = formattedValue;
-            }
-        }
 
         const container = document.getElementById('graphContainer');
         if (container) container.innerHTML = '';
 
         const capVoltageValues = capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
-        if (window.noGraphs !== true) {
-            plotGraph({
-                container,
-                values: capVoltageValues,
-                min: 0,
-                max: 0,
-                step: 0,
-                xLabel: 'Pulse Number',
-                yLabel: 'Output Voltage (V)',
-                color: 'gold',
-                title: 'Output Voltage vs Pulse Number'
-            });
-            plotGraphs(result);
-        }
+        plotGraph({
+            container,
+            values: capVoltageValues,
+            min: 0,
+            max: 0,
+            step: 0,
+            xLabel: 'Pulse Number',
+            yLabel: 'Output Voltage (V)',
+            color: 'gold',
+            title: 'Output Voltage vs Pulse Number'
+        });
+        plotGraphs(result);
         blinkEnd();
     });
 }

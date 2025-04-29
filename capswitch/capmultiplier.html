@@ -244,9 +244,10 @@
                     name: "Switch",
                     properties: {
                         numPulses: { label: "Number of Pulses", units: "", direction: "input" },
-                        cycleDuration: { label: "Cycle Duration", units: "s", direction: "input", default: 0.527 },
+                        frequency: { label: "Frequency", units: "Hz", direction: "input", default: 2 },
+                        cycleDuration: { label: "Cycle Duration", units: "s", direction: "output" },
+                        maxFrequency: { label: "Max Frequency", units: "Hz", direction: "output" },
                         minCycleDuration: { label: "Min Cycle Duration", units: "s", direction: "output" },
-                        maxFrequency: { label: "Max Frequency", units: "hz", direction: "output" },
                         image: { image: "cwmult.webp" },
                         label: { text: "Discharge C1 into C2"},
                         v1: { label: "Voltage C1", units: "V", direction: "input", checkbox: false },
@@ -311,7 +312,8 @@
             p.numPulses = Math.max(Math.round(p.numPulses), 1);
 
             const resistance = Math.max(p.inputResistance, 0.01);
-            const pulseDuration = p.cycleDuration / 2;
+            o.cycleDuration = 1 / p.frequency;
+            const pulseDuration = o.cycleDuration / 2;
 
             const RC = resistance * p.inputCapacitor;
             o.actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
@@ -360,23 +362,20 @@
 
             o.batteryChargePerPulseAvg = o.batteryTotalCharge / p.numPulses;
             o.batteryPowerPerPulseAvg = pulseDuration > 0 ? o.batteryChargePerPulseAvg / pulseDuration : 0;
-            o.batteryWattRate = o.batteryTotalEnergy / (p.cycleDuration * p.numPulses);
+            o.batteryWattRate = o.batteryTotalEnergy / (o.cycleDuration * p.numPulses);
 
             const stageFillFactor = 15.5; // Empirical
             o.minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
             o.maxFrequency = 1 / o.minCycleDuration;
 
             // Output load calculations
-            o.tCharge = p.cycleDuration * p.numPulses * 2; // 
+            o.tCharge = o.cycleDuration * p.numPulses * 2; // 
             o.outVoltage = (o.seriesCapacitance * o.capFinalVoltage) / (o.seriesCapacitance + p.outResistance);
             o.outCharge = o.capTotalCharge;
             o.tDischarge = 5 * p.outResistance * o.seriesCapacitance;
             o.outEnergy = o.capTotalEnergy;
             o.outPower = o.outEnergy / o.tDischarge;
             o.outEnergyRatio = o.batteryTotalEnergy > 0 ? o.outEnergy / o.batteryTotalEnergy : 0;
-
-            // Discharge cap C1 to C2 calculations
-            o.c1 = calcC1(p.c2, p.v1, p.v2);
 
             if (p.primary) {
                 // Additional debug and research values
@@ -390,6 +389,9 @@
                 o.capTotalEnergyByCharge = (0.5 * o.capTotalCharge ** 2) / o.seriesCapacitanceByCharge;
                 o.capTotalEnergyByChargev = 0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitanceByCharge;
                 o.energyRatioByCharge = o.capTotalEnergyByCharge / o.batteryTotalEnergy;
+
+                // Discharge unknown cap C1 into known C2 and calculate C1
+                o.c1 = calcC1(p.c2, p.v1, p.v2);            
             }
 
             return o;

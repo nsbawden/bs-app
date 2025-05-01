@@ -9,13 +9,15 @@ function buildCircuitTable(jsonObj) {
     const getLabelClass = (units) => {
         switch (units.toUpperCase()) {
             case "V": return "volt-label";
+            case "F": return "cap-label";
             case "Ω": return "ohm-label";
             case "C": return "charge-label";
             case "J": return "energy-label";
             case "W": return "watt-label";
             case "S": return "time-label";
+            case "H": return "henry-label";
             case "HZ": return "hz-label";
-            case "": return "ratio-label";
+            case " ": return "ratio-label";
             default: return "";
         }
     };

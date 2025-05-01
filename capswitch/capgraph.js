@@ -1,15 +1,22 @@
 // capgraph.js
 
-function computeGraph({ key, min, max, step }) {
+function computeGraph({ key, min, max, step, integral = false }) {
     window.plotting = true;
 
     const baseParams = getParams();
     const values = [];
 
+    if (integral) {
+        min = Math.floor(min);
+        max = Math.ceil(max);
+        step = Math.max(Math.floor(step), 1);
+    }
+    step = step === 0 ? 1 : step;
+
     for (let val = min; val <= max; val += step) {
         const params = { ...baseParams, [key]: val };
         const result = simulateCircuit(params);
-        values.push({ x: val, y: result.energyRatio });
+        values.push({ x: val, y: result.ratio });
     }
 
     window.plotting = false;
@@ -312,21 +319,22 @@ function plotGraphs(result) {
         const key = checkbox.getAttribute('data-key');
         const input = document.getElementById(key);
         let current = parseFloat(input.value);
-        let min, max;
+        let integral = false;
+        let min = current / 10;
+        let max = current * 10;
         switch (key) {
             case 'pulseDuration':
             case 'capacitance':
                 min = current / 4;
                 max = current * 4;
                 break;
-            default:
-                min = current / 10;
-                max = current * 10;
+            case 'numPulses':
+                integral = true;
                 break;
         }
         const steps = 500;
-        const step = (max - min) / steps;
-        const values = computeGraph({ key, min, max, step });
+        let step = (max - min) / steps;
+        const values = computeGraph({ key, min, max, step, integral });
 
         plotGraph({
             container,

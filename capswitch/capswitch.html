@@ -6,210 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="prefix" content="DCTS">
     <title>Dynamic Charge Transfer Simulator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 10.5pt;
-            background-color: rgb(31, 31, 31);
-            color: #e0e0e0;
-            margin: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-        }
-    
-        h3 {
-            text-align: center;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-    
-        input[type="number"] {
-            width: 6em;
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            text-align: right;
-            -webkit-appearance: none;
-            -moz-appearance: textfield;
-        }
-    
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-    
-        input[type="checkbox"] {
-            accent-color: #888;
-            margin-right: 5px;
-        }
-    
-        #circuitContainer {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 1200px;
-            margin-bottom: 20px;
-        }
-    
-        .component {
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #555;
-            background-color: #1f1f1f;
-            margin: 5px;
-        }
-    
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-    
-        td {
-            padding: 2px 2px;
-            vertical-align: middle;
-        }
-    
-        td.checkbox {
-            width: 24px;
-        }
-    
-        td.value {
-            text-align: right;
-        }
-    
-        td.units {
-            white-space: nowrap;
-        }
-    
-        tr.image-row td {
-            padding: 5px 0;
-        }
-    
-        tr.overline {
-            border-top: 1px solid #444;
-        }
-    
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 5px;
-            background-color: #444;
-            color: #eee;
-            border: 1px solid #666;
-            cursor: pointer;
-        }
-    
-        button:hover {
-            background-color: #555;
-        }
-    
-        #jsonPopup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #2a2a2a;
-            color: #e0e0e0;
-            border: 1px solid #777;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            max-width: 600px;
-            width: 90%;
-        }
-    
-        #jsonPopup textarea {
-            width: 100%;
-            height: 300px;
-            resize: none;
-            font-family: monospace;
-            font-size: 14px;
-            background-color: #1f1f1f;
-            color: #e0e0e0;
-            border: 1px solid #555;
-        }
-    
-        #jsonPopup button {
-            margin-top: 10px;
-        }
-    
-        #overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 999;
-        }
-    
-        #graphCanvas {
-            border: 1px solid #555;
-            margin-top: 20px;
-            background-color: #121212;
-        }
-    
-        .fade-in {
-            opacity: 1;
-            transition: opacity 0.3s ease-in;
-        }
-    
-        p,
-        label {
-            color: rgb(154, 154, 154);
-            white-space: nowrap;
-        }
-    
-        p span,
-        label span {
-            color: white;
-        }
-    
-        .volt-label {
-            color: yellow;
-        }
-    
-        .charge-label {
-            color: tan;
-        }
-    
-        .ohm-label {
-            color: lawngreen;
-        }
-    
-        .energy-label {
-            color: goldenrod;
-        }
-    
-        .watt-label {
-            color: skyblue;
-        }
-    
-        .time-label {
-            color: pink;
-        }
-    
-        .hz-label {
-            color: coral;
-        }
-    
-        .ratio-label {
-            color: rgb(1, 197, 1);
-        }
-    
-        .bold {
-            font-weight: bold;
-        }
-    
-        .italic {
-            font-style: italic;
-        }
-    </style>
+    <link rel="stylesheet" href="capswitch.css">
 </head>
 
 <body class="fade-in">
@@ -227,7 +24,7 @@
                 Battery: {
                     name: "Battery",
                     properties: {
-                        batteryVoltage: { label: "Battery Voltage", units: "V", direction: "input", default: 10 },
+                        batteryVoltage: { label: "Battery Voltage", units: "V", direction: "input", default: 12.6 },
                         batteryChargePerPulse: { label: "Charge per Pulse", units: "C", direction: "output" },
                         batteryTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
                         batteryEnergyPerPulse: { label: "Energy per Pulse", units: "J", direction: "output" },
@@ -239,7 +36,8 @@
                     name: "Switch",
                     properties: {
                         numPulses: { label: "Number of Pulses", units: "", direction: "input", default: 5 },
-                        pulseDuration: { label: "Pulse Duration", units: "s", direction: "input", default: 0.0025 },
+                        frequency: {label: "Frequency", units: "Hz", direction: "input", default: 400 },
+                        pulseDuration: { label: "Pulse Duration", units: "s", direction: "output" },
                         pulseOffTime: { label: "Pulse Off Time", units: "s", direction: "output" },
                         optimalPulsesActual: { label: "Optimal Pulses", units: "", direction: "output" },
                         image: { image: "circuit.png" }
@@ -248,12 +46,13 @@
                 Transformer: {
                     name: "Transformer",
                     properties: {
-                        turnsRatio: { label: "Turns Ratio", units: "", direction: "input", default: 30 },
+                        turnsRatio: { label: "Turns Ratio", units: "", direction: "input", default: 100 },
                         primaryInductance: { label: "Pri Inductance", units: "H", direction: "input", default: 0.01 },
                         primaryResistance: { label: "Pri Resistance", units: "Ω", direction: "input", default: 1 },
                         secondaryInductance: { label: "Sec Inductance", units: "H", direction: "output" },
                         secondaryResistance: { label: "Sec Resistance", units: "Ω", direction: "input", default: 10000 },
-                        couplingFactor: { label: "Coupling Factor", units: "k", direction: "input", default: 0.9 }
+                        couplingFactor: { label: "Coupling Factor", units: "k", direction: "input", default: 0.9 },
+                        V_sec: { label: "Sec Peak Volts", units: "V", direction: "output" }
                     }
                 },
                 Capacitor: {
@@ -266,7 +65,7 @@
                         capEnergyPerPulse: { label: "Energy per Pulse", units: "J", direction: "output" },
                         capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
                         capPowerPerPulse: { label: "Transient Pulse Pwr", units: "W", direction: "output" },
-                        energyRatio: { label: "Energy Ratio (OU)", units: "", direction: "output" }
+                        ratio: { label: "Energy Ratio (OU)", units: " ", direction: "output" }
                     }
                 }
             }
@@ -279,12 +78,15 @@
             const o = {}; // All outputs and intermediates go here
 
             const V_diode = 0.7;
+
+            o.pulseDuration = 1 / p.frequency;
+
             o.tau = p.primaryInductance / p.primaryResistance;
-            o.I_max = (p.batteryVoltage / p.primaryResistance) * (1 - Math.exp(-p.pulseDuration / o.tau));
-            o.batteryChargePerPulse = 0.5 * o.I_max * p.pulseDuration;
+            o.I_max = (p.batteryVoltage / p.primaryResistance) * (1 - Math.exp(-o.pulseDuration / o.tau));
+            o.batteryChargePerPulse = 0.5 * o.I_max * o.pulseDuration;
             o.batteryEnergyPerPulse = 0.5 * p.primaryInductance * o.I_max * o.I_max;
             o.batteryTotalEnergy = p.numPulses * o.batteryEnergyPerPulse;
-            o.batteryPowerPerPulse = o.batteryEnergyPerPulse / p.pulseDuration;
+            o.batteryPowerPerPulse = o.batteryEnergyPerPulse / o.pulseDuration;
             o.batteryTotalCharge = p.numPulses * o.batteryChargePerPulse;
             o.secondaryInductance = p.turnsRatio * p.turnsRatio * p.primaryInductance;
             o.V_sec = p.batteryVoltage * p.turnsRatio;
@@ -299,7 +101,7 @@
             for (let i = 0; i < p.numPulses; i++) {
                 o.V_before = o.capVoltage;
                 o.V_eff = o.V_sec - o.capVoltage - V_diode;
-                if (o.V_eff <= 0) break;
+                if (o.V_eff <= 0 && i > 0) break;
 
                 o.chargeFraction = Math.min(1, o.V_eff / o.V_sec);
                 o.pulseOffTime = (Math.PI / 2) * Math.sqrt(o.secondaryInductance * p.capacitance);
@@ -307,6 +109,8 @@
                 o.capChargePerPulse = p.couplingFactor * o.batteryChargePerPulse * o.chargeFraction * o.dampingFactor;
 
                 o.capVoltage += o.capChargePerPulse / p.capacitance;
+                o.capVoltage = Math.min(o.capVoltage, o.V_sec); // Clip at the max secondary voltage
+                
                 o.capVoltages.push(o.capVoltage);
                 o.V_avg = (o.V_before + o.capVoltage) / 2;
                 o.capEnergyPerPulse = o.capChargePerPulse * o.V_avg;
@@ -320,10 +124,10 @@
 
             o.capChargePerPulse = o.pulsesDelivered > 0 ? o.capChargePerPulseSum / o.pulsesDelivered : 0;
             o.capEnergyPerPulse = o.pulsesDelivered > 0 ? o.capEnergyPerPulseSum / o.pulsesDelivered : 0;
-            o.capPowerPerPulse = o.capEnergyPerPulse / p.pulseDuration;
+            o.capPowerPerPulse = o.capEnergyPerPulse / o.pulseDuration;
             o.pulseOffTime = o.pulsesDelivered > 0 ? o.totalPulseOffTime / o.pulsesDelivered : 0;
             o.capTotalEnergy = 0.5 * p.capacitance * o.capVoltage * o.capVoltage;
-            o.energyRatio = o.batteryTotalEnergy > 0 ? o.capTotalEnergy / o.batteryTotalEnergy : 0;
+            o.ratio = o.batteryTotalEnergy > 0 ? o.capTotalEnergy / o.batteryTotalEnergy : 0;
 
             return o;
         }

@@ -8,210 +8,7 @@
     <title>Dynamic Charge Transfer Simulator</title>
     <!-- Load MathJax from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 10.5pt;
-            background-color: rgb(31, 31, 31);
-            color: #e0e0e0;
-            margin: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-        }
-
-        h3 {
-            text-align: center;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-
-        input[type="number"] {
-            width: 6em;
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            text-align: right;
-            -webkit-appearance: none;
-            -moz-appearance: textfield;
-        }
-
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        input[type="checkbox"] {
-            accent-color: #888;
-            margin-right: 5px;
-        }
-
-        #circuitContainer {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 1200px;
-            margin-bottom: 20px;
-        }
-
-        .component {
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #555;
-            background-color: #1f1f1f;
-            margin: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        td {
-            padding: 2px 2px;
-            vertical-align: middle;
-        }
-
-        td.checkbox {
-            width: 24px;
-        }
-
-        td.value {
-            text-align: right;
-        }
-
-        td.units {
-            white-space: nowrap;
-        }
-
-        tr.image-row td {
-            padding: 5px 0;
-        }
-
-        tr.overline {
-            border-top: 1px solid #444;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 5px;
-            background-color: #444;
-            color: #eee;
-            border: 1px solid #666;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #555;
-        }
-
-        #jsonPopup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #2a2a2a;
-            color: #e0e0e0;
-            border: 1px solid #777;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            max-width: 600px;
-            width: 90%;
-        }
-
-        #jsonPopup textarea {
-            width: 100%;
-            height: 300px;
-            resize: none;
-            font-family: monospace;
-            font-size: 14px;
-            background-color: #1f1f1f;
-            color: #e0e0e0;
-            border: 1px solid #555;
-        }
-
-        #jsonPopup button {
-            margin-top: 10px;
-        }
-
-        #overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 999;
-        }
-
-        #graphCanvas {
-            border: 1px solid #555;
-            margin-top: 20px;
-            background-color: #121212;
-        }
-
-        .fade-in {
-            opacity: 1;
-            transition: opacity 0.3s ease-in;
-        }
-
-        p,
-        label {
-            color: rgb(154, 154, 154);
-            white-space: nowrap;
-        }
-
-        p span,
-        label span {
-            color: white;
-        }
-
-        .volt-label {
-            color: yellow;
-        }
-
-        .charge-label {
-            color: tan;
-        }
-
-        .ohm-label {
-            color: lawngreen;
-        }
-
-        .energy-label {
-            color: goldenrod;
-        }
-
-        .watt-label {
-            color: skyblue;
-        }
-
-        .time-label {
-            color: pink;
-        }
-
-        .hz-label {
-            color: coral;
-        }
-
-        .ratio-label {
-            color: rgb(1, 197, 1);
-        }
-
-        .bold {
-            font-weight: bold;
-        }
-
-        .italic {
-            font-style: italic;
-        }
-    </style>
+    <link rel="stylesheet" href="capswitch.css">
 </head>
 
 <body class="fade-in">
@@ -236,18 +33,20 @@
                         batteryCalculatedCharge: { label: "Calculated Charge", units: "C", direction: "output" },
                         batteryTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
                         batteryTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        tCharge: { label: "Charge Time", units: "s", direction: "output" },
+                        batteryWastedEnergy: { label: "Wasted Energy", units: "J", direction: "output" },
+                        batteryOnTime: { label: "Charge Time", units: "s", direction: "output" },
                         batteryWattRate: { label: "Watts Charging", units: "W", direction: "output" }
                     }
                 },
                 Switch: {
                     name: "Switch",
                     properties: {
+                        calcNumPulses: {label: "Calced Pulses", units: "", direction: "output" },
                         numPulses: { label: "Number of Pulses", units: "", direction: "input" },
                         frequency: { label: "Frequency", units: "Hz", direction: "input", default: 2 },
                         cycleDuration: { label: "Cycle Duration", units: "s", direction: "output" },
+                        minCycleDuration: { label: "Min Cyc Duration", units: "s", direction: "output" },
                         maxFrequency: { label: "Max Frequency", units: "Hz", direction: "output" },
-                        minCycleDuration: { label: "Min Cycle Duration", units: "s", direction: "output" },
                         image: { image: "cwmult.webp" },
                         label: { text: "Discharge C1 into C2"},
                         v1: { label: "Voltage C1", units: "V", direction: "input", checkbox: false },
@@ -260,30 +59,36 @@
                     name: "Multiplier",
                     properties: {
                         inputCapacitor: { label: "Capacitance / Stage", units: "F", direction: "input", default: 0.00068 },
+                        numArrays: { label: "Number of Arrays", units: "", direction: "input", default: 1 },
                         numStages: { label: "Number of Stages", units: "", direction: "input", default: 4 },
+                        efficiency: { label: "Charge efficiency", units: "%", direction: "input", default: 0.9, checkbox: false },
                         capVoltage1x: { label: "Voltage / Cap", units: "V", direction: "output" },
                         capFinalVoltage: { label: "Final Voltage", units: "V", direction: "output" },
-                        totalCapacitance1x: { label: "Total Capacitance 1x", units: "F", direction: "output", class: "overline" },
+                        expectedCapacitance: { label: "Expected Capacity", units: "F", direction: "output", class: "overline" },
+                        capExpectedCharge: { label: "Expected Charge", units: "C", direction: "output" },
+                        capExpectedEnergy: { label: "Expected Energy", units: "J", direction: "output" },
+                        expectedEnergyRatio: { label: "Expected Ratio", units: " ", direction: "output" },
+                        totalCapacitance1x: { label: "Total Capacity 1x", units: "F", direction: "output", class: "overline" },
                         capTotalCharge1x: { label: "Total Charge 1x", units: "C", direction: "output" },
                         capTotalEnergy1x: { label: "Total Energy 1x", units: "J", direction: "output" },
-                        energyRatio1x: { label: "Energy Ratio 1x", units: "", direction: "output" },
-                        seriesCapacitance: { label: "Series Capacitance", units: "F", direction: "output", class: "overline" },
-                        capTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
-                        capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        energyRatio: { label: "Energy Ratio", units: "", direction: "output" },
-                        seriesCapacitanceByCharge: { label: "Series Cap (TC)", units: "F", direction: "output", class: 'overline italic' },
-                        capTotalEnergyByCharge: { label: "Total Energy (TC)", units: "J", direction: "output", class: 'italic' },
-                        energyRatioByCharge: { label: "Energy Ratio (TC)", units: "", direction: "output", class: 'italic' }
+                        energyRatio1x: { label: "Energy Ratio 1x", units: " ", direction: "output" },
+                        empericalCapacitance: { label: "Emperical Cap", units: "F", direction: "output", class: "overline emphasis" },
+                        empericalCharge: { label: "Emperical Charge", units: "C", direction: "output", class: "emphasis" },
+                        empericalEnergy: { label: "Emperical Energy", units: "J", direction: "output", class: "emphasis" },
+                        empericalRatio: { label: "Emperical Ratio", units: " ", direction: "output", class: "emphasis" },
+                        seriesCapacitanceByCharge: { label: "Max Series Cap", units: "F", direction: "output", class: 'overline italic' },
+                        capTotalEnergyByCharge: { label: "Max Total Energy", units: "J", direction: "output", class: 'italic' },
+                        energyRatioByCharge: { label: "Max Energy Ratio", units: " ", direction: "output", class: 'italic' }
                     }
                 },
                 Output: {
                     name: "Output",
                     properties: {
                         outResistance: { label: "Output Resistor", units: "Ω", direction: "input", default: 100, checkbox: false },
-                        outVoltage: { label: "Final Voltage", units: "V", direction: "output" },
+                        outFinalVoltage: { label: "Final Voltage", units: "V", direction: "output" },
                         outCharge: { label: "Total Charge", units: "C", direction: "output" },
                         outEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        outEnergyRatio: { label: "Energy Ratio", units: "", direction: "output" },
+                        outEnergyRatio: { label: "Energy Ratio", units: " ", direction: "output" },
                         tDischarge: { label: "Discharge Time", units: "s", direction: "output" },
                         outPower: { label: "Watts Discharging", units: "W", direction: "output" }
                     }
@@ -304,95 +109,120 @@
             const o = {}; // All outputs and intermediates go here
 
             const diodeDrop = 0.49;
-            const efficiency = 0.9; // Applied to max voltage
-            const seriesK = 0.385; // Applied to series capacitance
+            const seriesK = 1.535; // Applied to series capacitance
 
             // Round inputs requiring whole numbers
             p.numStages = Math.max(Math.round(p.numStages), 1);
             p.numPulses = Math.max(Math.round(p.numPulses), 1);
 
-            const resistance = Math.max(p.inputResistance, 0.01);
+            p.inputResistance = Math.max(p.inputResistance, 0.01); // Prevent 0
             o.cycleDuration = 1 / p.frequency;
             const pulseDuration = o.cycleDuration / 2;
 
-            const RC = resistance * p.inputCapacitor;
+            const RC = p.inputResistance * p.inputCapacitor;
             o.actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
             o.totalCapacitance1x = 2 * p.inputCapacitor * p.numStages;
+            o.expectedCapacitance = 2 * p.inputCapacitor / p.numStages;
+
+            o.calcNumPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
+
 
             if (window.plotting) {
-                p.numPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
+                // p.numPulses = o.calcNumPulses;
             }
 
-            o.capFinalVoltage = 2 * p.numStages * o.actualInputVoltage * efficiency;
+            o.capFinalVoltage = 2 * p.numStages * o.actualInputVoltage * p.efficiency;
             o.capVoltage1x = o.capFinalVoltage / p.numStages;
-
-            o.batteryCalculatedCharge = 0;
-            o.capTotalCharge = 0;
-            o.capTotalEnergy = 0;
-            o.capTotalCharge1x = 0;
-            o.capTotalEnergy1x = 0;
-            o.energyRatio = 0;
-            o.energyRatio1x = 0;
-            o.capVoltages = [];
 
             // Accumulate values over pulses
             const tau = p.numPulses / 5; // Time constant 5
             const portionPerPulse = 1 / Math.PHI;
-
+            o.batteryCalculatedCharge = 0;
+            o.capVoltages = [];
+            
+            const ir = p.numPulses / o.calcNumPulses;
             for (let i = 0; i <= p.numPulses; i++) {
                 if (i < p.numPulses) {
-                    o.batteryCalculatedCharge += p.inputCapacitor * o.actualInputVoltage * portionPerPulse * Math.exp(-i / tau);
+                    // Done for every value
+                    o.batteryCalculatedCharge += p.inputCapacitor * o.actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
                 }
-                o.capVoltages.push(o.capFinalVoltage * (1 - Math.exp(-i / tau)));
+                // Done for every value + 1
+                o.capVoltages.push(o.capFinalVoltage * (1 - Math.exp(-(i * ir) / tau)));
             }
 
             // Core calculations based on conservation of charge
             o.capTotalCharge1x = o.totalCapacitance1x * o.capVoltage1x;
-            o.capTotalEnergy1x = (0.5 * o.capTotalCharge1x ** 2) / o.totalCapacitance1x;
-            o.capTotalCharge = o.capTotalCharge1x;
+            o.capExpectedCharge = o.expectedCapacitance * o.capFinalVoltage;
+            // o.empericalCharge = o.capTotalCharge1x;
+            // o.empericalCharge = o.capExpectedCharge;
 
-            o.seriesCapacitance = seriesK * o.capTotalCharge / o.capFinalVoltage;
-            o.capTotalEnergy = 0.5 * o.seriesCapacitance * o.capFinalVoltage ** 2; // by voltage
+            // o.empericalCapacitance = 2 * p.inputCapacitor / p.numStages;
+            // o.empericalCapacitance = seriesK * (o.capTotalCharge1x / o.capFinalVoltage) / p.numStages; // Emperical @ 680uf
+            o.empericalCapacitance = seriesK * o.expectedCapacitance;
+            // o.empericalCapacitance = (o.capExpectedCharge / o.capFinalVoltage);
+            // o.empericalCapacitance = o.expectedCapacitance; // kludge
 
+            o.empericalCharge = o.empericalCapacitance * o.capFinalVoltage;
+
+            o.batteryOnTime = o.cycleDuration * p.numPulses;
             o.batteryTotalCharge = o.capTotalCharge1x;
             o.batteryTotalEnergy = o.batteryTotalCharge * p.batteryVoltage;
 
-            o.energyRatio = o.batteryTotalEnergy > 0 ? o.capTotalEnergy / o.batteryTotalEnergy : 0;
-            o.energyRatio1x = o.batteryTotalEnergy > 0 ? o.capTotalEnergy1x / o.batteryTotalEnergy : 0;
+            // Energy used by input resistance = (Q ** 2) * R / t;
+            o.batteryWastedEnergy = (o.empericalCharge ** 2 * p.inputResistance) / o.batteryOnTime;
+
+            o.capTotalEnergy1x = ((0.5 * o.capTotalCharge1x ** 2) / o.totalCapacitance1x) - o.batteryWastedEnergy;
+            o.capExpectedEnergy = ((0.5 * o.capExpectedCharge ** 2) / o.expectedCapacitance) - o.batteryWastedEnergy; // by charge
+
+            // o.empericalEnergy = (0.5 * o.empericalCapacitance * o.capFinalVoltage ** 2) - o.batteryWastedEnergy; // by voltage
+            o.empericalEnergy = ((0.5 * o.empericalCharge ** 2) / o.empericalCapacitance) - o.batteryWastedEnergy; // by charge
+            // o.empericalEnergy = ((0.5 * o.capExpectedCharge ** 2) / o.empericalCapacitance) - o.batteryWastedEnergy; // by charge
+
+            o.batteryTotalEnergy = p.numArrays * o.batteryTotalEnergy;
+            o.capExpectedEnergy = p.numArrays * o.capExpectedEnergy;
+            o.capTotalEnergy1x = p.numArrays * o.capTotalEnergy1x;
+            o.empericalEnergy = p.numArrays * o.empericalEnergy;
+
+            o.energyRatio1x = o.capTotalEnergy1x / o.batteryTotalEnergy;
+            o.expectedEnergyRatio = o.capExpectedEnergy / o.batteryTotalEnergy;
+            o.empericalRatio = o.empericalEnergy / o.batteryTotalEnergy;
 
             o.batteryChargePerPulseAvg = o.batteryTotalCharge / p.numPulses;
             o.batteryPowerPerPulseAvg = pulseDuration > 0 ? o.batteryChargePerPulseAvg / pulseDuration : 0;
-            o.batteryWattRate = o.batteryTotalEnergy / (o.cycleDuration * p.numPulses);
+            o.batteryWattRate = o.batteryTotalEnergy / o.batteryOnTime;
 
             const stageFillFactor = 15.5; // Empirical
             o.minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
             o.maxFrequency = 1 / o.minCycleDuration;
 
             // Output load calculations
-            o.tCharge = o.cycleDuration * p.numPulses * 2; // 
-            o.outVoltage = (o.seriesCapacitance * o.capFinalVoltage) / (o.seriesCapacitance + p.outResistance);
-            o.outCharge = o.capTotalCharge;
-            o.tDischarge = 5 * p.outResistance * o.seriesCapacitance;
-            o.outEnergy = o.capTotalEnergy;
+            o.outFinalVoltage = (o.empericalCapacitance * o.capFinalVoltage) / (o.empericalCapacitance + p.outResistance);
+            o.outFinalVoltage = 12;
+            o.capEndCharge = o.outFinalVoltage * o.empericalCapacitance;
+            o.outCharge = o.empericalCharge - o.capEndCharge;
+            o.tDischarge = 5 * p.outResistance * o.empericalCapacitance;
+            o.outEnergy = o.empericalEnergy;
             o.outPower = o.outEnergy / o.tDischarge;
             o.outEnergyRatio = o.batteryTotalEnergy > 0 ? o.outEnergy / o.batteryTotalEnergy : 0;
 
             if (p.primary) {
                 // Additional debug and research values
                 o.seriesCapacitance1x = (p.inputCapacitor * 2) / p.numStages;
-                o.seriesCapacitanceByCharge = o.capTotalCharge / o.capFinalVoltage;
+                o.seriesCapacitanceByCharge = o.capTotalCharge1x / o.capFinalVoltage;
 
-                o.capTotalEnergyBy1x = (0.5 * o.capTotalCharge ** 2) / o.seriesCapacitance1x;
+                o.capTotalEnergyBy1x = (0.5 * o.capTotalCharge1x ** 2) / o.seriesCapacitance1x;
                 o.capTotalEnergyBy1xv = 0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitance1x;
                 o.energyRatioBy1x = o.capTotalEnergyBy1x / o.batteryTotalEnergy;
 
-                o.capTotalEnergyByCharge = (0.5 * o.capTotalCharge ** 2) / o.seriesCapacitanceByCharge;
-                o.capTotalEnergyByChargev = 0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitanceByCharge;
+                o.capTotalEnergyByCharge = ((0.5 * o.capTotalCharge1x ** 2) / o.seriesCapacitanceByCharge) - o.batteryWastedEnergy;
+                o.capTotalEnergyByChargev = (0.5 * o.capFinalVoltage ** 2 * o.seriesCapacitanceByCharge) - o.batteryWastedEnergy;
                 o.energyRatioByCharge = o.capTotalEnergyByCharge / o.batteryTotalEnergy;
 
                 // Discharge unknown cap C1 into known C2 and calculate C1
                 o.c1 = calcC1(p.c2, p.v1, p.v2);            
             }
+
+            o.ratio = o.empericalRatio;
 
             return o;
         }
@@ -417,7 +247,7 @@
             const inputResistance = parseFloat(document.getElementById('inputResistance').value);
 
             // Adjust numPulses based on exponential model and apply the scaling factor of 100000
-            el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
+            // el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
         }
 
         function calcNumPulses(numStages, inputCapacitor, inputResistance) {

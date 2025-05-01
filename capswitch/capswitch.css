@@ -1,0 +1,234 @@
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10.5pt;
+            background-color: rgb(31, 31, 31);
+            color: #e0e0e0;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+        }
+
+        h3 {
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        input[type="number"] {
+            width: 6em;
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            text-align: right;
+            font-size: 10.5pt;
+            font-family: consolas;
+            text-align: left;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+
+        .output-value {
+            padding-left: 3px;
+            font-size: 10.5pt;
+            font-family: consolas;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #888;
+            margin-right: 5px;
+        }
+
+        #circuitContainer {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        .component {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #555;
+            background-color: #1f1f1f;
+            margin: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 2px 2px;
+            vertical-align: middle;
+        }
+
+        td.checkbox {
+            width: 24px;
+        }
+
+        td.value {
+            text-align: left;
+        }
+
+        td.units {
+            white-space: nowrap;
+            font-size: 9pt;
+            font-family: Helvetica, sans-serif;
+            padding-top: 1.5%;
+        }
+
+        tr.image-row td {
+            padding: 5px 0;
+        }
+
+        tr.overline {
+            border-top: 1px solid #444;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #666;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        #jsonPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #777;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        #jsonPopup textarea {
+            width: 100%;
+            height: 300px;
+            resize: none;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+
+        #jsonPopup button {
+            margin-top: 10px;
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+
+        #graphCanvas {
+            border: 1px solid #555;
+            margin-top: 20px;
+            background-color: #121212;
+        }
+
+        .fade-in {
+            opacity: 1;
+            transition: opacity 0.3s ease-in;
+        }
+
+        p,
+        label {
+            color: rgb(154, 154, 154);
+            white-space: nowrap;
+            position: relative;
+        }
+
+        p span,
+        label span {
+            color: white;
+        }
+
+        .volt-label {
+            color: yellow;
+        }
+
+        .cap-label {
+            color: #1997fb;
+        }
+
+        .charge-label {
+            color: pink;
+        }
+
+        .ohm-label {
+            color: lawngreen;
+            font-weight: bold;
+        }
+
+        .energy-label {
+            color: goldenrod;
+        }
+
+        .watt-label {
+            color: skyblue;
+        }
+
+        .time-label {
+            color: tan;
+        }
+
+        .hz-label {
+            color: coral;
+        }
+
+        .henry-label {
+            color: thistle;
+        }
+
+        .ratio-label {
+            color: rgb(1, 197, 1);
+        }
+
+        tr.emphasis label {
+            color: rgb(199, 199, 175);
+        }
+
+        tr.bold label {
+            font-weight: bold;
+        }
+
+        tr.italic label {
+            font-style: italic;
+        }
+
+        tr.emphasis label:before {
+            content: '*';
+            position: absolute;
+            left: -0.8em;
+        }

@@ -64,8 +64,8 @@
                         capTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
                         capEnergyPerPulse: { label: "Energy per Pulse", units: "J", direction: "output" },
                         capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        capPowerPerPulse: { label: "Transient Pulse Pwr", units: "W", direction: "output" },
-                        ratio: { label: "Energy Ratio (OU)", units: " ", direction: "output" }
+                        capPowerPerPulse: { label: "Transient Pls Pwr", units: "W", direction: "output" },
+                        ratio: { label: "Energy Ratio", units: " ", direction: "output" }
                     }
                 }
             }
@@ -110,7 +110,7 @@
 
                 o.capVoltage += o.capChargePerPulse / p.capacitance;
                 o.capVoltage = Math.min(o.capVoltage, o.V_sec); // Clip at the max secondary voltage
-                
+
                 o.capVoltages.push(o.capVoltage);
                 o.V_avg = (o.V_before + o.capVoltage) / 2;
                 o.capEnergyPerPulse = o.capChargePerPulse * o.V_avg;

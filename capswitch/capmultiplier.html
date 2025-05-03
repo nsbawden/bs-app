@@ -41,14 +41,14 @@
                 Switch: {
                     name: "Switch",
                     properties: {
-                        calcNumPulses: {label: "Calced Pulses", units: "", direction: "output" },
+                        calcNumPulses: { label: "Calced Pulses", units: "", direction: "output" },
                         numPulses: { label: "Number of Pulses", units: "", direction: "input" },
                         frequency: { label: "Frequency", units: "Hz", direction: "input", default: 2 },
                         cycleDuration: { label: "Cycle Duration", units: "s", direction: "output" },
                         minCycleDuration: { label: "Min Cyc Duration", units: "s", direction: "output" },
                         maxFrequency: { label: "Max Frequency", units: "Hz", direction: "output" },
                         image: { image: "cwmult.webp" },
-                        label: { text: "Discharge C1 into C2"},
+                        label: { text: "Discharge C1 into C2" },
                         v1: { label: "Voltage C1", units: "V", direction: "input", checkbox: false },
                         v2: { label: "Voltage C2", units: "V", direction: "input", checkbox: false },
                         c2: { label: "Value C2", units: "F", direction: "input", default: 0.01, checkbox: false },
@@ -59,7 +59,7 @@
                     name: "Multiplier",
                     properties: {
                         inputCapacitor: { label: "Capacitance / Stage", units: "F", direction: "input", default: 0.00068 },
-                        numArrays: { label: "Number of Arrays", units: "", direction: "input", default: 1 },
+                        // numArrays: { label: "Number of Arrays", units: "", direction: "input", default: 1 },
                         numStages: { label: "Number of Stages", units: "", direction: "input", default: 4 },
                         efficiency: { label: "Charge efficiency", units: "%", direction: "input", default: 0.9, checkbox: false },
                         capVoltage1x: { label: "Voltage / Cap", units: "V", direction: "output" },
@@ -85,7 +85,8 @@
                     name: "Output",
                     properties: {
                         outResistance: { label: "Output Resistor", units: "Ω", direction: "input", default: 100, checkbox: false },
-                        outFinalVoltage: { label: "Final Voltage", units: "V", direction: "output" },
+                        includeInterstage: { label: "Inc Interstage", units: "", direction: "input", default: 1, checkbox: false },
+                        outEndVoltage: { label: "Final Voltage", units: "V", direction: "output" },
                         outCharge: { label: "Total Charge", units: "C", direction: "output" },
                         outEnergy: { label: "Total Energy", units: "J", direction: "output" },
                         outEnergyRatio: { label: "Energy Ratio", units: " ", direction: "output" },
@@ -105,49 +106,50 @@
          * across capacitors over `numPulses` pulses, each with duration `pulseDuration`.
          */
         function VMTS_simulateCircuit(params) {
-            const p = params;
+            const i = params;
             const o = {}; // All outputs and intermediates go here
 
             const diodeDrop = 0.49;
             const seriesK = 1.535; // Applied to series capacitance
 
             // Round inputs requiring whole numbers
-            p.numStages = Math.max(Math.round(p.numStages), 1);
-            p.numPulses = Math.max(Math.round(p.numPulses), 1);
+            i.numStages = Math.max(Math.round(i.numStages), 1);
+            i.numPulses = Math.max(Math.round(i.numPulses), 1);
+            i.numArrays = i.numArrays ?? 1;
 
-            p.inputResistance = Math.max(p.inputResistance, 0.01); // Prevent 0
-            o.cycleDuration = 1 / p.frequency;
+            i.inputResistance = Math.max(i.inputResistance, 0.01); // Prevent 0
+            o.cycleDuration = 1 / i.frequency;
             const pulseDuration = o.cycleDuration / 2;
 
-            const RC = p.inputResistance * p.inputCapacitor;
-            o.actualInputVoltage = p.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
-            o.totalCapacitance1x = 2 * p.inputCapacitor * p.numStages;
-            o.expectedCapacitance = 2 * p.inputCapacitor / p.numStages;
+            const RC = i.inputResistance * i.inputCapacitor;
+            o.actualInputVoltage = i.batteryVoltage * (1 - Math.exp(-pulseDuration / RC)) - (diodeDrop * 2);
+            o.totalCapacitance1x = 2 * i.inputCapacitor * i.numStages;
+            o.expectedCapacitance = 2 * i.inputCapacitor / i.numStages;
 
-            o.calcNumPulses = calcNumPulses(p.numStages, p.inputCapacitor, p.inputResistance);
+            o.calcNumPulses = calcNumPulses(i.numStages, i.inputCapacitor, i.inputResistance);
 
 
             if (window.plotting) {
-                // p.numPulses = o.calcNumPulses;
+                // i.numPulses = o.calcNumPulses;
             }
 
-            o.capFinalVoltage = 2 * p.numStages * o.actualInputVoltage * p.efficiency;
-            o.capVoltage1x = o.capFinalVoltage / p.numStages;
+            o.capFinalVoltage = 2 * i.numStages * o.actualInputVoltage * i.efficiency;
+            o.capVoltage1x = o.capFinalVoltage / i.numStages;
 
             // Accumulate values over pulses
-            const tau = p.numPulses / 5; // Time constant 5
+            const tau = i.numPulses / 5; // Time constant 5
             const portionPerPulse = 1 / Math.PHI;
             o.batteryCalculatedCharge = 0;
             o.capVoltages = [];
-            
-            const ir = p.numPulses / o.calcNumPulses;
-            for (let i = 0; i <= p.numPulses; i++) {
-                if (i < p.numPulses) {
+
+            const ir = i.numPulses / o.calcNumPulses;
+            for (let j = 0; j <= i.numPulses; j++) {
+                if (j < i.numPulses) {
                     // Done for every value
-                    o.batteryCalculatedCharge += p.inputCapacitor * o.actualInputVoltage * portionPerPulse * Math.exp(-(i) / tau);
+                    o.batteryCalculatedCharge += i.inputCapacitor * o.actualInputVoltage * portionPerPulse * Math.exp(-(j) / tau);
                 }
                 // Done for every value + 1
-                o.capVoltages.push(o.capFinalVoltage * (1 - Math.exp(-(i * ir) / tau)));
+                o.capVoltages.push(o.capFinalVoltage * (1 - Math.exp(-(j * ir) / tau)));
             }
 
             // Core calculations based on conservation of charge
@@ -156,20 +158,22 @@
             // o.empericalCharge = o.capTotalCharge1x;
             // o.empericalCharge = o.capExpectedCharge;
 
-            // o.empericalCapacitance = 2 * p.inputCapacitor / p.numStages;
-            // o.empericalCapacitance = seriesK * (o.capTotalCharge1x / o.capFinalVoltage) / p.numStages; // Emperical @ 680uf
+            // o.empericalCapacitance = 2 * i.inputCapacitor / i.numStages;
+            // o.empericalCapacitance = seriesK * (o.capTotalCharge1x / o.capFinalVoltage) / i.numStages; // Emperical @ 680uf
             o.empericalCapacitance = seriesK * o.expectedCapacitance;
             // o.empericalCapacitance = (o.capExpectedCharge / o.capFinalVoltage);
             // o.empericalCapacitance = o.expectedCapacitance; // kludge
 
             o.empericalCharge = o.empericalCapacitance * o.capFinalVoltage;
 
-            o.batteryOnTime = o.cycleDuration * p.numPulses;
+            o.batteryOnTime = o.cycleDuration * i.numPulses;
             o.batteryTotalCharge = o.capTotalCharge1x;
-            o.batteryTotalEnergy = o.batteryTotalCharge * p.batteryVoltage;
+            
+            o.batteryTotalEnergy = o.batteryTotalCharge * o.actualInputVoltage; // i.batteryVoltage;
+            // o.batteryTotalEnergy = o.batteryTotalCharge * i.batteryVoltage;
 
             // Energy used by input resistance = (Q ** 2) * R / t;
-            o.batteryWastedEnergy = (o.empericalCharge ** 2 * p.inputResistance) / o.batteryOnTime;
+            o.batteryWastedEnergy = (o.empericalCharge ** 2 * i.inputResistance) / o.batteryOnTime;
 
             o.capTotalEnergy1x = ((0.5 * o.capTotalCharge1x ** 2) / o.totalCapacitance1x) - o.batteryWastedEnergy;
             o.capExpectedEnergy = ((0.5 * o.capExpectedCharge ** 2) / o.expectedCapacitance) - o.batteryWastedEnergy; // by charge
@@ -178,36 +182,63 @@
             o.empericalEnergy = ((0.5 * o.empericalCharge ** 2) / o.empericalCapacitance) - o.batteryWastedEnergy; // by charge
             // o.empericalEnergy = ((0.5 * o.capExpectedCharge ** 2) / o.empericalCapacitance) - o.batteryWastedEnergy; // by charge
 
-            o.batteryTotalEnergy = p.numArrays * o.batteryTotalEnergy;
-            o.capExpectedEnergy = p.numArrays * o.capExpectedEnergy;
-            o.capTotalEnergy1x = p.numArrays * o.capTotalEnergy1x;
-            o.empericalEnergy = p.numArrays * o.empericalEnergy;
+            o.batteryTotalEnergy = i.numArrays * o.batteryTotalEnergy;
+            o.capExpectedEnergy = i.numArrays * o.capExpectedEnergy;
+            o.capTotalEnergy1x = i.numArrays * o.capTotalEnergy1x;
+            o.empericalEnergy = i.numArrays * o.empericalEnergy;
 
             o.energyRatio1x = o.capTotalEnergy1x / o.batteryTotalEnergy;
             o.expectedEnergyRatio = o.capExpectedEnergy / o.batteryTotalEnergy;
             o.empericalRatio = o.empericalEnergy / o.batteryTotalEnergy;
 
-            o.batteryChargePerPulseAvg = o.batteryTotalCharge / p.numPulses;
+            o.batteryChargePerPulseAvg = o.batteryTotalCharge / i.numPulses;
             o.batteryPowerPerPulseAvg = pulseDuration > 0 ? o.batteryChargePerPulseAvg / pulseDuration : 0;
             o.batteryWattRate = o.batteryTotalEnergy / o.batteryOnTime;
 
             const stageFillFactor = 15.5; // Empirical
-            o.minCycleDuration = stageFillFactor * p.inputResistance * p.inputCapacitor;
+            o.minCycleDuration = stageFillFactor * i.inputResistance * i.inputCapacitor;
             o.maxFrequency = 1 / o.minCycleDuration;
 
-            // Output load calculations
-            o.outFinalVoltage = (o.empericalCapacitance * o.capFinalVoltage) / (o.empericalCapacitance + p.outResistance);
-            o.outFinalVoltage = 12;
-            o.capEndCharge = o.outFinalVoltage * o.empericalCapacitance;
-            o.outCharge = o.empericalCharge - o.capEndCharge;
-            o.tDischarge = 5 * p.outResistance * o.empericalCapacitance;
-            o.outEnergy = o.empericalEnergy;
-            o.outPower = o.outEnergy / o.tDischarge;
-            o.outEnergyRatio = o.batteryTotalEnergy > 0 ? o.outEnergy / o.batteryTotalEnergy : 0;
+            o.outCapacitance = o.expectedCapacitance;
+            o.outStartVoltage = o.capFinalVoltage - (diodeDrop * i.numStages);
+            o.outEndVoltage = i.batteryVoltage;
 
-            if (p.primary) {
-                // Additional debug and research values
-                o.seriesCapacitance1x = (p.inputCapacitor * 2) / p.numStages;
+            // Output load calculations
+            o.deltaVoltage = o.outStartVoltage - o.outEndVoltage;
+            o.capEndCharge = o.outEndVoltage * o.outCapacitance;
+            o.tDischarge = 5 * (i.outResistance + (i.numStages - 1) * i.outResistance) * o.outCapacitance; // Total resistance includes interstage resistors
+            o.outCharge = (o.outCapacitance * o.outStartVoltage) - (o.outCapacitance * o.outEndVoltage);
+            o.outIdealEnergy = 0.5 * o.outCapacitance * o.outStartVoltage ** 2;
+            o.outEnergyR = 0.5 * o.outCapacitance * (o.outStartVoltage ** 2 - o.outEndVoltage ** 2);
+            o.outEnergyBatt = o.outCharge * o.outEndVoltage;
+            o.outEnergy = o.outEnergyR + o.outEnergyBatt;
+            o.outPower = o.outEnergy / o.tDischarge;
+
+            o.energyInterstageR = 0; // Initialize total energy in interstage resistors
+
+            if (i.includeInterstage > 0) {
+                // Interstage resistor energy calculations
+
+                // Voltage per stage (divided across the number of stages), accounting for interstage diode drops
+                o.outStageStVolts = o.outStartVoltage / i.numStages - diodeDrop;
+                o.outStageEnVolts = diodeDrop;
+
+                // Loop through each stage (except output) to calculate energy dissipated in the interstage resistors
+                for (let stage = 1; stage < i.numStages; stage++) {
+                    // Calculate energy dissipation in the interstage resistor for each stage
+                    let energyInStageR = 0.5 * (2 * i.inputCapacitor) * (o.outStageStVolts ** 2 - o.outStageEnVolts ** 2);
+                    o.energyInterstageR += energyInStageR; // Accumulate energy dissipation
+                }
+            }
+
+            // Optionally, you can include the total energy dissipation in the output energy calculations
+            o.outEnergy += o.energyInterstageR;
+
+            o.outEnergyRatio = o.outEnergy / o.batteryTotalEnergy;
+
+            if (i.primary) {
+                // Additional debug and research values on primary run only
+                o.seriesCapacitance1x = (i.inputCapacitor * 2) / i.numStages;
                 o.seriesCapacitanceByCharge = o.capTotalCharge1x / o.capFinalVoltage;
 
                 o.capTotalEnergyBy1x = (0.5 * o.capTotalCharge1x ** 2) / o.seriesCapacitance1x;
@@ -219,7 +250,7 @@
                 o.energyRatioByCharge = o.capTotalEnergyByCharge / o.batteryTotalEnergy;
 
                 // Discharge unknown cap C1 into known C2 and calculate C1
-                o.c1 = calcC1(p.c2, p.v1, p.v2);            
+                o.c1 = calcC1(i.c2, i.v1, i.v2);
             }
 
             o.ratio = o.empericalRatio;

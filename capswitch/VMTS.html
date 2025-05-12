@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="prefix" content="VMTS2">
+    <title>Dynamic Charge Transfer Simulator</title>
+    <!-- Load MathJax from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="capswitch.css">
+</head>
+
+<body class="fade-in">
+    <h1>Dynamic Charge Transfer Simulator
+        <button onclick="calculate()">Calculate</button>
+        <button onclick="copyJson()">Copy</button>
+    </h1>
+    <div id="circuitContainer"></div>
+    <div id="graphContainer"></div>
+    <div id="overlay"></div>
+
+    <script>
+        window.circuitComponents = {
+            components: {
+                Battery: {
+                    name: "Battery",
+                    properties: {
+                        Vin: { label: "Battery Voltage", units: "V", type: "number", default: 12.6 },
+                        Rin: { label: "Input Resistance", units: "Ω", type: "number", default: 3 },
+                        Qin: { label: "Charge In", units: "C" },
+                        powerIn: { label: "Power In", units: "W" }
+                    }
+                },
+                Switch: {
+                    name: "Switch",
+                    properties: {
+                        frequency: { label: "Frequency", units: "Hz", type: "number", default: 2 },
+                        cycle_count: {label: "Cycle count", type: "number", default: 135 }
+                    }
+                },
+                Multiplier: {
+                    name: "Multiplier",
+                    properties: {
+                        Ccw: { label: "Capacitance / Stage", units: "F", type: "number", default: 0.00068 },
+                        Cout: { label: "Capacitance out", units: "F", type: "number", default: 0.00004 },
+                        // numArrays: { label: "Number of Arrays", units: "", type: "number", default: 1 },
+                        cwStages: { label: "Number of Stages", units: "", type: "number", default: 8 },
+                        diodeDrop: { label: "Diode Drop", units: "V", type: "number", default: 0.49, graph: false },
+                    }
+                },
+                Output: {
+                    name: "Output",
+                    properties: {
+                        Vbatt: { label: "Out Batt Volts", units: "V", type: "number", default: 25.2 }, 
+                        Vcap: { label: "Capacitor Voltage", units: "V", type: "number", default: 71 },
+                        Qout: { label: "Charge Out", units: "C" },
+                        Iout: { label: "Current Out", units: "A" },
+                        peakRate: { label: "Peak possible amps", units: "W" },
+                        powerOut: { label: "Power Out", units: "W" },
+                        powerRatio: { label: "Power Ratio", units: " " },
+                        potentialPower: { label: "Potential Power", units: "W" },
+                        potentialRatio: { label: "Potential Ratio", units: " " }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <script>
+        /*
+         * VMTS_simulateCircuit models a Cockcroft-Walton voltage multiplier circuit driven by an H-bridge
+         * producing a square wave from a DC battery voltage. The circuit consists of `numStages` stages,
+         * each with a charging and doubling capacitor. The model simulates the incremental voltage buildup
+         * across capacitors over `numPulses` pulses, each with duration `pulseDuration`.
+         */
+        function PAGE_simulateCircuit(params) {
+            const i = params;
+            const o = {}; // All outputs and intermediates go here
+
+            o.CVcw = i.Ccw * 2 / i.cwStages;
+            o.VC = i.Cout + o.CVcw;
+            o.Qcw = o.CVcw * i.Vcap;
+            o.Qcw1x = i.cwStages * (i.Ccw * 2) * (i.Vcap / i.cwStages);
+            o.Qout = (i.Vcap - i.Vbatt) * o.VC;
+            o.Qin = o.Qout + o.Qcw1x - o.Qcw;
+            o.dps = i.frequency / i.cycle_count;
+            o.powerIn = o.dps * o.Qin * i.Vin;
+            o.powerOut = o.dps * o.Qout * i.Vbatt;
+            o.potentialPower = o.dps * 0.5 * o.VC * i.Vcap ** 2;
+            o.Iout = o.dps * o.Qout;
+            o.peakRate = o.dps * i.Vcap * o.VC;
+
+            o.powerRatio = o.powerOut / o.powerIn;
+            o.potentialRatio = o.potentialPower / o.powerIn;
+
+            o.ratio = o.powerRatio;
+
+            return o;
+        }
+
+        function VMTS_calculateOptimalPulses({ key = 'numPulses', min = 1, max = 1000, step = 1 }) {
+            const values = computeGraph({ key, min, max, step });
+            let maxY = 0;
+            let optimal = 0;
+            values.forEach(({ x, y }) => {
+                if (y > maxY) {
+                    maxY = y;
+                    optimal = x;
+                }
+            });
+            return optimal;
+        }
+
+        function VMTS_adjustValues() {
+            const el = document.getElementById('numPulses');
+            const numStages = parseFloat(document.getElementById('numStages').value);
+            const inputCapacitor = parseFloat(document.getElementById('inputCapacitor').value);
+            const inputResistance = parseFloat(document.getElementById('inputResistance').value);
+
+            // Adjust numPulses based on exponential model and apply the scaling factor of 100000
+            // el.value = calcNumPulses(numStages, inputCapacitor, inputResistance);
+        }
+
+        function calcNumPulses(numStages, inputCapacitor, inputResistance) {
+            // Experimentally determined on a 0.001 F capacitor
+            // with 1 stage requiring 15 pulses (4 stages = 60 pulse) etc.
+            const pulseMultiplier = 15000 * 0.001; // 15 pulses per stage
+            return Math.round(numStages * pulseMultiplier);
+        }
+
+    </script>
+
+    <script src="capgraph.js"></script>
+    <script src="capswitchxtra.js"></script>
+    <script src="capswitch.js"></script>
+
+</body>
+
+</html>

@@ -24,48 +24,48 @@
                 Battery: {
                     name: "Battery",
                     properties: {
-                        batteryVoltage: { label: "Battery Voltage", units: "V", direction: "input", default: 12.6 },
-                        batteryChargePerPulse: { label: "Charge per Pulse", units: "C", direction: "output" },
-                        batteryTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
-                        batteryEnergyPerPulse: { label: "Energy per Pulse", units: "J", direction: "output" },
-                        batteryTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        batteryPowerPerPulse: { label: "Transient Pulse Pwr", units: "W", direction: "output" }
+                        batteryVoltage: { label: "Battery Voltage", units: "V", type: "number", default: 12.6 },
+                        batteryChargePerPulse: { label: "Charge per Pulse", units: "C" },
+                        batteryTotalCharge: { label: "Total Charge", units: "C" },
+                        batteryEnergyPerPulse: { label: "Energy per Pulse", units: "J" },
+                        batteryTotalEnergy: { label: "Total Energy", units: "J" },
+                        batteryPowerPerPulse: { label: "Transient Pulse Pwr", units: "W" }
                     }
                 },
                 Switch: {
                     name: "Switch",
                     properties: {
-                        numPulses: { label: "Number of Pulses", units: "", direction: "input", default: 5 },
-                        frequency: {label: "Frequency", units: "Hz", direction: "input", default: 400 },
-                        pulseDuration: { label: "Pulse Duration", units: "s", direction: "output" },
-                        pulseOffTime: { label: "Pulse Off Time", units: "s", direction: "output" },
-                        optimalPulsesActual: { label: "Optimal Pulses", units: "", direction: "output" },
+                        numPulses: { label: "Number of Pulses", units: "", type: "number", default: 5 },
+                        frequency: {label: "Frequency", units: "Hz", type: "number", default: 400 },
+                        pulseDuration: { label: "Pulse Duration", units: "s" },
+                        pulseOffTime: { label: "Pulse Off Time", units: "s" },
+                        optimalPulsesActual: { label: "Optimal Pulses", units: "" },
                         image: { image: "circuit.png" }
                     }
                 },
                 Transformer: {
                     name: "Transformer",
                     properties: {
-                        turnsRatio: { label: "Turns Ratio", units: "", direction: "input", default: 100 },
-                        primaryInductance: { label: "Pri Inductance", units: "H", direction: "input", default: 0.01 },
-                        primaryResistance: { label: "Pri Resistance", units: "Ω", direction: "input", default: 1 },
-                        secondaryInductance: { label: "Sec Inductance", units: "H", direction: "output" },
-                        secondaryResistance: { label: "Sec Resistance", units: "Ω", direction: "input", default: 10000 },
-                        couplingFactor: { label: "Coupling Factor", units: "k", direction: "input", default: 0.9 },
-                        V_sec: { label: "Sec Peak Volts", units: "V", direction: "output" }
+                        turnsRatio: { label: "Turns Ratio", units: "", type: "number", default: 100 },
+                        primaryInductance: { label: "Pri Inductance", units: "H", type: "number", default: 0.01 },
+                        primaryResistance: { label: "Pri Resistance", units: "Ω", type: "number", default: 1 },
+                        secondaryInductance: { label: "Sec Inductance", units: "H" },
+                        secondaryResistance: { label: "Sec Resistance", units: "Ω", type: "number", default: 10000 },
+                        couplingFactor: { label: "Coupling Factor", units: "k", type: "number", default: 0.9 },
+                        V_sec: { label: "Sec Peak Volts", units: "V" }
                     }
                 },
                 Capacitor: {
                     name: "Capacitor",
                     properties: {
-                        capacitance: { label: "Capacitance", units: "F", direction: "input", default: 0.0000011 },
-                        capVoltage: { label: "Final Voltage", units: "V", direction: "output" },
-                        capChargePerPulse: { label: "Charge/Pulse", units: "C", direction: "output" },
-                        capTotalCharge: { label: "Total Charge", units: "C", direction: "output" },
-                        capEnergyPerPulse: { label: "Energy per Pulse", units: "J", direction: "output" },
-                        capTotalEnergy: { label: "Total Energy", units: "J", direction: "output" },
-                        capPowerPerPulse: { label: "Transient Pls Pwr", units: "W", direction: "output" },
-                        ratio: { label: "Energy Ratio", units: " ", direction: "output" }
+                        capacitance: { label: "Capacitance", units: "F", type: "number", default: 0.0000011 },
+                        capVoltage: { label: "Final Voltage", units: "V" },
+                        capChargePerPulse: { label: "Charge/Pulse", units: "C" },
+                        capTotalCharge: { label: "Total Charge", units: "C" },
+                        capEnergyPerPulse: { label: "Energy per Pulse", units: "J" },
+                        capTotalEnergy: { label: "Total Energy", units: "J" },
+                        capPowerPerPulse: { label: "Transient Pls Pwr", units: "W" },
+                        ratio: { label: "Energy Ratio", units: " " }
                     }
                 }
             }

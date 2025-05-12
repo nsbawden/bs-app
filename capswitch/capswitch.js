@@ -7,6 +7,7 @@ function buildCircuitTable(jsonObj) {
 
     // Map units to label classes
     const getLabelClass = (units) => {
+        if (units === undefined) return '';
         switch (units.toUpperCase()) {
             case "V": return "volt-label";
             case "F": return "cap-label";
@@ -23,14 +24,24 @@ function buildCircuitTable(jsonObj) {
     };
 
     const createInputField = (key, row) => {
-        const valueAttrs = [
-            row.value !== undefined && `value="${row.value}"`,
-            row.min !== undefined && `min="${row.min}"`,
-            row.step !== undefined && `step="${row.step}"`,
-            row.max !== undefined && `max="${row.max}"`
-        ].filter(Boolean).join(' ');
+        switch (row.type) {
+            case 'checkbox': {
+                const valueAttrs = [
+                    row.checked === true ? `checked` : ''
+                ].join(' ');
+                return `<input type="checkbox" class="input-checkbox" id="${key}" ${valueAttrs}>`;
+            }
 
-        return `<input type="number" id="${key}" ${valueAttrs}>`;
+            default: {
+                const valueAttrs = [
+                    row.value !== undefined && `value="${row.value}"`,
+                    row.min !== undefined && `min="${row.min}"`,
+                    row.step !== undefined && `step="${row.step}"`,
+                    row.max !== undefined && `max="${row.max}"`
+                ].filter(Boolean).join(' ');
+                return `<input type="number" id="${key}" ${valueAttrs}>`;
+            }
+        }
     };
 
     const createLabelCell = (row) => {
@@ -49,6 +60,12 @@ function buildCircuitTable(jsonObj) {
 
         Object.keys(component.properties).forEach(key => {
             const row = component.properties[key];
+            if (row.type === 'number' || row.type === 'checkbox') {
+                row.direction = 'input';
+            } else {
+                row.direction = 'output';
+                row.type = 'output';
+            }
             if (row.image) {
                 html += `<tr class="image-row">
                             <td colspan="4" style="text-align: center">
@@ -64,11 +81,11 @@ function buildCircuitTable(jsonObj) {
                 window.params[key] = row;
                 html += `<tr${row.class ? ` class="${row.class}"` : ''}>
                             <td class="checkbox">
-                                ${row.direction === 'input' && row.checkbox !== false ? `<input type="checkbox" class="graph-checkbox" data-key="${key}">` : ''}
+                                ${row.type === 'number' && row.graph !== false ? `<input type="checkbox" class="graph-checkbox" data-key="${key}">` : ''}
                             </td>
                             ${createLabelCell(row)}
                             <td class="value">
-                                ${row.direction === 'input' ? createInputField(key, row) : `<span id="${key}" class="output-value ${getLabelClass(row.units)}">${row.value || 0}</span>`}
+                                ${row.type !== 'output' ? createInputField(key, row) : `<span id="${key}" class="output-value ${getLabelClass(row.units)}">${row.value || 0}</span>`}
                             </td>
                             ${createUnitsCell(row)}
                         </tr>`;
@@ -125,6 +142,11 @@ setTimeout(() => {
             el.setAttribute('title', el.id);
             return el.id;
         });
+    window.checkboxIds = Array.from(document.querySelectorAll('input[type=checkbox].input-checkbox'))
+        .map(input => {
+            input.setAttribute('title', input.id);
+            return input.id;
+        });
     window.checkboxKeys = Array.from(document.querySelectorAll('input[type=checkbox].graph-checkbox')).map(input => input.dataset.key);
     loadSavedValues();
     calculate();
@@ -153,6 +175,10 @@ function getParams() {
         const value = document.getElementById(id)?.value;
         params[id] = value ? parseFloat(value) : NaN;
     }
+    for (const id of checkboxIds) {
+        const value = document.getElementById(id)?.checked ? 1 : 0;
+        params[id] = value;
+    }
     return params;
 }
 
@@ -162,6 +188,8 @@ function simulateCircuit(params) {
             return DCTS_simulateCircuit(params);
         case 'VMTS':
             return VMTS_simulateCircuit(params);
+        default:
+            return PAGE_simulateCircuit(params);
     }
     return {};
 }
@@ -203,6 +231,12 @@ function loadSavedValues() {
             : window.params[id]?.default ?? '';
     }
 
+    for (const id of checkboxIds) {
+        const input = document.getElementById(id);
+        if (!input) continue;
+        input.checked = inputValues[id] === 1;
+    }
+
     const savedCheckboxStates = localStorage.getItem(`${prefix}_checkboxStates`);
     const checkboxStates = savedCheckboxStates ? JSON.parse(savedCheckboxStates) : {};
     for (const key of checkboxKeys) {
@@ -219,6 +253,11 @@ function saveValues() {
         if (!input) continue;
         inputValues[id] = input.value;
     }
+    for (const id of checkboxIds) {
+        const input = document.getElementById(id);
+        if (!input) continue;
+        inputValues[id] = input.checked ? 1 : 0;
+    }
     localStorage.setItem(`${prefix}_inputValues`, JSON.stringify(inputValues));
 
     const checkboxStates = {};
@@ -228,36 +267,6 @@ function saveValues() {
         checkboxStates[key] = input.checked;
     }
     localStorage.setItem(`${prefix}_checkboxStates`, JSON.stringify(checkboxStates));
-}
-
-function xpageOutput(o) {
-    console.log('-----------------------------------------------------------------------');
-
-    // Check for outputIds with no corresponding entry in o
-    const ids = window.outputIds.sort();
-    for (const id of ids) {
-        if (o[id] === undefined) {
-            console.warn(`No value found for ID '${id}' in result`);
-        }
-    }
-
-    // Iterate through own keys of o
-    for (const key of Object.keys(o)) {
-        const value = o[key];
-        if (Number.isNaN(value)) {
-            console.warn(`Value for key '${key}' is NaN`);
-        } else {
-            const el = document.getElementById(key);
-            if (el && window.outputIds.includes(key)) {
-                el.textContent = smartFormat(value);
-                if (typeof value === 'number') {
-                    console.log(`${key} = ${value}`);
-                }
-            } else if (typeof value === 'number') {
-                console.log(`${key} = ${value}`);
-            }
-        }
-    }
 }
 
 function pageOutput(o) {
@@ -284,7 +293,7 @@ function pageOutput(o) {
                 //     console.log(`  ${key} = ${smartFormat(value)}`);
                 // }
             } else if (typeof value === 'number') {
-                console.log(`* ${key} = ${smartFormat(value)}`);
+                console.log(`  ${key} = ${smartFormat(value)}`);
             }
         }
     }
@@ -312,18 +321,20 @@ function calculate() {
         const container = document.getElementById('graphContainer');
         if (container) container.innerHTML = '';
 
-        const capVoltageValues = capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
-        plotGraph({
-            container,
-            values: capVoltageValues,
-            min: 0,
-            max: 0,
-            step: 0,
-            xLabel: 'Pulse Number',
-            yLabel: 'Output Voltage (V)',
-            color: 'gold',
-            title: 'Output Voltage vs Pulse Number'
-        });
+        if (result.capVoltages) {
+            const capVoltageValues = capVoltages?.map((v, i) => ({ x: i, y: v })) ?? [];
+            plotGraph({
+                container,
+                values: capVoltageValues,
+                min: 0,
+                max: 0,
+                step: 0,
+                xLabel: 'Pulse Number',
+                yLabel: 'Output Voltage (V)',
+                color: 'gold',
+                title: 'Output Voltage vs Pulse Number'
+            });
+        }
         plotGraphs(result);
         blinkEnd();
     });
@@ -339,6 +350,12 @@ document.querySelectorAll('input[type=number]').forEach(input => {
 });
 
 document.querySelectorAll('input[type=checkbox].graph-checkbox').forEach(input => {
+    input.addEventListener('change', () => {
+        calculate();
+    });
+});
+
+document.querySelectorAll('input[type=checkbox].input-checkbox').forEach(input => {
     input.addEventListener('change', () => {
         calculate();
     });
